@@ -1,0 +1,110 @@
+.CreateTask {
+    border-radius: 4vh;
+    position: fixed;
+    top: 50%;
+    left: 80%;
+    transform: translate(-50%, -50%) scale(145%);
+    text-align: center;
+    vertical-align: middle;
+    line-height: 3.1vh;
+    background: #fff;
+    width: 15%;
+    height: 20%;
+    font-family: 'Rubik', sans-serif;
+    box-shadow: 4px 4px 0px 0px gray;
+}
+
+.SubmitButt {
+    border-radius: 20px;
+    position: fixed;
+    top: 110%;
+    left: 54%;
+    transform: translate(-50%, -50%) scale(100%);
+    background: #fff;
+}
+
+.friend_buttons{
+    margin: 0 auto;
+    width: 5%;
+}
+
+.left-row{
+    position: fixed;
+    left: 5%;
+    top: 15%;
+    line-height: 5vh;
+    text-align: center;
+}
+
+.right-row{
+    position: fixed;
+    left: 85%;
+    top: 15%;
+    line-height: 5vh;
+    text-align: left;
+}
+
+.right-row button{
+    width: 10vh;
+    height: 4vh;
+    text-align: center;
+}
+
+.main-row{
+    position: absolute;
+    left: 10%;
+    top: 15%;
+    line-height: 10vh;
+}
+
+.settings{
+    text-align: center;
+    font-size: 0.7vmax;
+}
+
+.profile {
+    margin: 0 auto;
+    text-align: right;
+}
+
+.SubmitButt:hover {
+    border-radius: 20px;
+    position: fixed;
+    top: 110%;
+    left: 54%;
+    transform: translate(-50%, -50%) scale(100%);
+    background: #7a7a7a;
+    cursor: pointer;
+}
+
+.TasksWrapper{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+}
+
+.Separator{
+    position: fixed;
+    top: 10%;
+    left: 3%;
+    max-width: 125vh;
+}
+
+.Logout {
+    border-radius: 20px;
+    width: 70px;
+    height: 23px;
+    font-family: 'Rubik', sans-serif;
+    position: fixed;
+    top: 80%;
+    left: 81%;
+    transform: translate(-50%, -50%) scale(120%);
+    background: #A6E3DC;
+    text-align: center;
+}
+
+body {
+    background: #fafbfd url(/static/img/background.png) no-repeat -10vh 20vh;
+    background-size: 50vmax;
+    overflow: scroll;
+}

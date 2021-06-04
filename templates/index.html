@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register</title>
+    <link type="text/css" rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="Title"><h1>Sign in</h1></div>
+<form method="POST">
+    <div class="SignIn">
+        <div>
+            <label>Username</label>
+            <input type='text' minlength="5" maxlength="30" placeholder="5+ symbols" name="username" required>
+        </div>
+        <div style="padding-left: 0.8vw;">
+            <label>E-mail</label>
+            <input type="email" maxlength="30" placeholder="enter valid email" name="email" required>
+        </div>
+        <div style="padding-left: 0vw;">
+            <label>Password</label>
+            <input type="password" minlength="6" maxlength="20" placeholder="6+ symbols" name="pw1" required>
+        </div>
+        <div style="padding-left: 0vw;">
+            <label>Password</label>
+            <input type="password" minlength="6" maxlength="20" placeholder="6+ symbols" name="pw2" required>
+        </div>
+    </div>
+    <div class="SubmitButt">
+        <input class="SubmitButt" type="submit" value="Send">
+    </div>
+    <div class="Message">{% if error == 'passwords_dont_match' %}
+        <h2>Passwords aren't equal!</h2>
+        {% elif error == 'already_exist' %}
+        <h2>Username or user already exist!</h2>
+        {% endif %}
+    </div>
+</form>
+<div class="Login">
+    Or you can
+</div>
+<div class="Redirect">
+    <a href="/login">Login</a>
+</div>
+</body>
+</html>

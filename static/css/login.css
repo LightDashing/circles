@@ -1,0 +1,90 @@
+.LogIn {
+    background: #fff;
+    border-radius: 1vw;
+    font-family: "Ubuntu";
+    font-size: 0.7vmax;
+    vertical-align: middle;
+    line-height: 1.5vmax;
+    text-align: center;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 4px 4px 0px 0px gray;
+    width: 12vw;
+    height: 9vh;
+}
+
+.SubmitButt {
+    border-radius: 20px;
+    font-size: 0.7vmax;
+    position: absolute;
+    top: 60%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    width: 5vmax;
+    height: 1vmax;
+}
+
+.SubmitButt:hover {
+    border-radius: 20px;
+    font-size: 0.7vmax;
+    position: fixed;
+    top: 60%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #7a7a7a;
+    cursor: pointer;
+}
+
+.Message {
+    font-family: "Ubuntu";
+    position: fixed;
+    top: 49%;
+    left: 58%;
+    text-align: center;
+    color: red;
+    text-shadow: 2px 4px 2px #b0b0b0, 0 0 1em black;
+}
+
+.Text {
+    font-family: 'Ubuntu', 'Lucida Grande', 'Lucida Sans Unicode', 'Geneva', 'Verdana', sans-serif;
+    position: fixed;
+    font-size: 0.7vmax;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+input{
+    font-size: 0.5vmax;
+    width: 5vmax;
+    height: 0.6vmax;
+}
+
+.SignIn {
+    font-family: 'Rubik', sans-serif;
+    font-size: 0.7vmax;
+    position: absolute; 
+    top: 69%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.Redirect {
+    font-family: 'Rubik', sans-serif;
+    font-size: 0.7vmax;
+    position: absolute;
+    top: 72%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+body {
+    background: #fafbfd;
+    background-image: url(/static/img/background.png);
+    background-repeat: no-repeat;
+    background-position: -10vh 20vh;
+    background-size: 50vmax;
+}

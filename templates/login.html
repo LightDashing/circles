@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <link type="text/css" rel="stylesheet" href="/static/css/login.css">
+</head>
+<body>
+<div class="Text"><h1>Login</h1></div>
+<form method="POST">
+    <div class="LogIn">
+        <div style="padding-left: 20px;">
+            <label>E-mail</label>
+            <input type="email" placeholder="enter valid email" name="email" required>
+        </div>
+        <div>
+            <label>Password</label>
+            <input type="password" minlength="6" placeholder="6+ symbols" name="pw1" required>
+        </div>
+        <div>
+            <label>Remember me</label>
+            <input type="checkbox" name="remember">
+        </div>
+    </div>
+    <div class="SubmitButt">
+        <input class="SubmitButt" type="submit" value="Send">
+    </div>
+    <div class="Message">
+        {% if error == 'dont_match' %}
+        <h2>Email or password is incorrect!</h2>
+        {% endif %}
+    </div>
+</form>
+<div class="SignIn">
+    Or you can
+</div>
+<div class="Redirect">
+    <a href="/">Sign in</a>
+</div>
+<div class="Redirect" style="top: 75%;">
+    <a href="/reset">Reset</a>
+</div>
+</body>
+</html>

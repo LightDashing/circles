@@ -1,0 +1,22 @@
+.left-row{
+    position: fixed;
+    left: 5%;
+    top: 15%;
+    line-height: 5vh;
+    text-align: center;
+}
+
+.right-row{
+    position: fixed;
+    left: 85%;
+    top: 15%;
+    line-height: 5vh;
+    text-align: center;
+}
+
+.main-row{
+    position: absolute;
+    left: 10%;
+    top: 15%;
+    line-height: 10vh;
+}
