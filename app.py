@@ -153,7 +153,7 @@ def send_message():
     if request.method == 'POST':
         data = request.get_json()
         with OpenConnectionToBD(db):
-            db.send_message(session.get("username"), data['user'], data['message'])
+            db.send_message(session.get("username"), data['chat_id'], data['message'], data['attachment'])
         return jsonify("True")
 
 
@@ -165,36 +165,17 @@ def load_messages():
             if data['type'] == 'load':
                 messages = db.get_messages_with_user(session.get("username"), data['user'])
             elif data['type'] == 'update':
-                messages = db.update_messages(session.get("username"), data['user'], data['msg_time'])
-            msglist = None
-            if messages:
-                msglist = [None, []]
-                for message in messages:
-                    msglist[1].append((db.get_name_by_userid(message.fromuserid), message.message))
-                    msglist[0] = str(message.message_date)
-        return jsonify(msglist)
+                messages = db.update_messages(data['chat_id'], data['msg_time'])
+        return jsonify(messages)
 
 
 @app.route('/dialog/<username>', methods=['GET', 'POST'])
 def dialog_page(username):
-    if request.method == 'POST':
-        msg = request.form.get("inp_msg")
-        with OpenConnectionToBD(db):
-            db.send_message(session['username'], username, msg)
-            name = session['username']
-            messages = db.get_messages_with_user(name, username)
-            msglist = []
-            for message in messages:
-                msglist.append((db.get_name_by_userid(message.fromuserid), message.message))
-        return render_template('dialog.html', name=name, messages=msglist)
-    else:
-        with OpenConnectionToBD(db):
-            name = session['username']
-            messages = db.get_messages_with_user(name, username)
-            msglist = []
-            for message in messages:
-                msglist.append((db.get_name_by_userid(message.fromuserid), message.message))
-        return render_template("dialog.html", name=name, messages=msglist, username=username)
+    with OpenConnectionToBD(db):
+        name = session['username']
+        messages = db.get_messages_with_user(name, username)
+        chat_id = db.get_dialog_chat_id(name, username)
+    return render_template("dialog.html", name=name, messages=messages, username=username, chat_id=chat_id)
 
 
 @app.route('/user/settings', methods=['GET', 'POST'])

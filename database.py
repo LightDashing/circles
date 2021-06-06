@@ -1,9 +1,9 @@
-from sqlalchemy import or_, and_
+from sqlalchemy import or_, and_, func
 from sqlalchemy.engine import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 import datetime
-from models import User, UserPost, Message, Friend
+from models import User, UserPost, Message, Friend, Chat
 
 
 class OpenConnectionToBD:
@@ -122,34 +122,78 @@ class DataBase:
         else:
             return False
 
-    def get_messages_with_user(self, name: str, username: str):
-        name = self.get_userid_by_name(name)
-        username = self.get_userid_by_name(username)
-        messages = self.session.query(Message) \
-            .filter(or_(and_(Message.userid == name, Message.fromuserid == username),
-                        and_(Message.userid == username, Message.fromuserid == name))) \
-            .order_by(Message.message_date).all()
+    def create_chat(self, name: str, username: str) -> str:
+        userid = self.get_userid_by_name(name)
+        s_userid = self.get_userid_by_name(username)
+        chat = self.session.add(Chat(chatname=str(name + ", " + username), userids=[userid, s_userid]))
+        user = self.session.query(User).filter(User.id == userid).first()
+        user.chats.append(chat.id)
+        user = self.session.query(User).filter(User.id == s_userid).first()
+        user.chats.append(chat.id)
+        self.session.commit()
+        return str(name + ", " + username + chat.id)
+
+    def get_messages_with_user(self, name: str, username: str) -> list[dict]:
+        userid = self.get_userid_by_name(name)
+        s_userid = self.get_userid_by_name(username)
+        chat = self.session.query(Chat).filter(Chat.userids.contains([userid, s_userid]),
+                                               func.array_length(Chat.userids, 1) == 2).first()
+        if chat:
+            messages = []
+            for message in chat.messages:
+                messages.append(
+                    {"user": message.fromuserid, "message": message.message, "attachment": message.attachments,
+                     "date": message.message_date})
+            return messages
+        else:
+            chat_name = self.create_chat(name, username)
+            return [{"chat-name": chat_name, 'messages': None}]
+
+    def get_dialog_chat_id(self, name: str, username: str) -> int:
+        userid = self.get_userid_by_name(name)
+        s_userid= self.get_userid_by_name(username)
+        chat = self.session.query(Chat).filter(Chat.userids.contains([userid, s_userid]),
+                                               func.array_length(Chat.userids, 1) == 2).first()
+        return chat.id
+
+    def update_messages(self, chat_id: int, msg_time: str) -> list[dict]:
+        msg_time = datetime.datetime.strptime(msg_time, "%Y-%m-%d %H:%M:%S.%f")
+        messages = self.session.query(Chat).filter(Chat.id == chat_id).first()
+        new_messages = []
+        for message in messages:
+            if message.message_date > msg_time:
+                new_messages.append(
+                    {"user": message.fromuserid, "message": message.message, "attachment": message.attachments,
+                     "date": message.message_date})
         return messages
 
-    def update_messages(self, f_user: str, s_user: str, msg_time: str) -> list:
-        try:
-            msg_time = datetime.datetime.strptime(msg_time, "%Y-%m-%d %H:%M:%S.%f")
-        except TypeError:
-            msg_time = datetime.datetime.now()
-        f_user = self.get_userid_by_name(f_user)
-        s_user = self.get_userid_by_name(s_user)
-        messages = self.session.query(Message) \
-            .filter(or_(and_(Message.userid == f_user, Message.fromuserid == s_user, Message.message_date > msg_time),
-                        and_(Message.userid == s_user, Message.fromuserid == f_user, Message.message_date > msg_time))) \
-            .order_by(Message.message_date).all()
-        return messages
+    # def update_messages(self, f_user: str, s_user: str, msg_time: str) -> list:
+    #     try:
+    #         msg_time = datetime.datetime.strptime(msg_time, "%Y-%m-%d %H:%M:%S.%f")
+    #     except TypeError:
+    #         msg_time = datetime.datetime.now()
+    #     f_user = self.get_userid_by_name(f_user)
+    #     s_user = self.get_userid_by_name(s_user)
+    #     messages = self.session.query(Message) \
+    #         .filter(or_(and_(Message.userid == f_user, Message.fromuserid == s_user, Message.message_date > msg_time),
+    #                     and_(Message.userid == s_user, Message.fromuserid == f_user, Message.message_date > msg_time))) \
+    #         .order_by(Message.message_date).all()
+    #     return messages
 
-    def send_message(self, name: str, to: str, msg: str) -> bool:
-        to = self.get_userid_by_name(to)
-        name = self.get_userid_by_name(name)
-        self.session.add(Message(userid=to, fromuserid=name, message=msg, message_date=datetime.datetime.now()))
+    def send_message(self, user: str, chat_id: int, msg: str, attachment: str = None) -> bool:
+        userid = self.get_userid_by_name(user)
+        chat = self.session.query(Chat).filter(Chat.id == chat_id).first()
+        self.session.add(Message(fromuserid=userid, message_date=datetime.datetime.now(), message=msg, chat_id=chat.id,
+                                 attachments=attachment))
         self.session.commit()
         return True
+
+    # def send_message(self, name: str, to: str, msg: str) -> bool:
+    #     to = self.get_userid_by_name(to)
+    #     name = self.get_userid_by_name(name)
+    #     self.session.add(Message(userid=to, fromuserid=name, message=msg, message_date=datetime.datetime.now()))
+    #     self.session.commit()
+    #     return True
 
     def publish_post(self, msg: str, v_lvl: int, user: str, whereid: str = None, att: str = None) -> bool:
         userid = self.get_userid_by_name(user)

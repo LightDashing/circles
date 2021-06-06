@@ -1,8 +1,9 @@
-function send_message(message, username) {
+function send_message(message, username, chat_id) {
+    chat_id = parseInt(chat_id)
     $.ajax({
         url: '/_send_message',
         method: 'POST',
-        data: JSON.stringify({"user": username, "message": message}),
+        data: JSON.stringify({"user": username, "message": message, "chat_id": chat_id}),
         dataType: 'json',
         contentType: 'application/json',
         success: function (){
@@ -12,12 +13,13 @@ function send_message(message, username) {
 }
 
 //TODO: исправить баг, при котором когда у пользователя 0 сообщений, они не загржаются после отправки
-function update_messages(username) {
+function update_messages(username, chat_id) {
+    chat_id = parseInt(chat_id)
     let last_msg_time = null;
     $.ajax({
         url: '/_load_messages',
         method: 'POST',
-        data: JSON.stringify({"user": username, "type": 'load'}),
+        data: JSON.stringify({"user": username, "type": 'load', "chat_id": chat_id}),
         dataType: 'json',
         contentType: 'application/json',
         success: function (data) {
@@ -35,7 +37,7 @@ function update_messages(username) {
         $.ajax({
             url: '/_load_messages',
             method: 'POST',
-            data: JSON.stringify({"user": username, "msg_time": last_msg_time, "type": 'update'}),
+            data: JSON.stringify({"user": username, "msg_time": last_msg_time, "type": 'update', "chat_id": chat_id}),
             dataType: 'json',
             contentType: 'application/json',
             success: function (data) {

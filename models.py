@@ -1,4 +1,5 @@
-from sqlalchemy import Column, INTEGER, Text, ForeignKey, VARCHAR, DateTime, Boolean, ARRAY, or_, and_
+from sqlalchemy import Column, INTEGER, Text, ForeignKey, VARCHAR, DateTime, Boolean, or_, and_
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.engine import create_engine
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
@@ -23,9 +24,9 @@ class User(Base):
     other_publish = Column(Boolean, nullable=False, default=True)
     # Здесь можно указать уровень людей, способных постить на стене
     min_posting_lvl = Column(INTEGER, nullable=False, default=5)
+    chats = Column(ARRAY(INTEGER))
 
     chats = relationship("Chat", cascade="all, delete-orphan")
-    user_messages = relationship("Message", cascade="all, delete-orphan")
     user_friends = relationship("Friend", cascade="all, delete-orphan")
     user_posts = relationship("UserPost", cascade="all, delete-orphan")
 
@@ -94,7 +95,7 @@ class Chat(Base):
     id = Column(INTEGER, primary_key=True, autoincrement=True)
     chatname = Column(VARCHAR(128), nullable=False)
     userids = Column(ARRAY(INTEGER), nullable=False)
-    admin = Column(INTEGER, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    admin = Column(INTEGER, ForeignKey('users.id', ondelete='CASCADE'))
     moders = Column(ARRAY(INTEGER))
     rules = Column(VARCHAR(1024))
     fandoms = Column(ARRAY(VARCHAR(128)))
@@ -109,5 +110,3 @@ class Message(Base):
     message = Column(VARCHAR(1024), nullable=False)
     chat_id = Column(INTEGER, ForeignKey('chats.id', ondelete='CASCADE'), nullable=False)
     attachments = Column(ARRAY(VARCHAR(128)))
-
-
