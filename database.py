@@ -125,25 +125,27 @@ class DataBase:
     def create_chat(self, name: str, username: str) -> str:
         userid = self.get_userid_by_name(name)
         s_userid = self.get_userid_by_name(username)
-        chat = self.session.add(Chat(chatname=str(name + ", " + username), userids=[userid, s_userid]))
+        chat = Chat(chatname=str(name + ", " + username), userids=[userid, s_userid])
+        self.session.add(chat)
         user = self.session.query(User).filter(User.id == userid).first()
-        user.chats.append(chat.id)
+        user.chats.append(chat)
         user = self.session.query(User).filter(User.id == s_userid).first()
-        user.chats.append(chat.id)
+        user.chats.append(chat)
         self.session.commit()
-        return str(name + ", " + username + chat.id)
+        return str(name + ", " + username + str(chat.id))
 
-    def get_messages_with_user(self, name: str, username: str) -> list[dict]:
+    def get_messages_with_user(self, name: str, username: str):
         userid = self.get_userid_by_name(name)
         s_userid = self.get_userid_by_name(username)
         chat = self.session.query(Chat).filter(Chat.userids.contains([userid, s_userid]),
                                                func.array_length(Chat.userids, 1) == 2).first()
         if chat:
-            messages = []
+            messages = [0, []]
             for message in chat.messages:
-                messages.append(
-                    {"user": message.fromuserid, "message": message.message, "attachment": message.attachments,
+                messages[1].append(
+                    {"user": self.get_name_by_userid(message.fromuserid), "message": message.message, "attachment": message.attachments,
                      "date": message.message_date})
+                messages[0] = str(message.message_date)
             return messages
         else:
             chat_name = self.create_chat(name, username)
@@ -156,16 +158,19 @@ class DataBase:
                                                func.array_length(Chat.userids, 1) == 2).first()
         return chat.id
 
-    def update_messages(self, chat_id: int, msg_time: str) -> list[dict]:
+    def update_messages(self, chat_id: int, msg_time: str):
+        if not msg_time:
+            msg_time = str(datetime.datetime.now())
         msg_time = datetime.datetime.strptime(msg_time, "%Y-%m-%d %H:%M:%S.%f")
-        messages = self.session.query(Chat).filter(Chat.id == chat_id).first()
-        new_messages = []
-        for message in messages:
+        chat = self.session.query(Chat).filter(Chat.id == chat_id).first()
+        new_messages = [0, []]
+        for message in chat.messages:
             if message.message_date > msg_time:
-                new_messages.append(
-                    {"user": message.fromuserid, "message": message.message, "attachment": message.attachments,
+                new_messages[1].append(
+                    {"user": self.get_name_by_userid(message.fromuserid), "message": message.message, "attachment": message.attachments,
                      "date": message.message_date})
-        return messages
+            new_messages[0] = str(message.message_date)
+        return new_messages
 
     # def update_messages(self, f_user: str, s_user: str, msg_time: str) -> list:
     #     try:

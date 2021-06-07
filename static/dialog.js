@@ -3,7 +3,7 @@ function send_message(message, username, chat_id) {
     $.ajax({
         url: '/_send_message',
         method: 'POST',
-        data: JSON.stringify({"user": username, "message": message, "chat_id": chat_id}),
+        data: JSON.stringify({"user": username, "message": message, "chat_id": chat_id, "attachment": null}),
         dataType: 'json',
         contentType: 'application/json',
         success: function (){
@@ -24,11 +24,13 @@ function update_messages(username, chat_id) {
         contentType: 'application/json',
         success: function (data) {
             if (data) {
+                try{
                 data[1].forEach(function (el, index) {
-                    $("#incoming_msg").append("<a>" + el[0] + ": " + el[1] + "</a><br>")
-                })
+                    $("#incoming_msg").append("<a>" + el['user'] + ": " + el['message'] + "</a><br>")
+                })} catch (TypeError){
+                    
+                }
                 last_msg_time = data[0]
-                console.log(last_msg_time)
             }
         }
     });
@@ -42,11 +44,13 @@ function update_messages(username, chat_id) {
             contentType: 'application/json',
             success: function (data) {
                 if (data) {
+                    try{
                     data[1].forEach(function (el, index) {
-                        $("#incoming_msg").append("<a>" + el[0] + ": " + el[1] + "</a><br>")
-                    })
+                        $("#incoming_msg").append("<a>" + el['user'] + ": " + el['message'] + "</a><br>")
+                    })} catch (TypeError) {
+                        
+                    }
                     last_msg_time = data[0]
-                    console.log(last_msg_time)
                 }
             }
         });
