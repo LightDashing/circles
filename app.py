@@ -178,6 +178,35 @@ def dialog_page(username):
     return render_template("dialog.html", name=name, messages=messages, username=username, chat_id=chat_id)
 
 
+@app.route('/user/messages', methods=['GET'])
+def messages():
+    with OpenConnectionToBD(db):
+        username = session['username']
+        chats = db.get_user_chats(username)
+    return render_template("messages.html", chats=chats, name=username)
+
+
+@app.route('/user/create_chat', methods=['GET', 'POST'])
+def create_chat():
+    if request.method == 'POST':
+        pass
+    with OpenConnectionToBD(db):
+        username = session.get("username")
+        friends = db.return_friendslist(username)
+    return render_template("create_chat.html", friends=friends, name=username)
+
+
+@app.route('/chat/<chatid>', methods=['GET', 'POST'])
+def chat(chatid):
+    if request.method == 'POST':
+        pass
+    else:
+        with OpenConnectionToBD(db):
+            chat = db.get_chat_byid(chatid)
+            username = session.get('username')
+        return render_template("chat.html", chat=chat, name=username)
+
+
 @app.route('/user/settings', methods=['GET', 'POST'])
 def user_settings():
     if request.method == 'POST':

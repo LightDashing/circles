@@ -121,8 +121,13 @@ class DataBase:
             return posts
         else:
             return False
+    
+    def get_user_chats(self, name: str) -> list:
+        userid = self.get_userid_by_name(name)
+        chats = self.session.query(Chat).filter(Chat.userids.contains([userid])).all()
+        return chats 
 
-    def create_chat(self, name: str, username: str) -> str:
+    def create_dialog_chat(self, name: str, username: str) -> str:
         userid = self.get_userid_by_name(name)
         s_userid = self.get_userid_by_name(username)
         chat = Chat(chatname=str(name + ", " + username), userids=[userid, s_userid])
@@ -133,6 +138,29 @@ class DataBase:
         user.chats.append(chat)
         self.session.commit()
         return str(name + ", " + username + str(chat.id))
+
+    def get_messages_chatid(self, chatid: int) -> list:
+        chat = self.session.query(Chat).filter(Chat.id == chatid).first()
+        return chat.messages
+    
+    def get_chat_byid(self, chatid: int) -> Chat:
+        chat = self.session.query(Chat).filter(Chat.id == chatid).first()
+        return chat
+    
+    def create_chat(self, users: list, chatname: str, admin: str, rules: str = None, fandoms: list = None, 
+    moders: list = None) -> int:
+        admin = self.get_userid_by_name(admin)
+        for i in range(len(users)):
+            users[i] = self.get_userid_by_name(users[i])
+        if moders:
+            for i in range(len(moders)):
+                moders[i] = self.get_userid_by_name(moders[i])
+        chat = Chat(chatname=chatname, userids=users, admin=admin, moders=moders, rules=rules, fandoms=fandoms)
+        self.session.add(chat)
+        for userid in users:
+            user = self.session.query(User).filter(User.id == userid).first()
+            user.chats.appen(chat)
+        self.session.commit()
 
     def get_messages_with_user(self, name: str, username: str):
         userid = self.get_userid_by_name(name)
@@ -148,7 +176,7 @@ class DataBase:
                 messages[0] = str(message.message_date)
             return messages
         else:
-            chat_name = self.create_chat(name, username)
+            chat_name = self.create_dialog_chat(name, username)
             return [{"chat-name": chat_name, 'messages': None}]
 
     def get_dialog_chat_id(self, name: str, username: str) -> int:

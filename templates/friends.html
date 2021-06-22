@@ -22,7 +22,7 @@
     {% for friend in friends['friendslist'] %}
     <!-- Сверху сначала должен быть аватар -->
     <a href="/users/{{friend['name']}}">{{friend['name']}}</a>
-    <a href="/dialog/{{friend['name']}}">Write message</a>
+    <a href="/dialog/{{friend['name']}}">Write message</a><br>
     {% endfor %}
     {% else %}
     <a>You don't have friends</a>

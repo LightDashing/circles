@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{chat.chatname}}</title>
+</head>
+<body>
+    <h1>{{chat.chatname}}</h1>
+    <h3>{{chat.rules}}</h3>
+    {% for message in chat.messages %}
+    <div class='message-box'>
+        <p class="from-user">{{message.fromuserid}}</p>
+        <p class=message-text>{{message.message}}</p>
+    </div>
+    {% enfor %}
+<!-- --TODO: написать проверку на пользователя, переписать все взаимодействия с имени на id -->
+</body>
+</html>
