@@ -3,7 +3,7 @@ from sqlalchemy.engine import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 import datetime
-from models import User, UserPost, Message, Friend, Chat
+from models import User, UserPost, Message, Friend, Chat, Group, GroupPost, UserGroupLink
 
 
 class OpenConnectionToBD:
@@ -121,11 +121,53 @@ class DataBase:
             return posts
         else:
             return False
-    
+
     def get_user_chats(self, name: str) -> list:
         userid = self.get_userid_by_name(name)
         chats = self.session.query(Chat).filter(Chat.userids.contains([userid])).all()
-        return chats 
+        return chats
+
+    def get_user_groups(self, name: str) -> list:
+        user = self.session.query(User).filter(User.username == name).first()
+        user_groups = self.session.query(Group).filter(Group.users.contains(user)).all()
+        return user_groups
+        # userid = self.get_userid_by_name(name)
+        # usergroups = self.session.query(UserGroupLink).filter(UserGroupLink.user_id == userid).all()
+        # groups = []
+        # for group in usergroups:
+        #     groups.append(self.session.query(Group).filter(Group.id == group.id).first())
+        # return groups
+
+    def create_group(self, username: str, group_name: str, group_desc: str, group_rules: str, group_tags: list = None):
+        userid = self.get_userid_by_name(username)
+        self.session.add(Group(group_name=group_name, owner=userid, fandom_tags=group_tags, description=group_desc,
+                               rules=group_rules))
+        self.session.commit()
+        return True
+
+    def join_group(self, username, group_name):
+        group = self.session.query(Group).filter(Group.group_name == group_name).first()
+        user = self.session.query(User).filter(User.username == username).first()
+        group.users.append(user)
+        self.session.commit()
+
+    def leave_group(self, username, group_name):
+        group = self.session.query(Group).filter(Group.group_name == group_name).first()
+        user = self.session.query(User).filter(User.username == username).first()
+        group.users.remove(user)
+        self.session.commit()
+
+    def is_joined(self, username, group_name):
+        group = self.session.query(Group).filter(Group.group_name == group_name).first()
+        user = self.session.query(User).filter(User.username == username).first()
+        if user in group.users:
+            return True
+        else:
+            return False
+
+    def get_group_data(self, group_name: str):
+        group = self.session.query(Group).filter(Group.group_name == group_name).first()
+        return group
 
     def create_dialog_chat(self, name: str, username: str) -> str:
         userid = self.get_userid_by_name(name)
@@ -142,25 +184,26 @@ class DataBase:
     def get_messages_chatid(self, chatid: int) -> list:
         chat = self.session.query(Chat).filter(Chat.id == chatid).first()
         return chat.messages
-    
+
     def get_chat_byid(self, chatid: int) -> Chat:
         chat = self.session.query(Chat).filter(Chat.id == chatid).first()
         return chat
-    
-    def create_chat(self, users: list, chatname: str, admin: str, rules: str = None, fandoms: list = None, 
-    moders: list = None) -> int:
+
+    def create_chat(self, users: list, chat_name: str, admin: str, rules: str = None, fandoms: list = None,
+                    moderators: list = None) -> int:
         admin = self.get_userid_by_name(admin)
         for i in range(len(users)):
             users[i] = self.get_userid_by_name(users[i])
-        if moders:
-            for i in range(len(moders)):
-                moders[i] = self.get_userid_by_name(moders[i])
-        chat = Chat(chatname=chatname, userids=users, admin=admin, moders=moders, rules=rules, fandoms=fandoms)
+        if moderators:
+            for i in range(len(moderators)):
+                moderators[i] = self.get_userid_by_name(moderators[i])
+        chat = Chat(chatname=chat_name, userids=users, admin=admin, moders=moderators, rules=rules, fandoms=fandoms)
         self.session.add(chat)
         for userid in users:
             user = self.session.query(User).filter(User.id == userid).first()
-            user.chats.appen(chat)
+            user.chats.append(chat)
         self.session.commit()
+        return chat.id
 
     def get_messages_with_user(self, name: str, username: str):
         userid = self.get_userid_by_name(name)
@@ -171,7 +214,8 @@ class DataBase:
             messages = [0, []]
             for message in chat.messages:
                 messages[1].append(
-                    {"user": self.get_name_by_userid(message.fromuserid), "message": message.message, "attachment": message.attachments,
+                    {"user": self.get_name_by_userid(message.fromuserid), "message": message.message,
+                     "attachment": message.attachments,
                      "date": message.message_date})
                 messages[0] = str(message.message_date)
             return messages
@@ -181,10 +225,20 @@ class DataBase:
 
     def get_dialog_chat_id(self, name: str, username: str) -> int:
         userid = self.get_userid_by_name(name)
-        s_userid= self.get_userid_by_name(username)
+        s_userid = self.get_userid_by_name(username)
         chat = self.session.query(Chat).filter(Chat.userids.contains([userid, s_userid]),
                                                func.array_length(Chat.userids, 1) == 2).first()
         return chat.id
+
+    def load_messages(self, user: str, chat_id: int):
+        userid = self.get_userid_by_name(user)
+        chat = self.session.query(Chat).filter(Chat.id == chat_id).first()
+        if chat.messages:
+            for message in chat.messages:
+                message.fromuserid = self.get_name_by_userid(message.fromuserid)
+            return chat.messages
+        else:
+            return False
 
     def update_messages(self, chat_id: int, msg_time: str):
         if not msg_time:
@@ -195,23 +249,11 @@ class DataBase:
         for message in chat.messages:
             if message.message_date > msg_time:
                 new_messages[1].append(
-                    {"user": self.get_name_by_userid(message.fromuserid), "message": message.message, "attachment": message.attachments,
+                    {"user": self.get_name_by_userid(message.fromuserid), "message": message.message,
+                     "attachment": message.attachments,
                      "date": message.message_date})
             new_messages[0] = str(message.message_date)
         return new_messages
-
-    # def update_messages(self, f_user: str, s_user: str, msg_time: str) -> list:
-    #     try:
-    #         msg_time = datetime.datetime.strptime(msg_time, "%Y-%m-%d %H:%M:%S.%f")
-    #     except TypeError:
-    #         msg_time = datetime.datetime.now()
-    #     f_user = self.get_userid_by_name(f_user)
-    #     s_user = self.get_userid_by_name(s_user)
-    #     messages = self.session.query(Message) \
-    #         .filter(or_(and_(Message.userid == f_user, Message.fromuserid == s_user, Message.message_date > msg_time),
-    #                     and_(Message.userid == s_user, Message.fromuserid == f_user, Message.message_date > msg_time))) \
-    #         .order_by(Message.message_date).all()
-    #     return messages
 
     def send_message(self, user: str, chat_id: int, msg: str, attachment: str = None) -> bool:
         userid = self.get_userid_by_name(user)
@@ -220,13 +262,6 @@ class DataBase:
                                  attachments=attachment))
         self.session.commit()
         return True
-
-    # def send_message(self, name: str, to: str, msg: str) -> bool:
-    #     to = self.get_userid_by_name(to)
-    #     name = self.get_userid_by_name(name)
-    #     self.session.add(Message(userid=to, fromuserid=name, message=msg, message_date=datetime.datetime.now()))
-    #     self.session.commit()
-    #     return True
 
     def publish_post(self, msg: str, v_lvl: int, user: str, whereid: str = None, att: str = None) -> bool:
         userid = self.get_userid_by_name(user)

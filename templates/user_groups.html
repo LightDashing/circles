@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Your communities</title>
+</head>
+<body>
+<div class="left-row">
+
+</div>
+<div class="main-row">
+    {% if groups %}
+        {% for group in groups %}
+        <div class="group-place">
+            <span class="group-avatar">{{ group.avatar }}</span>
+            <a class="group-name" href="{{ url_for("group_page", group_name=group.group_name) }}">{{ group.group_name }}</a><br>
+            <span class="group-status">{{ group.group_status }}</span>
+        </div>
+        {% endfor %}
+    {% else %}
+        <span>You haven't joined any communities yet</span>
+    {% endif %}
+    <a href="{{ url_for("create_group") }}">Create your community</a>
+</div>
+<div class="right-row">
+
+</div>
+</body>
+</html>

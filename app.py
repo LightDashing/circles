@@ -73,6 +73,53 @@ def users_page(name):
         return render_template('user.html', name=name, descrip=user['description'], posts=postlist, v_lvl=view_level)
 
 
+@app.route('/groups/<group_name>', methods=['GET'])
+def group_page(group_name):
+    with OpenConnectionToBD(db):
+        data = db.get_group_data(group_name)
+        data = data.serialize
+        is_in_group = db.is_joined(session.get("username"), group_name)
+    return render_template('group.html', group=data, joined=is_in_group)
+
+
+@app.route('/_join_group', methods=['POST'])
+def join_group():
+    data = request.get_json()
+    with OpenConnectionToBD(db):
+        db.join_group(session.get("username"), data['group_name'])
+    return jsonify(True)
+
+
+@app.route('/_leave_group', methods=['POST'])
+def leave_group():
+    data = request.get_json()
+    with OpenConnectionToBD(db):
+        db.leave_group(session.get("username"), data['group_name'])
+    return jsonify(True)
+
+
+@app.route('/create/group', methods=['GET', 'POST'])
+def create_group():
+    if request.method == 'POST':
+        data = request.get_json()
+        with OpenConnectionToBD(db):
+            db.create_group(session.get("username"), data['group_name'], data['group_description'],
+                            data['group_rules'], data['group_tags'])
+            db.join_group(session.get("username"), data['group_name'])
+        # TODO: редирект не работает? исправить
+        return redirect(url_for("group_page", group_name=data['group_name']))
+    else:
+        return render_template("create_group.html")
+
+
+@app.route('/user/groups', methods=['GET'])
+def user_groups():
+    with OpenConnectionToBD(db):
+        username = session.get("username")
+        user_groups = db.get_user_groups(username)
+    return render_template('user_groups.html', groups=user_groups)
+
+
 @app.route('/_publish_post', methods=['POST'])
 def publish_post():
     if request.method == 'POST':
@@ -84,10 +131,9 @@ def publish_post():
                     return jsonify(False)
                 elif data["view_lvl"] < userdata["min_post_lvl"]:
                     return jsonify(False)
-                db.publish_post(data['message'], data['view_lvl'], data["fromid"], \
-                                data["whereid"], data['attach'])
+                db.publish_post(data['message'], data['view_lvl'], data["fromid"], data["whereid"], data['attach'])
             else:
-                db.publish_post(data['message'], data['view_lvl'], session.get("username"), \
+                db.publish_post(data['message'], data['view_lvl'], session.get("username"),
                                 data["whereid"], data['attach'])
         return jsonify(True)
 
@@ -189,22 +235,47 @@ def messages():
 @app.route('/user/create_chat', methods=['GET', 'POST'])
 def create_chat():
     if request.method == 'POST':
-        pass
-    with OpenConnectionToBD(db):
-        username = session.get("username")
-        friends = db.return_friendslist(username)
-    return render_template("create_chat.html", friends=friends, name=username)
-
-
-@app.route('/chat/<chatid>', methods=['GET', 'POST'])
-def chat(chatid):
-    if request.method == 'POST':
-        pass
+        data = request.get_json()
+        with OpenConnectionToBD(db):
+            chat_id = db.create_chat(data['users'], data['chat_name'], data['admin'], moderators=data['moderators'])
+        return url_for("chat", chat_id=chat_id)
     else:
         with OpenConnectionToBD(db):
-            chat = db.get_chat_byid(chatid)
-            username = session.get('username')
-        return render_template("chat.html", chat=chat, name=username)
+            username = session.get("username")
+            friends = db.return_friendslist(username)
+        return render_template("create_chat.html", friends=friends, name=username)
+
+
+@app.route('/chat/send_message', methods=['POST'])
+def send_message_v2():
+    if request.method == 'POST':
+        data = request.get_json()
+        with OpenConnectionToBD(db):
+            db.send_message(data['user'], data['chat_id'], data['message'], data['attachment'])
+    return jsonify(True)
+
+
+@app.route('/chat/load_messages', methods=['POST'])
+def load_messages_v2():
+    if request.method == 'POST':
+        data = request.get_json()
+        with OpenConnectionToBD(db):
+            if data['type'] == 'load':
+                messages = db.load_messages(session.get("username"), data['chat_id'])
+            elif data['type'] == 'update':
+                messages = db.update_messages(data['chat_id'], data['msg_time'])
+        return jsonify(messages)
+
+
+@app.route('/chat/<chat_id>', methods=['GET'])
+def chat(chat_id):
+    with OpenConnectionToBD(db):
+        chat_obj = db.get_chat_byid(chat_id)
+        messages = chat_obj.serialize['messages']
+    for message in messages:
+        message.fromuserid = db.get_name_by_userid(message.fromuserid)
+    username = session.get('username')
+    return render_template("chat.html", chat=chat_obj.serialize, name=username, messages=messages)
 
 
 @app.route('/user/settings', methods=['GET', 'POST'])

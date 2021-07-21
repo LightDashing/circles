@@ -4,17 +4,40 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{chat.chatname}}</title>
+    <title>{{ chat.chatname }}</title>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script>window.jQuery || document.write('<script src="{{
+  url_for('static', filename='jquery3.6.0.js') }}">\x3C/script>')</script>
+    <script type=text/javascript>
+        $SCRIPT_ROOT = {{ request.script_root|tojson }};
+    </script>
+    <script type="text/javascript" src="{{ url_for("static", filename="chat.js") }}"></script>
 </head>
 <body>
-    <h1>{{chat.chatname}}</h1>
-    <h3>{{chat.rules}}</h3>
-    {% for message in chat.messages %}
-    <div class='message-box'>
-        <p class="from-user">{{message.fromuserid}}</p>
-        <p class=message-text>{{message.message}}</p>
+<h1>{{ chat.chatname }}</h1>
+<h3>{{ chat.rules }}</h3>
+{% for message in messages %}
+    <div class="all_messages" id="incoming_msg">
+        <div class='message-box'>
+            <span class="from-user">{{ message.fromuserid }}:</span>
+            <span class="message-text">{{ message.message }}</span><br>
+        </div>
     </div>
-    {% enfor %}
+{% endfor %}
+<script>
+    {% set item = messages|last %}
+    let last_msg_time = "{{item.message_date}}"
+</script>
+<label> Input some message...
+    <textarea id="message"></textarea>
+</label>
+<button id="send_message">Send</button>
 <!-- --TODO: написать проверку на пользователя, переписать все взаимодействия с имени на id -->
+<script>
+    $("#send_message").click(function () {
+        send_message($("#message").val(), "{{ name }}", "{{ chat.id }}")
+    })
+    update_messages("{{ name }}", "{{ chat.id }}", last_msg_time)
+</script>
 </body>
 </html>
