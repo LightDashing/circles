@@ -1,0 +1,47 @@
+.all_messages {
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    width: 50%;
+    background: #9694A8;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.textarea {
+    width: 90%;
+    height: 100px;
+    margin: 10px 0;
+}
+
+#incoming_msg {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    max-height: 25rem;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    padding: 0 5px;
+}
+
+.message-box {
+    padding: 10px 8px;
+    margin: 2px 0;
+    background: #e9e9ed;
+    border: 1px solid #B49E93;
+    border-radius: 10px;
+    max-width: 50%;
+}
+
+.all_messages .new-button {
+    margin: auto;
+}
+
+.all_messages label{
+    padding: 10px 0;
+}
+
+html {
+    overflow: -moz-scrollbars-vertical;
+    overflow-y: scroll;
+}

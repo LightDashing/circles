@@ -1,0 +1,29 @@
+@font-face {
+    font-family: "Golos Text";
+    src: local("fonts/Golost-Text_Regular.ttf");
+    font-weight: normal;
+}
+
+@font-face {
+    font-family: "Golos Text";
+    src: local("fonts/Golost-Text_Medium");
+    font-weight: 500;
+}
+
+@font-face {
+    font-family: "Golos Text";
+    src: local("fonts/Golos-Text_DemiBold");
+    font-weight: 600;
+}
+
+@font-face {
+    font-family: "Golos Text";
+    src: local("fonts/Golos-Text_Bold");
+    font-weight: 700;
+}
+
+@font-face {
+    font-family: "Golos Text";
+    src: local("fonts/Golos-Text_Black");
+    font-weight: 900;
+}
