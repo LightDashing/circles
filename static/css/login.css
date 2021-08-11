@@ -1,45 +1,69 @@
-.LogIn {
-    background: #fff;
-    border-radius: 1vw;
-    font-family: "Ubuntu";
-    font-size: 0.7vmax;
-    vertical-align: middle;
-    line-height: 1.5vmax;
+.user-input, .sign-in-reset {
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    font-family: 'Golos Text', sans-serif;
+    font-weight: 500;
+    border: 1px solid #B49E93;
+    background: #CEC5C3;
+    border-radius: 15px;
+    min-width: 300px;
+    min-height: 170px;
+    line-height: 50px;
+}
+
+.sign-in-reset {
+    top: 59%;
+    background: none;
+    border: none;
+}
+
+.text-input {
+    font-family: 'Golos Text', sans-serif;
+    font-size: 1em;
+    border-radius: 5px;
+    border: none;
+    padding-left: 8px;
+    margin-left: 8px;
+    min-height: 25px;
+    min-width: 150px;
+    color: #56658A;
+}
+
+.input_button {
+    font-family: 'Golos Text', sans-serif;
+    font-size: 1em;
+    border-radius: 10px;
+    font-weight: 500;
+    margin-top: 10px;
+    width: 130px;
+    height: 35px;
     text-align: center;
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    box-shadow: 4px 4px 0px 0px gray;
-    width: 12vw;
-    height: 9vh;
-}
-
-.SubmitButt {
-    border-radius: 20px;
-    font-size: 0.7vmax;
-    position: absolute;
-    top: 60%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: #fff;
-    width: 5vmax;
-    height: 1vmax;
-}
-
-.SubmitButt:hover {
-    border-radius: 20px;
-    font-size: 0.7vmax;
-    position: fixed;
-    top: 60%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: #7a7a7a;
+    background: #C5B8B3;
     cursor: pointer;
+    border: none;
+}
+
+.sign-in-reset .input_button{
+    width: 110px;
+    height: 35px;
+}
+
+.input_button:hover {
+    background: #B49E93;
+}
+
+.input_button:active {
+    background: #A38473;
 }
 
 .Message {
-    font-family: "Ubuntu";
+    font-family: "Ubuntu", sans-serif;
     position: fixed;
     top: 49%;
     left: 58%;
@@ -49,42 +73,14 @@
 }
 
 .Text {
-    font-family: 'Ubuntu', 'Lucida Grande', 'Lucida Sans Unicode', 'Geneva', 'Verdana', sans-serif;
+    font-family: 'Golos Text', sans-serif;
     position: fixed;
     font-size: 0.7vmax;
-    top: 40%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
-
-input{
-    font-size: 0.5vmax;
-    width: 5vmax;
-    height: 0.6vmax;
-}
-
-.SignIn {
-    font-family: 'Rubik', sans-serif;
-    font-size: 0.7vmax;
-    position: absolute; 
-    top: 69%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
-
-.Redirect {
-    font-family: 'Rubik', sans-serif;
-    font-size: 0.7vmax;
-    position: absolute;
-    top: 72%;
+    top: 30%;
     left: 50%;
     transform: translate(-50%, -50%);
 }
 
 body {
-    background: #fafbfd;
-    background-image: url(/static/img/background.png);
-    background-repeat: no-repeat;
-    background-position: -10vh 20vh;
-    background-size: 50vmax;
+    background: #F5F4F4;
 }

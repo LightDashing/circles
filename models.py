@@ -4,7 +4,6 @@ from sqlalchemy.engine import create_engine
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 import datetime
-from sqlalchemy.exc import IntegrityError
 
 Base = declarative_base()
 
@@ -57,13 +56,10 @@ class UserPost(Base):
     whereid = Column(INTEGER, nullable=False)
     # Уровень поста, 5 - виден для всех, 4 - виден для всех друзей и дальше по уменьшению
     view_level = Column(INTEGER, nullable=False, default=5)
+    date_added = Column(DateTime, nullable=False, default=datetime.datetime.now())
     message = Column(VARCHAR())
     tags = Column(ARRAY(VARCHAR(128)))
     attachment = Column(ARRAY(VARCHAR(128)))
-
-
-# TODO: ниже будет часть кода ответственного за фандомную часть соц. сети
-
 
 class UserCharacter(Base):
     __tablename__ = 'usercharacters'
@@ -161,7 +157,7 @@ class Chat(Base):
             "admin": self.admin,
             "moders": self.moders,
             "rules": self.rules,
-            "fandoms": self.fandoms,
+            "fandoms": self.fandom_tags,
             "messages": self.messages
         }
 

@@ -1,4 +1,4 @@
-function send_message(message, user, chat_id){
+function send_message(message, user, chat_id) {
     chat_id = parseInt(chat_id)
     $.ajax({
         url: '/chat/send_message',
@@ -24,19 +24,31 @@ function update_messages(username, chat_id, last_msg_time) {
             contentType: 'application/json',
             success: function (data) {
                 if (data) {
-                    try{
-                    data[1].forEach(function (el, index) {
-                        let author = document.createElement("span")
-                        author.innerHTML = el['user'] + ": "
-                        let message = document.createElement("span")
-                        message.innerHTML = el['message'] + "<br>"
-                        $("#incoming_msg").append(author, message)
-                    })} catch (TypeError) {
+                    try {
+                        data[1].forEach(function (el, index) {
+                            let element;
+                            if (el["user"] === username){
+                                element = `<div class="message-box" style="align-self: end; background: #CEC5C3">
+                                     <span class="from-user"> ${el["user"]}: </span> 
+                                    <span class="message-text"> ${el["message"]}</span></div>`
+                            } else {
+                                element = `<div class="message-box"><span class="from-user"> ${el["user"]}: </span> 
+                                    <span class="message-text"> ${el["message"]}</span></div>`
+                            }
+                            // let div = document.createElement("div")
+                            // let author = document.createElement("span")
+                            // author.innerHTML = el['user'] + ": "
+                            // let message = document.createElement("span")
+                            // message.innerHTML = el['message'] + "<br>"
+                            // $("#incoming_msg").append(author, message)
+                            $("#incoming_msg").append(element)
+                        })
+                    } catch (TypeError) {
 
                     }
                     msg_time = data[0]
                 }
             }
         });
-    }, 1000);
+    }, 1250);
 }

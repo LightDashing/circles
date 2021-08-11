@@ -6,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ chat.chatname }}</title>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <link href="/static/css/golos_text.css" rel="stylesheet">
+    <link href="/static/css/main.css" rel="stylesheet">
+    <link href="/static/css/chat.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
     <script>window.jQuery || document.write('<script src="{{
   url_for('static', filename='jquery3.6.0.js') }}">\x3C/script>')</script>
     <script type=text/javascript>
@@ -14,26 +18,64 @@
     <script type="text/javascript" src="{{ url_for("static", filename="chat.js") }}"></script>
 </head>
 <body>
-<h1>{{ chat.chatname }}</h1>
-<h3>{{ chat.rules }}</h3>
-{% for message in messages %}
-    <div class="all_messages" id="incoming_msg">
-        <div class='message-box'>
-            <span class="from-user">{{ message.fromuserid }}:</span>
-            <span class="message-text">{{ message.message }}</span><br>
+<div class="left-row">
+    <button class="new-button" id="profile" onclick="location.href='{{ url_for("index") }}'"><i
+            class="bi-gear"> </i>Profile
+    </button>
+    <button class="new-button" id="settings" onclick="location.href='{{ url_for("user_settings") }}'"><i
+            class="bi-gear"> </i>Settings
+    </button>
+    <button class="new-button" id="messages" onclick="location.href='{{ url_for("messages") }}'"><i
+            class="bi-envelope"> </i>Messages
+    </button>
+    <button class="new-button" id="friends" onclick="location.href='{{ url_for("friends_page") }}'"><i
+            class="bi-people"> </i>Friends
+    </button>
+    <button class="new-button" id="groups" onclick="location.href='{{ url_for("user_groups") }}'"><i
+            class="bi-people"> </i>Communities
+    </button>
+</div>
+<div class="main-row">
+    <h1>{{ chat.chatname }}</h1>
+    <h3>{{ chat.rules }}</h3>
+    <div class="all_messages">
+        <div id="incoming_msg">
+            {% for message in messages %}
+                {% if message.fromuserid == name %}
+                    <div class='message-box' style="align-self: end; background: #CEC5C3">
+                        <span class="from-user">{{ message.fromuserid }}:</span>
+                        <span class="message-text">{{ message.message }}</span>
+                    </div>
+                {% else %}
+                    <div class='message-box'>
+                        <span class="from-user">{{ message.fromuserid }}:</span>
+                        <span class="message-text">{{ message.message }}</span>
+                    </div>
+                {% endif %}
+            {% endfor %}
         </div>
+        <label> Input some message...
+            <textarea class="textarea" id="message"></textarea>
+        </label>
+        <button class="new-button" id="send_message">Send</button>
     </div>
-{% endfor %}
-<script>
-    {% set item = messages|last %}
-    let last_msg_time = "{{item.message_date}}"
-</script>
-<label> Input some message...
-    <textarea id="message"></textarea>
-</label>
-<button id="send_message">Send</button>
+</div>
+<div class="right-row">
+    <div class="profile">
+        <a>{{ name }}</a>
+        <a>{{ v_lvl }}</a>
+    </div>
+</div>
 <!-- --TODO: написать проверку на пользователя, переписать все взаимодействия с имени на id -->
 <script>
+    let last_msg_time
+    {% if messages %}
+        {% set item = messages|last %}
+        last_msg_time = "{{item.message_date}}"
+    {% else %}
+        last_msg_time = "{{ get_current_datetime() }}"
+    {% endif %}
+
     $("#send_message").click(function () {
         send_message($("#message").val(), "{{ name }}", "{{ chat.id }}")
     })

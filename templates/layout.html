@@ -12,40 +12,49 @@
         <script type=text/javascript>
             $SCRIPT_ROOT = {{ request.script_root|tojson }};
         </script>
-        <script type="text/javascript" src="{{ url_for("static", filename="chat.js") }}"></script>
     {% endblock %}
 </head>
 <body>
+<div class="header">
+    <label class="label-search"><i class="bi-search"></i>
+        <input type="text">
+    </label>
+    <a style="font-size: 1.4em">InRole</a>
+</div>
 <div class="left-row">
-    {% block left-row %}
-    <button class="new-button" id="profile" onclick="location.href='{{ url_for("index") }}'"><i
-            class="bi-house"> </i>Profile
-    </button>
-    <button class="new-button" id="settings" onclick="location.href='{{ url_for("user_settings") }}'"><i
-            class="bi-gear"> </i>Settings
-    </button>
-    <button class="new-button" id="messages" onclick="location.href='{{ url_for("messages") }}'"><i
-            class="bi-envelope"> </i>Messages
-    </button>
-    <button class="new-button" id="friends" onclick="location.href='{{ url_for("friends_page") }}'"><i
-            class="bi-people"> </i>Friends
-    </button>
-    <button class="new-button" id="groups" onclick="location.href='{{ url_for("user_groups") }}'"><i
-            class="bi-people"> </i>Communities
-    </button>
+    {% block left_row %}
+        <button class="new-button" id="profile" onclick="location.href='{{ url_for("index") }}'"><i
+                class="bi-house-fill"> </i>Profile
+        </button>
+        <button class="new-button" id="settings" onclick="location.href='{{ url_for("user_settings") }}'"><i
+                class="bi-gear-fill"> </i>Settings
+        </button>
+        <button class="new-button" id="messages" onclick="location.href='{{ url_for("messages") }}'"><i
+                class="bi-envelope-fill"> </i>Messages
+        </button>
+        <button class="new-button" id="friends" onclick="location.href='{{ url_for("friends_page") }}'"><i
+                class="bi-people-fill"> </i>Friends
+        </button>
+        <button class="new-button" id="groups" onclick="location.href='{{ url_for("user_groups") }}'"><i
+                class="bi-people-fill"> </i>Communities
+        </button>
     {% endblock %}
 </div>
 <div class="main-row">
-    {% block main-row %}
+    {% block main_row %}
     {% endblock %}
 </div>
 <div class="right-row">
-    {% block right-row %}
-    <div class="profile">
+    {% block right_row %}
+        <img class="avatar" alt="User doesn't have avatar" src="{{ avatar }}">
         <a>{{ name }}</a>
-        <a>{{ v_lvl }}</a>
-    </div>
+        <div class="logout">
+            <button class="new-button" id="logout-button" onclick="location.href='{{ url_for("logout") }}'">Logout
+            </button>
+        </div>
     {% endblock %}
 </div>
 </body>
+{% block scripts %}
+{% endblock %}
 </html>

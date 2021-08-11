@@ -1,0 +1,171 @@
+:root {
+    --object-bg-color: #CEC5C3;
+    --object-border-color: #B49E93;
+    --object-accent-color: #9694A8;
+    --object-accent-bg-color: #BEBCC7;
+}
+
+.header {
+    display: flex;
+    flex-direction: row;
+    align-content: space-evenly;
+    width: 95vw;
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    border: solid 1px var(--object-accent-color);
+    border-radius: 15px;
+    padding: 10px 0;
+    background: var(--object-accent-bg-color);
+    font-family: 'Golos Text', sans-serif;
+    font-size: 1em;
+    font-weight: 500;
+    z-index: 1;
+}
+
+.label-search {
+    padding: 0 30px;
+}
+
+.left-row {
+    font-family: 'Golos Text', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    overflow: hidden;
+    position: fixed;
+    left: 10%;
+    top: 15%;
+    line-height: 5vh;
+    text-align: center;
+}
+
+.right-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    font-family: 'Golos Text', sans-serif;
+    position: fixed;
+    z-index: -1;
+    left: 82%;
+    top: 15%;
+    line-height: 5vh;
+    text-align: left;
+    overflow: hidden;
+}
+
+.main-row {
+    font-family: 'Golos Text', sans-serif;
+    position: absolute;
+    left: 25%;
+    top: 15%;
+    width: 55%;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.hideModal {
+    z-index: -1;
+    opacity: 0;
+    animation: hide .25s;
+    transform: scale(0);
+}
+
+@keyframes hide {
+    from {
+        z-index: 2;
+        transform: scale(1);
+        opacity: 1;
+    }
+    to {
+        z-index: -1;
+        transform: scale(0);
+        opacity: 0;
+    }
+}
+
+.showModal {
+    opacity: 1;
+    z-index: 2;
+    animation: show .2s;
+    transform: scale(1);
+}
+
+@keyframes show {
+    from {
+        transform: scale(0);
+        opacity: 0;
+        z-index: -1;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+        z-index: 2;
+    }
+}
+
+.new-button {
+    font-family: 'Golos Text', sans-serif;
+    font-size: 1em;
+    font-weight: 500;
+    border-radius: 10px;
+    margin: 5px 0;
+    width: 130px;
+    height: 35px;
+    text-align: center;
+    background: #C5B8B3;
+    cursor: pointer;
+    border: none;
+}
+
+.error-message {
+    font-family: 'Golos Text', sans-serif;
+    font-size: 1em;
+    font-weight: 700;
+    color: darkred;
+}
+
+.file-input {
+    font-family: 'Golos Text', sans-serif;
+    font-size: 1em;
+}
+
+.new-button:hover {
+    background: #B49E93;
+}
+
+.new-button:active {
+    background: #A38473;
+}
+
+.textarea {
+    width: 90%;
+    height: 200px;
+    font-family: 'Golos Text', sans-serif;
+    font-size: 1em;
+    border-radius: 10px;
+    resize: none;
+    border: none;
+    padding: 10px;
+}
+
+.avatar {
+    border-radius: 15px;
+    width: 210px;
+    height: 210px;
+}
+
+.flex-break {
+    flex-basis: 100%;
+    height: 0;
+}
+
+html, body {
+    background: #F5F4F4;
+    /*overflow: scroll;*/
+    /*height: 100px;*/
+}

@@ -1,22 +1,16 @@
-.left-row{
-    position: fixed;
-    left: 5%;
-    top: 15%;
-    line-height: 5vh;
-    text-align: center;
+.friend-block{
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex-direction: row;
+    background: var(--object-accent-color);
+    border: 1px solid var(--object-border-color);
+    border-radius: 10px;
+    padding: 10px;
+    width: 50%;
+    height: 30px;
 }
 
-.right-row{
-    position: fixed;
-    left: 85%;
-    top: 15%;
-    line-height: 5vh;
-    text-align: center;
-}
-
-.main-row{
-    position: absolute;
-    left: 10%;
-    top: 15%;
-    line-height: 10vh;
+.friend-block > .new-button{
+    margin: 5px;
 }

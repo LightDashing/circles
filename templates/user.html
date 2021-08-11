@@ -29,9 +29,10 @@
         {% if posts %}
             {% for post in posts %}
                 <div class="post">
-                    <a>{{ formate_datetime(post.date_added) }}</a>
-                    <a><b>{{ get_username(post.userid) }}:</b></a><br>
-                    <a class="userPost">{{ post.message }}</a><br>
+                    <img class="post-avatar" alt="User avatar" src="{{ get_user_avatar(post.userid) }}">
+                    <a class="post-nick" href="{{ url_for("users_page", name=get_username(post.userid)) }}"><b>{{ get_username(post.userid) }}:</b></a><br>
+                    <a class="post-date">{{ formate_datetime(post.date_added) }}</a><br>
+                    <a class="post-message">{{ post.message }}</a><br>
                 </div>
             {% endfor %}
         {% endif %}

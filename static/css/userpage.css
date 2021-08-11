@@ -1,65 +1,115 @@
-.CreateTask {
-    border-radius: 4vh;
-    position: fixed;
-    top: 50%;
-    left: 80%;
-    transform: translate(-50%, -50%) scale(145%);
-    text-align: center;
-    vertical-align: middle;
-    line-height: 3.1vh;
-    background: #fff;
-    width: 15%;
-    height: 20%;
-    font-family: 'Rubik', sans-serif;
-    box-shadow: 4px 4px 0px 0px gray;
+.main-row button {
+    margin: auto;
 }
 
-.SubmitButt {
-    border-radius: 20px;
-    position: fixed;
-    top: 110%;
-    left: 54%;
-    transform: translate(-50%, -50%) scale(100%);
-    background: #fff;
+.main-row {
+    left: 22%;
+    /*overflow: auto;*/
 }
 
-.friend_buttons{
-    margin: 0 auto;
-    width: 5%;
-}
-
-.left-row{
-    position: fixed;
-    left: 5%;
-    top: 15%;
-    line-height: 5vh;
+.user-description {
+    font-family: 'Golos Text', sans-serif;
+    font-size: 1.2em;
+    margin: 10px;
+    display: flex;
+    justify-content: center;
+    color: #000000;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #6878A1;
     text-align: center;
 }
 
-.right-row{
-    position: fixed;
-    left: 85%;
-    top: 15%;
-    line-height: 5vh;
+.create_post {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    text-align: center;
+    margin: 10px;
+    border: solid 1px #B49E93;
+    background: #CEC5C3;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.create_post textarea {
+    width: 90%;
+    height: 200px;
+    font-family: 'Golos Text', sans-serif;
+    font-size: 1em;
+    border-radius: 10px;
+    resize: none;
+    border: none;
+    padding: 10px;
+}
+
+.create_post label {
+    font-family: 'Golos Text', sans-serif;
+    font-size: 1em;
+    font-weight: 500;
+    margin: 10px 0;
+}
+
+.create_post button, select {
+    font-family: 'Golos Text', sans-serif;
+    font-size: 1em;
+    font-weight: 500;
+    border-radius: 10px;
+    margin: 5px 0;
+    width: 150px;
+    height: 30px;
+    text-align: center;
+    background: #C5B8B3;
+    cursor: pointer;
+    border: none;
+}
+
+.create_post button:hover, select:hover {
+    background: #B49E93;
+}
+
+.create_post button:active, select:active {
+    background: #A38473;
+}
+
+.posts {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100vh;
+}
+
+.post {
+    flex-basis: auto;
+    flex-shrink: 1;
+    font-family: 'Golos Text', sans-serif;
+    font-size: 1em;
+    margin: 10px 0;
+    border: 1px solid #B49E93;
+    word-wrap: break-word;
+    background: #CEC5C3;
+    border-radius: 8px;
     text-align: left;
+    padding: 10px;
+    vertical-align: center;
 }
 
-.right-row button{
-    width: 10vh;
-    height: 4vh;
-    text-align: center;
+.post-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 15px;
 }
 
-.main-row{
-    position: absolute;
-    left: 10%;
-    top: 15%;
-    line-height: 10vh;
+.post-nick {
+    vertical-align: center;
 }
 
-.settings{
-    text-align: center;
-    font-size: 0.7vmax;
+.post-date {
+    padding-left: 30px;
+}
+
+.post-message {
+    padding-left: 30px;
 }
 
 .profile {
@@ -67,44 +117,10 @@
     text-align: right;
 }
 
-.SubmitButt:hover {
-    border-radius: 20px;
-    position: fixed;
-    top: 110%;
-    left: 54%;
-    transform: translate(-50%, -50%) scale(100%);
-    background: #7a7a7a;
-    cursor: pointer;
+.logout {
+    top: 85%;
 }
 
-.TasksWrapper{
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-around;
-}
-
-.Separator{
-    position: fixed;
-    top: 10%;
-    left: 3%;
-    max-width: 125vh;
-}
-
-.Logout {
-    border-radius: 20px;
-    width: 70px;
-    height: 23px;
-    font-family: 'Rubik', sans-serif;
-    position: fixed;
-    top: 80%;
-    left: 81%;
-    transform: translate(-50%, -50%) scale(120%);
-    background: #A6E3DC;
-    text-align: center;
-}
-
-body {
-    background: #fafbfd url(/static/img/background.png) no-repeat -10vh 20vh;
-    background-size: 50vmax;
-    overflow: scroll;
+html, body {
+    background: #F5F4F4;
 }

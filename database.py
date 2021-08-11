@@ -3,6 +3,7 @@ from sqlalchemy.engine import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 import datetime
+import re
 from models import User, UserPost, Message, Friend, Chat, Group, GroupPost, UserGroupLink
 
 
@@ -60,45 +61,88 @@ class DataBase:
         else:
             return {"success": False}
 
-    def change_username(self, oldname: str, newname: str):
+    def change_username(self, old_name: str, new_name: str) -> int:
+        """This function changes username, returns one of the codes
+        0: username was changed successfully
+        1: user with that username already exists
+        2: username length is incorrect
+        3: new username same as old username
+        -1: some unknown error occurred on database side"""
+        if not new_name or len(new_name) < 3 or len(new_name) > 30:
+            return 2
+        if old_name == new_name:
+            return 3
+        elif self.session.query(User).filter(User.username == new_name).first():
+            return 1
         try:
-            self.session.query(User).filter(User.username == oldname).update({User.username: newname})
+            self.session.query(User).filter(User.username == old_name).update({User.username: new_name})
             self.session.commit()
-            return True
+            return 0
         except IntegrityError:
-            return False
+            return -1
 
-    def change_description(self, name: str, descrip: str):
+    def change_description(self, name: str, desc: str) -> int:
+        """This function changes user description, it returns one of the codes
+        0: description was successfully changed
+        -1: some unknown error occurred on database side"""
+        if not desc:
+            desc = 'None was provided'
         try:
-            self.session.query(User).filter(User.username == name).update({User.description: descrip})
+            self.session.query(User).filter(User.username == name).update({User.description: desc})
             self.session.commit()
-            return True
+            return 0
         except IntegrityError:
-            return False
+            return -1
 
-    def change_mail(self, name: str, email: str):
+    def change_mail(self, name: str, email: str) -> int:
+        """This function changes user e-mail, it returns one of the codes
+        0: email was successfully changed
+        1: email isn't valid
+        2: there already exist user with such email
+        3: new email same as old email
+        -1: some unknown error occurred on database side"""
+        pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+        if not re.fullmatch(pattern, email):
+            return 1
+        elif self.session.query(User).filter(User.username == name).first().email == email:
+            return 3
+        elif self.session.query(User).filter(User.email == email).first():
+            return 2
         try:
             self.session.query(User).filter(User.username == name).update({User.email: email})
             self.session.commit()
-            return True
+            return 0
         except IntegrityError:
-            return False
+            return -1
 
-    def ch_min_posting_lvl(self, name: str, lvl: int):
+    def ch_min_posting_lvl(self, name: str, lvl: int) -> int:
+        """This function changes minimum level other users need, to post on your wall, it returns one of the codes
+        0: level was changed successfully
+        1: level was incorrect
+        -1: some unknown error occurred on database side"""
+        if lvl > 5 or lvl < 0:
+            return 1
         try:
             self.session.query(User).filter(User.username == name).update({User.min_posting_lvl: lvl})
             self.session.commit()
-            return True
+            return 0
         except IntegrityError:
-            return False
+            return -1
 
-    def change_publish_settings(self, name: str, publish: bool):
+    def change_publish_settings(self, name: str, publish: bool) -> int:
+        """This function can change if other users may post on your wall or not, it returns one of the codes
+        0: publish settings was successfully changed
+        1: some unknown error occurred on database side"""
         try:
             self.session.query(User).filter(User.username == name).update({User.other_publish: publish})
             self.session.commit()
-            return True
+            return 0
         except IntegrityError:
-            return False
+            return -1
+
+    def change_avatar(self, userid: int, filepath: str):
+        self.session.query(User).filter(User.id == userid).update({User.avatar: filepath})
+        self.session.commit()
 
     def get_userid_by_name(self, name: str):
         user = self.session.query(User).filter(User.username == name).first()
@@ -121,6 +165,10 @@ class DataBase:
             return posts
         else:
             return False
+
+    def get_avatar_by_name(self, username: str) -> str:
+        user = self.session.query(User).filter(User.username == username).first()
+        return user.avatar
 
     def get_user_chats(self, name: str) -> list:
         userid = self.get_userid_by_name(name)
@@ -197,7 +245,7 @@ class DataBase:
         if moderators:
             for i in range(len(moderators)):
                 moderators[i] = self.get_userid_by_name(moderators[i])
-        chat = Chat(chatname=chat_name, userids=users, admin=admin, moders=moderators, rules=rules, fandoms=fandoms)
+        chat = Chat(chatname=chat_name, userids=users, admin=admin, moders=moderators, rules=rules, fandom_tags=fandoms)
         self.session.add(chat)
         for userid in users:
             user = self.session.query(User).filter(User.id == userid).first()
@@ -267,9 +315,11 @@ class DataBase:
         userid = self.get_userid_by_name(user)
         if whereid:
             whereid = self.get_userid_by_name(whereid)
-            self.session.add(UserPost(userid=userid, message=msg, view_level=v_lvl, attachment=att, whereid=whereid))
+            self.session.add(UserPost(userid=userid, message=msg, view_level=v_lvl, attachment=att, whereid=whereid,
+                                      date_added=datetime.datetime.now()))
         else:
-            self.session.add(UserPost(userid=userid, message=msg, view_level=v_lvl, attachment=att, whereid=userid))
+            self.session.add(UserPost(userid=userid, message=msg, view_level=v_lvl, attachment=att, whereid=userid,
+                                      date_added=datetime.datetime.now()))
         self.session.commit()
         return True
 

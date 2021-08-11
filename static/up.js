@@ -1,6 +1,16 @@
 function init(name, username) {
     hide_all()
-    console.log("testing-one-two-three")
+    let create_post = $("#create_post")
+    create_post.hide()
+    let add_post = $("#add_post")
+    add_post.click(function () {
+        if (create_post.is(':visible')) {
+            create_post.hide("slow")
+        } else {
+            create_post.show("slow")
+            //add_post.hide()
+        }
+    })
     $.ajax({
         url: '/_check_friend',
         method: 'POST',
@@ -8,8 +18,6 @@ function init(name, username) {
         dataType: 'json',
         contentType: 'application/json',
         success: function (data) {
-            console.log(data['friend'], data['request'])
-            console.log("u1_lvl")
             if (data['friend'] && data['request'] && data['sent_by'] === username) {
                 $("#cancel_request").show();
             } else if (!data['friend']) {
@@ -42,15 +50,15 @@ function add_friend(name) {
 
 function accept_request(name) {
     $.ajax({
-       url: '/_accept_friend',
-       method: 'POST',
-       data: JSON.stringify({'name': name}),
-       dataType: 'json',
-       contentType: 'application/json',
-       success: function () {
-           hide_all()
-           $("#remove_friend").show()
-       }
+        url: '/_accept_friend',
+        method: 'POST',
+        data: JSON.stringify({'name': name}),
+        dataType: 'json',
+        contentType: 'application/json',
+        success: function () {
+            hide_all()
+            $("#remove_friend").show()
+        }
     });
 }
 
@@ -76,23 +84,21 @@ function hide_all() {
     $("#cancel_request").hide();
 }
 
-function publish_post(post_msg, post_attach, view_level, whereid, fromid){
-    console.log(whereid)
+function publish_post(post_msg, post_attach, view_level, whereid, fromid) {
     $.ajax({
         url: '/_publish_post',
         method: 'POST',
-        data: JSON.stringify({"message": post_msg, "attach": post_attach, 
-        "view_lvl": view_level, "whereid": whereid, "fromid": fromid}),
+        data: JSON.stringify({
+            "message": post_msg, "attach": post_attach,
+            "view_lvl": view_level, "whereid": whereid, "fromid": fromid
+        }),
         dataType: 'json',
         contentType: 'application/json',
-        success: function(){
-            
+        success: function (data) {
+            console.log(data)
         },
-        error: function(){
+        error: function () {
+            console.log('Failure')
         }
     })
-}
-
-function update_posts(userid){
-    
 }

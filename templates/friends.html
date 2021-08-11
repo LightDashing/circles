@@ -1,36 +1,20 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Friends list</title>
+{% extends "layout.html" %}
+{% block title %}Friends{% endblock %}
+{% block head %}
+    {{ super() }}
     <link type="text/css" rel="stylesheet" href="/static/css/friends.css">
-</head>
-<body>
-<div class="header">
-    <div class="logo"></div>
-    <div class="friends-header"></div>
-</div>
-<div class="left-row">
-    <a>Profile</a><br>
-    <a>Messages</a><br>
-    <a>Friends</a><br>
-    <a>Fandom Groups</a><br>
-    <a>Your characters</a><br>
-</div>
-<div class="main-row">
+{% endblock %}
+{% block main_row %}
     {% if friends['success'] %}
-    {% for friend in friends['friendslist'] %}
-    <!-- Сверху сначала должен быть аватар -->
-    <a href="/users/{{friend['name']}}">{{friend['name']}}</a>
-    <a href="/dialog/{{friend['name']}}">Write message</a><br>
-    {% endfor %}
+        {% for friend in friends['friendslist'] %}
+            <div class="friend-block">
+                <button class="new-button"
+                        onclick="location.href='/users/{{ friend['name'] }}'">{{ friend['name'] }}</button>
+                {#                <a href="/users/{{ friend['name'] }}">{{ friend['name'] }}</a>#}
+                <button class="new-button" onclick="location.href='/dialog/{{ friend['name'] }}'">Write message</button>
+            </div>
+        {% endfor %}
     {% else %}
-    <a>You don't have friends</a>
+        <a>You don't have friends</a>
     {% endif %}
-</div>
-<div class="right-row">
-    <a>Friends count: {{ userdata["friends_count"] }}</a><br>
-    <a>Your fandoms: {{ fandoms_list }}</a><br>
-</div>
-</body>
-</html>
+{% endblock %}

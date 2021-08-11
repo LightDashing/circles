@@ -1,13 +1,19 @@
+import datetime
+
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from database import DataBase, OpenConnectionToBD
+from files import FileOperations
+import re
+
 # from smtp_mail import Email
 # from flask_mail import Message, Mail
 # import jwt
-from time import time
 
 app = Flask(__name__)
 # app.secret_key = 'SomeSuperDuperSecretKey'
 app.config['SECRET_KEY'] = 'SomeSuperDuperSecretKey'
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 25
 # app.config['MAIL_SERVER'] = 'smtp.googlemail.com'
 # app.config['MAIL_PORT'] = 587
 # app.config['MAIL_USE_TLS'] = True
@@ -19,7 +25,7 @@ app.config['SECRET_KEY'] = 'SomeSuperDuperSecretKey'
 # def get_reset_password_token(user_id, expires_in=600):
 #     return jwt.encode({'reset_password': user_id, 'exp':time() + expires_in}, app.secret_key, algorithm='HS256').decode('utf-8')
 
-# def veryfy_reset_password_token(token):
+# def verify_reset_password_token(token):
 #     try:
 #         id = jwt.decode(token, app.secret_key, algorithms=['HS256'])['reset_password']
 #     except:
@@ -27,6 +33,36 @@ app.config['SECRET_KEY'] = 'SomeSuperDuperSecretKey'
 #     return id
 
 db = DataBase()
+
+
+# TODO: ВАЖНО! хранить в куках одноразовую сессию, проверять код сессии при загрузке каждой странциы, юзернейм в
+#  куках не хранить
+
+
+@app.context_processor
+def utility_processor():
+    def format_datetime(date_time):
+        return date_time.strftime("%Y-%m-%d %H:%M")
+
+    def get_username(userid):
+        with OpenConnectionToBD(db):
+            user_name = db.get_name_by_userid(userid)
+        return user_name
+
+    def get_user_avatar(userid=None, username=None):
+        with OpenConnectionToBD(db):
+            if userid:
+                username = db.get_name_by_userid(userid)
+            elif not username:
+                return None
+            avatar = db.get_avatar_by_name(username)
+            return avatar
+
+    def get_current_datetime():
+        return datetime.datetime.now()
+
+    return dict(formate_datetime=format_datetime, get_username=get_username, get_current_datetime=get_current_datetime,
+                get_user_avatar=get_user_avatar)
 
 
 @app.errorhandler(404)
@@ -51,7 +87,10 @@ def index():
             created = db.add_user(name, email, password)
         if not created:
             return render_template('index.html', error='already_exist')
+        else:
+            userid = db.get_userid_by_name(name)
         session['username'] = name
+        session['userid'] = userid
         return redirect(url_for('users_page', name=name))
 
 
@@ -67,10 +106,8 @@ def users_page(name):
                 view_level = 0
             user = db.userdata_by_name(name)
             posts = db.get_posts_by_id(name, view_level)
-        postlist = []
-        if posts:
-            postlist = [i.message for i in posts]
-        return render_template('user.html', name=name, descrip=user['description'], posts=postlist, v_lvl=view_level)
+        return render_template('user.html', name=name, descrip=user['description'], posts=posts, v_lvl=view_level,
+                               avatar=user['avatar'])
 
 
 @app.route('/groups/<group_name>', methods=['GET'])
@@ -116,8 +153,9 @@ def create_group():
 def user_groups():
     with OpenConnectionToBD(db):
         username = session.get("username")
+        avatar = db.get_avatar_by_name(username)
         user_groups = db.get_user_groups(username)
-    return render_template('user_groups.html', groups=user_groups)
+    return render_template('user_groups.html', groups=user_groups, name=username, avatar=avatar)
 
 
 @app.route('/_publish_post', methods=['POST'])
@@ -129,7 +167,7 @@ def publish_post():
                 userdata = db.userdata_by_name(data['whereid'])
                 if not userdata['can_post']:
                     return jsonify(False)
-                elif data["view_lvl"] < userdata["min_post_lvl"]:
+                elif data["view_lvl"] > userdata["min_post_lvl"]:
                     return jsonify(False)
                 db.publish_post(data['message'], data['view_lvl'], data["fromid"], data["whereid"], data['attach'])
             else:
@@ -188,10 +226,12 @@ def check_is_friend():
 @app.route('/user/friends')
 def friends_page():
     if request.method == 'GET':
+        username = session.get('username')
         with OpenConnectionToBD(db):
             userdata = db.userdata_by_name(session.get("username"))
             friends = db.return_friendslist(session.get("username"))
-    return render_template("friends.html", userdata=userdata, friends=friends)
+        return render_template("friends.html", userdata=userdata, friends=friends, avatar=userdata['avatar'],
+                               name=username)
 
 
 @app.route('/_send_message', methods=['POST'])
@@ -228,8 +268,9 @@ def dialog_page(username):
 def messages():
     with OpenConnectionToBD(db):
         username = session['username']
+        avatar = db.get_avatar_by_name(username)
         chats = db.get_user_chats(username)
-    return render_template("messages.html", chats=chats, name=username)
+    return render_template("messages.html", chats=chats, name=username, avatar=avatar)
 
 
 @app.route('/user/create_chat', methods=['GET', 'POST'])
@@ -248,10 +289,11 @@ def create_chat():
 
 @app.route('/chat/send_message', methods=['POST'])
 def send_message_v2():
-    if request.method == 'POST':
-        data = request.get_json()
-        with OpenConnectionToBD(db):
-            db.send_message(data['user'], data['chat_id'], data['message'], data['attachment'])
+    data = request.get_json()
+    cleaner = re.compile('<.*?>')
+    message = re.sub(cleaner, '', data['message'])
+    with OpenConnectionToBD(db):
+        db.send_message(data['user'], data['chat_id'], message, data['attachment'])
     return jsonify(True)
 
 
@@ -269,35 +311,48 @@ def load_messages_v2():
 
 @app.route('/chat/<chat_id>', methods=['GET'])
 def chat(chat_id):
+    username = session.get('username')
     with OpenConnectionToBD(db):
         chat_obj = db.get_chat_byid(chat_id)
+        avatar = db.get_avatar_by_name(username)
         messages = chat_obj.serialize['messages']
     for message in messages:
         message.fromuserid = db.get_name_by_userid(message.fromuserid)
-    username = session.get('username')
-    return render_template("chat.html", chat=chat_obj.serialize, name=username, messages=messages)
+    return render_template("chat.html", chat=chat_obj.serialize, name=username, messages=messages, avatar=avatar)
+
+
+@app.route('/user/_upload_settings', methods=['POST'])
+def upload_settings():
+    data = request.get_json()
+    if data:
+        image = data.get("image")
+        fo = FileOperations(session.get('userid'))
+        fo.save_image(image, 'avatar')
+    username = str(request.form["username"])
+    description = str(request.form["desc"])
+    can_post = bool(request.form["can_post"])
+    post_lvl = int(request.form["view_level"])
+    email = str(request.form["email"])
+    password = str(request.form['pw1'])
+    response = {}
+    with OpenConnectionToBD(db):
+        response['u_name_r'] = db.change_username(session.get('username'), username)
+        response['u_desc_r'] = db.change_description(session.get('username'), description)
+        response['u_pub_r'] = db.change_publish_settings(session.get('username'), can_post)
+        response['u_lvl_r'] = db.ch_min_posting_lvl(session.get('username'), post_lvl)
+        response['u_email_r'] = db.change_mail(session.get('username'), email)
+        if password:
+            # Do something
+            pass
+        if -1 in response.values():
+            return jsonify({'unknown_error': True})
+    return jsonify(response)
 
 
 @app.route('/user/settings', methods=['GET', 'POST'])
 def user_settings():
     if request.method == 'POST':
-        name = request.form['username']
-        email = request.form['email']
-        descrip = request.form.get('descrip')
-        pub = request.form.get("other_post")
-        v_lvl = request.form.get("view_level", 5)
-        if pub:
-            pub = True
-        else:
-            pub = False
-        with OpenConnectionToBD(db):
-            db.change_username(session['username'], name)
-            db.change_mail(name, email)
-            db.change_description(name, descrip)
-            db.change_publish_settings(name, pub)
-            db.ch_min_posting_lvl(name, v_lvl)
-        session['username'] = name
-        return redirect(url_for("users_page", name=name))
+        pass
     else:
         if not session.get('username'):
             return render_template('index.html')
@@ -311,7 +366,7 @@ def user_settings():
         checkbox = userdata['can_post']
         min_pub_lvl = userdata['min_post_lvl']
         return render_template('settings.html', name=name, email=email, descrip=descrip, can_post=checkbox,
-                               m_p_lvl=min_pub_lvl)
+                               m_p_lvl=min_pub_lvl, avatar=userdata['avatar'])
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -323,7 +378,9 @@ def login():
             if not db.login_user(email, password):
                 return render_template('login.html', error='dont_match')
             name = db.name_by_mail(email)
+            userid = db.get_userid_by_name(name)
         session['username'] = name
+        session['userid'] = userid
         return redirect(url_for('users_page', name=name))
     else:
         if session.get('username'):

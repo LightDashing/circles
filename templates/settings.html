@@ -3,49 +3,130 @@
 {% block head %}
     {{ super() }}
     <link type="text/css" rel="stylesheet" href="/static/css/settings.css">
+    <script type="text/javascript"
+            src="{{ url_for("static", filename="node_modules/cropperjs/dist/cropper.js") }}"></script>
+    <link rel="stylesheet" href="{{ url_for("static", filename="node_modules/cropperjs/dist/cropper.css") }}">
+    <script type="text/javascript"
+            src="{{ url_for("static", filename="node_modules/jquery-cropper/dist/jquery-cropper.js") }}"></script>
+    <script type="text/javascript" src="{{ url_for("static", filename="settings.js") }}"></script>
 {% endblock %}
 {% block main_row %}
     <h1 class="settingsTitle">Profile settings</h1>
-    <form method="POST" id="main_form">
-        <div class='settings-form'>
-            <label>Username
-                <input class="settingsInputForm" type='text' minlength="5" maxlength="30" placeholder="5+ symbols"
-                       name="username" value="{{ name }}">
-            </label>
-            <label style="vertical-align: 315%;">Character description
-                <textarea class="descrip" name='descrip' form="main_form">{{ descrip }}</textarea>
-            </label>
-            <label>Can other post on your wall?
-                {% if can_post %}
-                    <input class="settingsInputForm" type="checkbox" form="main_form" name="other_post"
-                           checked=True>
-                {% else %}
-                    <input class="settingsInputForm" type="checkbox" form="main_form" name="other_post">
-                {% endif %}
-            </label>
-            <label for="view_level">Select level who can post</label>
-            <select class="new-button" name="view_level" id="view_level">
-                <option value="5" {% if m_p_lvl == 5 %} selected {% endif %}>5 (Everyone)</option>
-                <option value="4" {% if m_p_lvl == 4 %} selected {% endif %}>4 (Just friends)</option>
-                <option value="3" {% if m_p_lvl == 3 %} selected {% endif %}>3</option>
-                <option value="2" {% if m_p_lvl == 2 %} selected {% endif %}>2</option>
-                <option value="1" {% if m_p_lvl == 1 %} selected {% endif %}>1</option>
-                <option value="0" {% if m_p_lvl == 0 %} selected {% endif %}>0 (Only you)</option>
-            </select>
-            <label style="margin-left: 2vh;">Email
-                <input class="settingsInputForm" type="email" maxlength="30" placeholder="enter valid email"
-                       name="email" value="{{ email }}">
-            </label>
-            <label>Password
-                <input class="settingsInputForm" type="password" minlength="6" maxlength="20"
-                       placeholder="6+ symbols"
-                       name="pw1">
-            </label>
-            <label>Load avatar
-                <input class="fileSend" type="file" placeholder="upload avatar" name='avatar'>
-            </label>
-            <input class="new-button" type="submit" value="Save changes">
+    <div class="change-avatar" id="change_avatar">
+        <div class="change-avatar-content" id="avatar-modal">
+            <span class="close" id="close_button">&times;</span>
+            <form class="avatar-form" method="post" enctype=multipart/form-data id="change-avatar">
+                <input class="file-input" type="file" accept="image/png, image/jpeg" id="picture">
+            </form>
+            <div class="previews-column">
+                <div class="item-preview-flex" id="item-preview-flex-big">
+                    <div class="preview" id="big-preview">
+                    </div>
+                </div>
+                <div class="item-preview-flex">
+                    <div class="preview" id="medium-preview">
+                    </div>
+                    <div class="preview" id="small-preview">
+                    </div>
+                </div>
+                <div class="control-buttons">
+                    <button class="new-button" style="display: none" id="crop_button" title="Crop"><i
+                            class="bi-crop"></i></button>
+                    <button class="new-button" style="display: none" id="move_button" title="Move"><i
+                            class="bi-arrows-move"></i></button>
+                    <div class="flex-break"></div>
+                    <button class="new-button" style="display: none" id="rotate_90_left" title="Rotate clockwise"><i
+                            class="bi-arrow-clockwise"></i></button>
+                    <button class="new-button" style="display: none" id="rotate_90_right"
+                            title="Rotate counterclockwise"><i class="bi-arrow-counterclockwise"></i></button>
+                    <div class="flex-break"></div>
+                    <button class="new-button" style="display: none" id="save_image" title="Save image"><i
+                            class="bi-upload"></i></button>
+                </div>
+            </div>
+            <div class="crop-image" id="crop-image">
+            </div>
         </div>
-    </form>
+    </div>
+    <div>
+        <form method="POST" id="main_form">
+            <div class='settings-form'>
+                <label>Username
+                    <input class="settingsInputForm" type='text' minlength="3" maxlength="30" placeholder="5+ symbols"
+                           name="username" value="{{ name }}" required>
+                </label>
+                <div class="username-error"></div>
+                <label style="vertical-align: 315%;">Character description
+                    <textarea class="desc" name='desc' form="main_form">{{ descrip }}</textarea>
+                </label>
+                <div class="description-error"></div>
+                <label>Can other post on your wall?
+                    {% if can_post %}
+                        <input class="settingsInputForm" type="checkbox" form="main_form" name="can_post"
+                               checked=True>
+                    {% else %}
+                        <input class="settingsInputForm" type="checkbox" form="main_form" name="can_post">
+                    {% endif %}
+                </label>
+                <label for="view_level">Select level who can post</label>
+                <select class="new-button" name="view_level" id="view_level">
+                    <option value="5" {% if m_p_lvl == 5 %} selected {% endif %}>5 (Everyone)</option>
+                    <option value="4" {% if m_p_lvl == 4 %} selected {% endif %}>4 (Just friends)</option>
+                    <option value="3" {% if m_p_lvl == 3 %} selected {% endif %}>3</option>
+                    <option value="2" {% if m_p_lvl == 2 %} selected {% endif %}>2</option>
+                    <option value="1" {% if m_p_lvl == 1 %} selected {% endif %}>1</option>
+                    <option value="0" {% if m_p_lvl == 0 %} selected {% endif %}>0 (Only you)</option>
+                </select>
+                <label>Email
+                    <input class="settingsInputForm" type="email" maxlength="30" placeholder="enter valid email"
+                           name="email" value="{{ email }}" required>
+                </label>
+                <div class="email-error"></div>
+                <label>Password
+                    <input class="settingsInputForm" type="password" minlength="6" maxlength="20"
+                           placeholder="6+ symbols"
+                           name="pw1">
+                </label>
+                <div class="password-error"></div>
+                <input class="new-button" type="submit" value="Save changes">
+            <div class="unknown-error"></div>
+            </div>
+        </form>
+        <button class="new-button" id="avatar-changer">Change avatar</button>
+    </div>
 
+{% endblock %}
+{% block scripts %}
+    <script>
+        const modal = document.getElementById("change_avatar")
+        const modal_content = $("#avatar-modal")
+        $("#avatar-changer").click(function () {
+            modal.style.display = "block";
+            $("#avatar-modal").addClass("showModal")
+        })
+        window.onclick = function (event) {
+            if (event.target === modal) {
+                modal_content.removeClass("showModal")
+                modal_content.addClass("hideModal")
+                setTimeout(() => modal.style.display = "none", 250)
+            }
+        }
+        $("#close_button").click(function () {
+            modal_content.removeClass("showModal")
+            $("#avatar-modal").addClass("hideModal")
+            setTimeout(() => modal.style.display = "none", 250)
+        })
+        const mainForm = document.getElementById("main_form")
+        mainForm.onsubmit = function (event) {
+            let settingsForm = new FormData(mainForm)
+            send_settings(settingsForm)
+            event.preventDefault()
+        }
+        const fileInput = document.getElementById("picture")
+        fileInput.addEventListener('change', addImage, false)
+        $("#change-avatar").onchange = function (event) {
+            let image = event.target.files
+            console.log(image)
+        }
+    </script>
 {% endblock %}

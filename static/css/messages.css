@@ -2,7 +2,7 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    width: 50%;
+    width: 70%;
 }
 
 .main-row{
@@ -10,13 +10,9 @@
     width: 45%;
 }
 
-.chat{
-    background: #CEC5C3;
-    border: #B49E93;
-    border-radius: 5px;
+.all-chats .new-button{
+    width: 100%;
+    border: 1px solid var(--object-border-color);
+    text-align: center;
     vertical-align: center;
-    align-items: center;
-    margin: 10px;
-    width: 300px;
-    height: 40px;
 }
