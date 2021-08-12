@@ -1,6 +1,7 @@
 import datetime
 
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask_login import LoginManager, login_user, login_required, current_user, logout_user
 from database import DataBase, OpenConnectionToBD
 from files import FileOperations
 import re
@@ -8,7 +9,6 @@ import re
 # from smtp_mail import Email
 # from flask_mail import Message, Mail
 # import jwt
-
 app = Flask(__name__)
 # app.secret_key = 'SomeSuperDuperSecretKey'
 app.config['SECRET_KEY'] = 'SomeSuperDuperSecretKey'
@@ -22,6 +22,12 @@ app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 25
 # app.config['MAIL_PASSWORD'] = 'add your password'
 # email_app = Email(app)
 
+db = DataBase()
+login_manager = LoginManager()
+login_manager.login_view = '/login'
+login_manager.init_app(app)
+
+
 # def get_reset_password_token(user_id, expires_in=600):
 #     return jwt.encode({'reset_password': user_id, 'exp':time() + expires_in}, app.secret_key, algorithm='HS256').decode('utf-8')
 
@@ -32,11 +38,15 @@ app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 25
 #         return
 #     return id
 
-db = DataBase()
 
+# TODO: Авторизация переделана под login-manager однако необходимо добавить генерацию временной уникальной куки,
+#  чтобы нельзя было украсть сессию чужую и использовать её постоянно
 
-# TODO: ВАЖНО! хранить в куках одноразовую сессию, проверять код сессии при загрузке каждой странциы, юзернейм в
-#  куках не хранить
+@login_manager.user_loader
+def load_user(user_id):
+    with OpenConnectionToBD(db):
+        user = db.get_user(user_id)
+    return user
 
 
 @app.context_processor
@@ -73,7 +83,7 @@ def error_404(e):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'GET':
-        if session.get('username'):
+        if not current_user.is_anonymous:
             return redirect(url_for('users_page', name=session['username']))
         return render_template('index.html', error=None)
     else:
@@ -94,20 +104,19 @@ def index():
         return redirect(url_for('users_page', name=name))
 
 
-@app.route('/users/<name>', methods=['GET', 'POST'])
+@app.route('/users/<name>', methods=['GET'])
 def users_page(name):
-    if request.method == 'POST':
-        pass
-    else:
-        with OpenConnectionToBD(db):
-            if name != session.get("username"):
-                view_level = db.is_friend(name, session.get("username"))['u1_lvl']
-            else:
-                view_level = 0
-            user = db.userdata_by_name(name)
-            posts = db.get_posts_by_id(name, view_level)
-        return render_template('user.html', name=name, descrip=user['description'], posts=posts, v_lvl=view_level,
-                               avatar=user['avatar'])
+    with OpenConnectionToBD(db):
+        if current_user.is_anonymous:
+            view_level = 5
+        elif name != current_user.username:
+            view_level = db.is_friend(name, current_user.username)['u1_lvl']
+        else:
+            view_level = 0
+        user = db.userdata_by_name(name)
+        posts = db.get_posts_by_id(name, view_level)
+    return render_template('user.html', name=name, descrip=user['description'], posts=posts, v_lvl=view_level,
+                           avatar=user['avatar'])
 
 
 @app.route('/groups/<group_name>', methods=['GET'])
@@ -115,32 +124,35 @@ def group_page(group_name):
     with OpenConnectionToBD(db):
         data = db.get_group_data(group_name)
         data = data.serialize
-        is_in_group = db.is_joined(session.get("username"), group_name)
+        is_in_group = db.is_joined(current_user.username, group_name)
     return render_template('group.html', group=data, joined=is_in_group)
 
 
 @app.route('/_join_group', methods=['POST'])
+@login_required
 def join_group():
     data = request.get_json()
     with OpenConnectionToBD(db):
-        db.join_group(session.get("username"), data['group_name'])
+        db.join_group(current_user.username, data['group_name'])
     return jsonify(True)
 
 
 @app.route('/_leave_group', methods=['POST'])
+@login_required
 def leave_group():
     data = request.get_json()
     with OpenConnectionToBD(db):
-        db.leave_group(session.get("username"), data['group_name'])
+        db.leave_group(current_user.username, data['group_name'])
     return jsonify(True)
 
 
 @app.route('/create/group', methods=['GET', 'POST'])
+@login_required
 def create_group():
     if request.method == 'POST':
         data = request.get_json()
         with OpenConnectionToBD(db):
-            db.create_group(session.get("username"), data['group_name'], data['group_description'],
+            db.create_group(current_user.username, data['group_name'], data['group_description'],
                             data['group_rules'], data['group_tags'])
             db.join_group(session.get("username"), data['group_name'])
         # TODO: редирект не работает? исправить
@@ -150,15 +162,15 @@ def create_group():
 
 
 @app.route('/user/groups', methods=['GET'])
+@login_required
 def user_groups():
     with OpenConnectionToBD(db):
-        username = session.get("username")
-        avatar = db.get_avatar_by_name(username)
-        user_groups = db.get_user_groups(username)
-    return render_template('user_groups.html', groups=user_groups, name=username, avatar=avatar)
+        user_subs = db.get_user_groups(current_user.username)
+    return render_template('user_groups.html', groups=user_subs, name=current_user.username)
 
 
 @app.route('/_publish_post', methods=['POST'])
+@login_required
 def publish_post():
     if request.method == 'POST':
         data = request.get_json()
@@ -171,12 +183,13 @@ def publish_post():
                     return jsonify(False)
                 db.publish_post(data['message'], data['view_lvl'], data["fromid"], data["whereid"], data['attach'])
             else:
-                db.publish_post(data['message'], data['view_lvl'], session.get("username"),
+                db.publish_post(data['message'], data['view_lvl'], current_user.username,
                                 data["whereid"], data['attach'])
         return jsonify(True)
 
 
 @app.route('/_update_posts', methods=['POST'])
+@login_required
 def update_posts():
     if request.method == 'POST':
         user = request.get_json()
@@ -185,95 +198,100 @@ def update_posts():
 
 
 @app.route('/_add_friend', methods=['POST'])
+@login_required
 def add_friend():
     if request.method == 'POST':
         username = request.get_json()['name']
         with OpenConnectionToBD(db):
-            db.add_friend(session.get('username'), username)
+            db.add_friend(current_user.username, username)
         return jsonify(True)
     return url_for(error_404(Exception("Such page doesn't exists")))
 
 
 @app.route('/_accept_friend', methods=['POST'])
+@login_required
 def accept_friend():
     if request.method == 'POST':
         username = request.get_json()['name']
         with OpenConnectionToBD(db):
-            db.accept_request(username, session.get("username"))
+            db.accept_request(username, current_user.username)
         return jsonify(True)
     return url_for(error_404(Exception("Such page doesn't exists")))
 
 
 @app.route('/_remove_friend', methods=['POST'])
+@login_required
 def cancel_request():
     if request.method == 'POST':
         username = request.get_json()['name']
         with OpenConnectionToBD(db):
-            db.remove_friend(session.get('username'), username)
+            db.remove_friend(current_user.username, username)
         return jsonify(True)
     return url_for(error_404(Exception("Such page doesn't exists")))
 
 
 @app.route('/_check_friend', methods=['POST'])
+@login_required
 def check_is_friend():
     if request.method == 'POST':
         username = request.get_json()['name']
         with OpenConnectionToBD(db):
-            fr_check = db.is_friend(session.get("username"), username)
+            fr_check = db.is_friend(current_user.username, username)
             return jsonify(fr_check)
 
 
 @app.route('/user/friends')
+@login_required
 def friends_page():
     if request.method == 'GET':
-        username = session.get('username')
         with OpenConnectionToBD(db):
-            userdata = db.userdata_by_name(session.get("username"))
-            friends = db.return_friendslist(session.get("username"))
-        return render_template("friends.html", userdata=userdata, friends=friends, avatar=userdata['avatar'],
-                               name=username)
+            friends = db.return_friendslist(current_user.username)
+        return render_template("friends.html", friends=friends, name=current_user.username)
 
 
 @app.route('/_send_message', methods=['POST'])
+@login_required
 def send_message():
     if request.method == 'POST':
         data = request.get_json()
         with OpenConnectionToBD(db):
-            db.send_message(session.get("username"), data['chat_id'], data['message'], data['attachment'])
+            db.send_message(current_user.username, data['chat_id'], data['message'], data['attachment'])
         return jsonify("True")
 
 
 @app.route('/_load_messages', methods=['POST'])
+@login_required
 def load_messages():
     if request.method == 'POST':
         data = request.get_json()
         with OpenConnectionToBD(db):
             if data['type'] == 'load':
-                messages = db.get_messages_with_user(session.get("username"), data['user'])
+                user_messages = db.get_messages_with_user(current_user.username, data['user'])
             elif data['type'] == 'update':
-                messages = db.update_messages(data['chat_id'], data['msg_time'])
-        return jsonify(messages)
+                user_messages = db.update_messages(data['chat_id'], data['msg_time'])
+        return jsonify(user_messages)
 
 
 @app.route('/dialog/<username>', methods=['GET', 'POST'])
+@login_required
 def dialog_page(username):
     with OpenConnectionToBD(db):
-        name = session['username']
-        messages = db.get_messages_with_user(name, username)
-        chat_id = db.get_dialog_chat_id(name, username)
-    return render_template("dialog.html", name=name, messages=messages, username=username, chat_id=chat_id)
+        messages = db.get_messages_with_user(current_user.username, username)
+        chat_id = db.get_dialog_chat_id(current_user.username, username)
+    return render_template("dialog.html", name=current_user.username, messages=messages, username=username,
+                           chat_id=chat_id)
 
 
 @app.route('/user/messages', methods=['GET'])
+@login_required
 def messages():
     with OpenConnectionToBD(db):
-        username = session['username']
-        avatar = db.get_avatar_by_name(username)
-        chats = db.get_user_chats(username)
-    return render_template("messages.html", chats=chats, name=username, avatar=avatar)
+        chats = db.get_user_chats(current_user.username)
+    return render_template("messages.html", chats=chats, name=current_user.username)
 
 
 @app.route('/user/create_chat', methods=['GET', 'POST'])
+@login_required
 def create_chat():
     if request.method == 'POST':
         data = request.get_json()
@@ -282,12 +300,13 @@ def create_chat():
         return url_for("chat", chat_id=chat_id)
     else:
         with OpenConnectionToBD(db):
-            username = session.get("username")
-            friends = db.return_friendslist(username)
-        return render_template("create_chat.html", friends=friends, name=username)
+            friends = db.return_friendslist(current_user.username)
+        return render_template("create_chat.html", friends=friends, name=current_user.username)
 
 
+# TODO: поменять endpointы для сообщений, выглядит небезопасно
 @app.route('/chat/send_message', methods=['POST'])
+@login_required
 def send_message_v2():
     data = request.get_json()
     cleaner = re.compile('<.*?>')
@@ -298,30 +317,33 @@ def send_message_v2():
 
 
 @app.route('/chat/load_messages', methods=['POST'])
+@login_required
 def load_messages_v2():
     if request.method == 'POST':
         data = request.get_json()
         with OpenConnectionToBD(db):
             if data['type'] == 'load':
-                messages = db.load_messages(session.get("username"), data['chat_id'])
+                user_messages = db.load_messages(current_user.username, data['chat_id'])
             elif data['type'] == 'update':
-                messages = db.update_messages(data['chat_id'], data['msg_time'])
-        return jsonify(messages)
+                user_messages = db.update_messages(data['chat_id'], data['msg_time'])
+        return jsonify(user_messages)
 
 
 @app.route('/chat/<chat_id>', methods=['GET'])
+@login_required
 def chat(chat_id):
-    username = session.get('username')
     with OpenConnectionToBD(db):
         chat_obj = db.get_chat_byid(chat_id)
-        avatar = db.get_avatar_by_name(username)
+        avatar = db.get_avatar_by_name(current_user.username)
         messages = chat_obj.serialize['messages']
     for message in messages:
         message.fromuserid = db.get_name_by_userid(message.fromuserid)
-    return render_template("chat.html", chat=chat_obj.serialize, name=username, messages=messages, avatar=avatar)
+    return render_template("chat.html", chat=chat_obj.serialize,
+                           name=current_user.username, messages=messages)
 
 
 @app.route('/user/_upload_settings', methods=['POST'])
+@login_required
 def upload_settings():
     data = request.get_json()
     if data:
@@ -336,11 +358,11 @@ def upload_settings():
     password = str(request.form['pw1'])
     response = {}
     with OpenConnectionToBD(db):
-        response['u_name_r'] = db.change_username(session.get('username'), username)
-        response['u_desc_r'] = db.change_description(session.get('username'), description)
-        response['u_pub_r'] = db.change_publish_settings(session.get('username'), can_post)
-        response['u_lvl_r'] = db.ch_min_posting_lvl(session.get('username'), post_lvl)
-        response['u_email_r'] = db.change_mail(session.get('username'), email)
+        response['u_name_r'] = db.change_username(current_user.username, username)
+        response['u_desc_r'] = db.change_description(current_user.username, description)
+        response['u_pub_r'] = db.change_publish_settings(current_user.username, can_post)
+        response['u_lvl_r'] = db.ch_min_posting_lvl(current_user.username, post_lvl)
+        response['u_email_r'] = db.change_mail(current_user.username, email)
         if password:
             # Do something
             pass
@@ -349,24 +371,12 @@ def upload_settings():
     return jsonify(response)
 
 
-@app.route('/user/settings', methods=['GET', 'POST'])
+@app.route('/user/settings', methods=['GET'])
+@login_required
 def user_settings():
-    if request.method == 'POST':
-        pass
-    else:
-        if not session.get('username'):
-            return render_template('index.html')
-        name = session['username']
-        with OpenConnectionToBD(db):
-            userdata = db.userdata_by_name(name)
-            if not userdata:
-                return render_template("404.html")
-        email = userdata['email']
-        descrip = userdata['description']
-        checkbox = userdata['can_post']
-        min_pub_lvl = userdata['min_post_lvl']
-        return render_template('settings.html', name=name, email=email, descrip=descrip, can_post=checkbox,
-                               m_p_lvl=min_pub_lvl, avatar=userdata['avatar'])
+    return render_template('settings.html', name=current_user.username, email=current_user.email,
+                           descrip=current_user.description, can_post=current_user.other_publish,
+                           m_p_lvl=current_user.min_posting_lvl)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -377,22 +387,21 @@ def login():
         with OpenConnectionToBD(db):
             if not db.login_user(email, password):
                 return render_template('login.html', error='dont_match')
-            name = db.name_by_mail(email)
-            userid = db.get_userid_by_name(name)
-        session['username'] = name
-        session['userid'] = userid
-        return redirect(url_for('users_page', name=name))
+            user_id = db.get_userid(email)
+            login_user(user_id, remember=True)
+        return redirect(url_for('users_page', name=current_user.username))
     else:
-        if session.get('username'):
-            return redirect(url_for('users_page', name=session['username']))
+        if not current_user.is_anonymous:
+            return redirect(url_for('users_page', name=current_user.username))
         else:
             return render_template('login.html', error=None)
 
 
 @app.route('/logout')
+@login_required
 def logout():
-    session.pop('username', None)
-    return redirect(url_for('index'))
+    logout_user()
+    return redirect(request.path)
 
 
 # @app.route('/reset', methods=['GET', 'POST'])

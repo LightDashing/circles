@@ -6,9 +6,6 @@
 }
 
 .header {
-    display: flex;
-    flex-direction: row;
-    align-content: space-evenly;
     width: 95vw;
     position: fixed;
     left: 50%;
@@ -21,6 +18,39 @@
     font-size: 1em;
     font-weight: 500;
     z-index: 1;
+}
+
+.header-content {
+    display: flex;
+    flex-direction: row;
+    align-content: space-evenly;
+    align-items: center;
+    gap: 10px;
+    height: 40px;
+}
+
+.header-content > .new-button {
+    background: #9694A8;
+    height: 30px;
+}
+
+#login-button{
+    margin-left: 40px;
+}
+
+.header-content > .new-button:hover{
+    background: #686C83;
+}
+
+.header-content > .new-button:active{
+    background: #56658A;
+}
+
+.header-title {
+    font-size: 1.4em;
+    font-weight: 700;
+    margin-left: auto;
+    margin-right: 5%
 }
 
 .label-search {

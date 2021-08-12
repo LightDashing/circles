@@ -45,6 +45,14 @@ class DataBase:
         else:
             return False
 
+    def get_user(self, userid):
+        user = self.session.query(User).filter(User.id == userid).first()
+        return user
+
+    def get_userid(self, email):
+        user = self.session.query(User).filter(User.email == email).first()
+        return user
+
     def name_by_mail(self, email: str):
         user = self.session.query(User).filter(User.email == email).first()
         if user:
@@ -52,6 +60,7 @@ class DataBase:
         else:
             return False
 
+    # TODO: ВАЖНО! Необходимо получать всю информацию не по юзернейму, а по айди! По-идее так более безопасно
     def userdata_by_name(self, name: str):
         user = self.session.query(User).filter(User.username == name).first()
         if user:
@@ -323,6 +332,7 @@ class DataBase:
         self.session.commit()
         return True
 
+    # TODO: ВАЖНО! переписать весь этот сущий ужас и кошмар, выглядит нечитабельно и говнокодельно
     def return_friendslist(self, user: str) -> dict:
         userid = self.get_userid_by_name(user)
         friends = self.session.query(Friend).filter(and_(or_(Friend.first_user == userid, Friend.second_user == userid), \

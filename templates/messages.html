@@ -18,3 +18,7 @@
         </div>
     {% endif %}
 {% endblock %}
+{% block right_row %}
+    {{ super() }}
+    {% block other_profile %}{% endblock %}
+{% endblock %}

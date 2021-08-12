@@ -89,12 +89,16 @@
                 </label>
                 <div class="password-error"></div>
                 <input class="new-button" type="submit" value="Save changes">
-            <div class="unknown-error"></div>
+                <div class="unknown-error"></div>
             </div>
         </form>
         <button class="new-button" id="avatar-changer">Change avatar</button>
     </div>
 
+{% endblock %}
+{% block right_row %}
+    {{ super() }}
+    {% block other_profile %}{% endblock %}
 {% endblock %}
 {% block scripts %}
     <script>

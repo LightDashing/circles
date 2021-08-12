@@ -3,18 +3,20 @@ from sqlalchemy.dialects.postgresql import ARRAY, VARCHAR
 from sqlalchemy.engine import create_engine
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
+from flask_login import UserMixin
 import datetime
 
 Base = declarative_base()
 
 
-class User(Base):
+class User(UserMixin, Base):
     __tablename__ = 'users'
     id = Column(INTEGER, primary_key=True, autoincrement=True)
     username = Column(VARCHAR(30), unique=True, nullable=False)
     email = Column(VARCHAR(30), unique=True, nullable=False)
     password = Column(VARCHAR(512), nullable=False)
     registration_date = Column(DateTime, nullable=False, default=datetime.datetime.now())
+    # email_active = Column(Boolean, nullable=False, default=False)
     description = Column(VARCHAR())
     status = Column(VARCHAR(30), nullable=False, default=' ')
     avatar = Column(VARCHAR(128))

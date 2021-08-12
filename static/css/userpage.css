@@ -95,17 +95,24 @@
 }
 
 .post-avatar {
+    float: left;
     width: 50px;
     height: 50px;
     border-radius: 15px;
 }
 
 .post-nick {
-    vertical-align: center;
+
 }
 
 .post-date {
-    padding-left: 30px;
+
+}
+
+.post-inside{
+    display: inline;
+    vertical-align: center;
+    /*border: solid;*/
 }
 
 .post-message {

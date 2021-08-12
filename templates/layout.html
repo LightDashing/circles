@@ -16,28 +16,41 @@
 </head>
 <body>
 <div class="header">
-    <label class="label-search"><i class="bi-search"></i>
-        <input type="text">
-    </label>
-    <a style="font-size: 1.4em">InRole</a>
+    <div class="header-content">
+        {% if current_user.is_anonymous %}
+            <button class="new-button" id="login-button" onclick="location.href='{{ url_for('login') }}'">Login</button>
+            <button class="new-button" id="sign-in-button">Sign In</button>
+            <label class="label-search"><i class="bi-search"></i>
+                <input type="text">
+            </label>
+        {% else %}
+        <label class="label-search"><i class="bi-search"></i>
+            <input type="text">
+        </label>
+        {% endif %}
+        <span class="header-title">InRole
+            - {{ self.title() }}</span>
+    </div>
 </div>
 <div class="left-row">
     {% block left_row %}
-        <button class="new-button" id="profile" onclick="location.href='{{ url_for("index") }}'"><i
-                class="bi-house-fill"> </i>Profile
-        </button>
-        <button class="new-button" id="settings" onclick="location.href='{{ url_for("user_settings") }}'"><i
-                class="bi-gear-fill"> </i>Settings
-        </button>
-        <button class="new-button" id="messages" onclick="location.href='{{ url_for("messages") }}'"><i
-                class="bi-envelope-fill"> </i>Messages
-        </button>
-        <button class="new-button" id="friends" onclick="location.href='{{ url_for("friends_page") }}'"><i
-                class="bi-people-fill"> </i>Friends
-        </button>
-        <button class="new-button" id="groups" onclick="location.href='{{ url_for("user_groups") }}'"><i
-                class="bi-people-fill"> </i>Communities
-        </button>
+        {% if not current_user.is_anonymous %}
+            <button class="new-button" id="profile" onclick="location.href='{{ url_for("index") }}'"><i
+                    class="bi-house-fill"> </i>Profile
+            </button>
+            <button class="new-button" id="settings" onclick="location.href='{{ url_for("user_settings") }}'"><i
+                    class="bi-gear-fill"> </i>Settings
+            </button>
+            <button class="new-button" id="messages" onclick="location.href='{{ url_for("messages") }}'"><i
+                    class="bi-envelope-fill"> </i>Messages
+            </button>
+            <button class="new-button" id="friends" onclick="location.href='{{ url_for("friends_page") }}'"><i
+                    class="bi-people-fill"> </i>Friends
+            </button>
+            <button class="new-button" id="groups" onclick="location.href='{{ url_for("user_groups") }}'"><i
+                    class="bi-people-fill"> </i>Communities
+            </button>
+        {% endif %}
     {% endblock %}
 </div>
 <div class="main-row">
@@ -46,12 +59,20 @@
 </div>
 <div class="right-row">
     {% block right_row %}
-        <img class="avatar" alt="User doesn't have avatar" src="{{ avatar }}">
-        <a>{{ name }}</a>
-        <div class="logout">
-            <button class="new-button" id="logout-button" onclick="location.href='{{ url_for("logout") }}'">Logout
-            </button>
-        </div>
+        {% block your_profile %}
+            <img class="avatar" alt="You don't have avatar" src="{{ current_user.avatar }}">
+            <a>{{ current_user.username }}</a>
+        {% endblock %}
+        {% block other_profile %}
+            <img class="avatar" alt="User doesn't have avatar" src="{{ avatar }}">
+            <a>{{ name }}</a>
+        {% endblock %}
+        {% if not current_user.is_anonymous %}
+            <div class="logout">
+                <button class="new-button" id="logout-button" onclick="location.href='{{ url_for("logout") }}'">Logout
+                </button>
+            </div>
+        {% endif %}
     {% endblock %}
 </div>
 </body>

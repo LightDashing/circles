@@ -8,6 +8,7 @@
 {% endblock %}
 {% block main_row %}
     <a class="user-description">{{ descrip }}</a>
+    {% if not current_user.is_anonymous %}
     <button id="add_post" class="new-button">Add new post</button>
     <div class="create_post" id="create_post">
         <label class="create_post-label" for="user_post">Create new post</label>
@@ -25,13 +26,18 @@
         {% endif %}
         <button class="post-button" id="publish_post">Make post</button>
     </div>
+    {% endif %}
     <div class="posts">
         {% if posts %}
             {% for post in posts %}
                 <div class="post">
-                    <img class="post-avatar" alt="User avatar" src="{{ get_user_avatar(post.userid) }}">
-                    <a class="post-nick" href="{{ url_for("users_page", name=get_username(post.userid)) }}"><b>{{ get_username(post.userid) }}:</b></a><br>
-                    <a class="post-date">{{ formate_datetime(post.date_added) }}</a><br>
+                    <div class="post-inside">
+                        <img class="post-avatar" alt="User avatar" src="{{ get_user_avatar(post.userid) }}">
+                        <a class="post-nick"
+                           href="{{ url_for("users_page", name=get_username(post.userid)) }}"><b>{{ get_username(post.userid) }}:</b></a>
+                        <a class="post-date">{{ formate_datetime(post.date_added) }}</a><br>
+                    </div>
+
                     <a class="post-message">{{ post.message }}</a><br>
                 </div>
             {% endfor %}
@@ -40,6 +46,7 @@
 {% endblock %}
 {% block right_row %}
     {{ super() }}
+    {% block your_profile %}{% endblock %}
     {% if name != session['username'] %}
         <div class="friend_buttons">
             <button class="new-button" id="add_friend" value="Add friend">Add friend</button>
