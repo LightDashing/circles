@@ -9,6 +9,8 @@ import datetime
 Base = declarative_base()
 
 
+# TODO: ВАЖНО! вернуть ограничения по полям, сделать его большим, но существующим, чтобы нельзя было сохранять
+#  десятки мегабайт текста
 class User(UserMixin, Base):
     __tablename__ = 'users'
     id = Column(INTEGER, primary_key=True, autoincrement=True)
@@ -42,9 +44,6 @@ class Friend(Base):
     second_user = Column(INTEGER, primary_key=True)
     is_request = Column(Boolean, nullable=False, default=True)
     date_added = Column(DateTime, nullable=False, default=datetime.datetime.now())
-    # TODO уровень доверия к человеку, выставляется пользователем, нужен для просмотра постов
-    # 4 - самый низкий, 5 - этот человек не является другом
-    # уровень доверия виден только автору страницы
     first_ulevel = Column(INTEGER, nullable=False, default=5)
     second_ulevel = Column(INTEGER, nullable=False, default=5)
 
@@ -62,6 +61,7 @@ class UserPost(Base):
     message = Column(VARCHAR())
     tags = Column(ARRAY(VARCHAR(128)))
     attachment = Column(ARRAY(VARCHAR(128)))
+
 
 class UserCharacter(Base):
     __tablename__ = 'usercharacters'

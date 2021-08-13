@@ -31,14 +31,14 @@
         {% if posts %}
             {% for post in posts %}
                 <div class="post">
-                    <div class="post-inside">
+                    <div class="post-header">
                         <img class="post-avatar" alt="User avatar" src="{{ get_user_avatar(post.userid) }}">
                         <a class="post-nick"
-                           href="{{ url_for("users_page", name=get_username(post.userid)) }}"><b>{{ get_username(post.userid) }}:</b></a>
+                           href="{{ url_for("users_page", name=get_username(post.userid)) }}"><b>{{ get_username(post.userid) }}</b></a>
                         <a class="post-date">{{ formate_datetime(post.date_added) }}</a><br>
                     </div>
 
-                    <a class="post-message">{{ post.message }}</a><br>
+                    <a class="post-message">{{ post.message }}</a>
                 </div>
             {% endfor %}
         {% endif %}

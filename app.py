@@ -13,7 +13,7 @@ app = Flask(__name__)
 # app.secret_key = 'SomeSuperDuperSecretKey'
 app.config['SECRET_KEY'] = 'SomeSuperDuperSecretKey'
 app.config['SESSION_COOKIE_SECURE'] = True
-app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 25
+app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 20
 # app.config['MAIL_SERVER'] = 'smtp.googlemail.com'
 # app.config['MAIL_PORT'] = 587
 # app.config['MAIL_USE_TLS'] = True
@@ -349,7 +349,8 @@ def upload_settings():
     if data:
         image = data.get("image")
         fo = FileOperations(session.get('userid'))
-        fo.save_image(image, 'avatar')
+        response = fo.save_image(image, 'avatar')
+        return jsonify(response)
     username = str(request.form["username"])
     description = str(request.form["desc"])
     can_post = bool(request.form["can_post"])

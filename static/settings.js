@@ -10,6 +10,12 @@ function send_avatar(data) {
         data: JSON.stringify({"image": base64img}),
         success: function updateModal(data) {
             console.log(data)
+            if (data === 2){
+                alert('This file is too large!')
+            }
+            else if (data === 1){
+                alert('You little cheater')
+            }
         }
     });
 }
