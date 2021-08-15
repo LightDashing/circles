@@ -52,7 +52,7 @@ def load_user(user_id):
 @app.context_processor
 def utility_processor():
     def format_datetime(date_time):
-        return date_time.strftime("%Y-%m-%d %H:%M")
+        return date_time.strftime("%R, %e %b, %Y")
 
     def get_username(userid):
         with OpenConnectionToBD(db):
