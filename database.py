@@ -153,6 +153,32 @@ class DataBase:
         self.session.query(User).filter(User.id == userid).update({User.avatar: filepath})
         self.session.commit()
 
+    def search_for(self, search_query: str, search_type: str = 'user') -> list:
+        if search_type == 'user':
+            query = self.session.query(User).filter(User.username.like(f"%{search_query.lower()}%")).limit(5) \
+                .all()
+            users = [user.serialize for user in query]
+            print(users)
+        else:
+            query = self.session.query().all()
+        return users
+
+    # TODO: сделать систему дозагрузки при прокрутке страницы
+    def get_user_friends(self, userid: int, amount: int = 5):
+        if amount == -1:
+            friends = self.session.query(Friend).filter(
+                or_(Friend.first_user_id == userid, Friend.second_user_id == userid)).all()
+        else:
+            friends = self.session.query(Friend).filter(
+                or_(Friend.first_user_id == userid, Friend.second_user_id == userid)).limit(amount).all()
+        user_friends = []
+        for friend in friends:
+            if friend.first_user.serialize['id'] == userid:
+                user_friends.append(friend.second_user.serialize)
+            else:
+                user_friends.append(friend.first_user.serialize)
+        return user_friends
+
     def get_userid_by_name(self, name: str):
         user = self.session.query(User).filter(User.username == name).first()
         if user:
@@ -332,36 +358,19 @@ class DataBase:
         self.session.commit()
         return True
 
-    # TODO: ВАЖНО! переписать весь этот сущий ужас и кошмар, выглядит нечитабельно и говнокодельно
-    def return_friendslist(self, user: str) -> dict:
-        userid = self.get_userid_by_name(user)
-        friends = self.session.query(Friend).filter(and_(or_(Friend.first_user == userid, Friend.second_user == userid), \
-                                                         Friend.is_request == False)).order_by(Friend.date_added).all()
-        if friends:
-            friendlist = []
-            for friend in friends:
-                friend_dict = {}
-                if friend.first_user == userid:
-                    friend_dict['name'] = self.get_name_by_userid(friend.second_user)
-                    frienddata = self.userdata_by_name(friend_dict['name'])
-                else:
-                    friend_dict['name'] = self.get_name_by_userid(friend.first_user)
-                    frienddata = self.userdata_by_name(friend_dict['name'])
-                friend_dict['avatar'] = frienddata['avatar']
-                # TODO: добавить в таблицу пользователей колонку статуса
-                # friend['status'] = frienddata['status']
-                friendlist.append(friend_dict)
-            return {"success": True, "friendslist": friendlist}
-        else:
-            return {"success": False}
+    # TODO: ВАЖНО! в следствии изменения таблицы с друзьями весь этот ад не работает, нужно переделывать!
 
-    def add_friend(self, user, second_user):
-        #  TODO: Пофиксить ошибку, из-за которой можно одновременно нажать на кнопку и добавить в друзья с двух сторон
-        user = self.get_userid_by_name(user)
-        second_user = self.get_userid_by_name(second_user)
-        self.session.add(Friend(first_user=user, second_user=second_user))
-        self.session.commit()
-        return True
+    def add_friend(self, user: int, second_user: int) -> bool:
+        """This function is checking if friend already exists and if it isn't, adds a new entry to database\n
+        returns boolean value, true if new entry was created and false if entry already existed"""
+        if self.session.query(Friend).filter(
+                or_(and_(Friend.first_user_id == user, Friend.second_user_id == second_user),
+                    and_(Friend.first_user_id == second_user, Friend.second_user_id == user))):
+            return False
+        else:
+            self.session.add(Friend(first_user_id=user, second_user_id=second_user))
+            self.session.commit()
+            return True
 
     # TODO: при отмене запроса, кол-во друзей не нужно уменьшать
     def remove_friend(self, user, second_user):

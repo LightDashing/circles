@@ -44,7 +44,6 @@ class FileOperations:
         1: File extension is not allowed \n
         2: File is too large \n"""
         if not self.is_allowed(self.get_file_extension(file)):
-            print('kek')
             return 1
         if not self.get_file_size(file):
             return 2
@@ -61,7 +60,8 @@ class FileOperations:
         if filetype == 'avatar':
             with OpenConnectionToBD(self.db):
                 old_avatar = self.db.userdata_by_name(self.db.get_name_by_userid(self.userid))['avatar']
-                os.remove(old_avatar[old_avatar.find('.') + 1:])
+                if old_avatar[old_avatar.rfind('\\') + 1:] != 'user-avatar.svg':
+                    os.remove(old_avatar[old_avatar.find('.') + 1:])
                 self.db.change_avatar(self.userid, os.path.join("..", filepath))
                 return 0
 

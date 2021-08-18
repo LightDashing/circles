@@ -42,6 +42,8 @@ login_manager.init_app(app)
 # TODO: Авторизация переделана под login-manager однако необходимо добавить генерацию временной уникальной куки,
 #  чтобы нельзя было украсть сессию чужую и использовать её постоянно
 
+# TODO: ВАЖНО! Переделать все endpointы под flask blueprints, чтобы тут остались только респонсы на get'ы
+
 @login_manager.user_loader
 def load_user(user_id):
     with OpenConnectionToBD(db):
@@ -84,7 +86,7 @@ def error_404(e):
 def index():
     if request.method == 'GET':
         if not current_user.is_anonymous:
-            return redirect(url_for('users_page', name=session['username']))
+            return redirect(url_for('users_page', name=current_user.username))
         return render_template('index.html', error=None)
     else:
         email = request.form['email']
@@ -203,7 +205,7 @@ def add_friend():
     if request.method == 'POST':
         username = request.get_json()['name']
         with OpenConnectionToBD(db):
-            db.add_friend(current_user.username, username)
+            db.add_friend(current_user.id, db.get_userid_by_name(username))
         return jsonify(True)
     return url_for(error_404(Exception("Such page doesn't exists")))
 
@@ -240,12 +242,21 @@ def check_is_friend():
             return jsonify(fr_check)
 
 
+@app.route('/_get_user_friends', methods=['POST'])
+@login_required
+def get_friends_list():
+    with OpenConnectionToBD(db):
+        friends = db.get_user_friends(current_user.id)
+    return jsonify(friends)
+
+
 @app.route('/user/friends')
 @login_required
 def friends_page():
     if request.method == 'GET':
         with OpenConnectionToBD(db):
-            friends = db.return_friendslist(current_user.username)
+            friends = db.get_user_friends(current_user.id, 10)
+            print(friends)
         return render_template("friends.html", friends=friends, name=current_user.username)
 
 
@@ -300,7 +311,7 @@ def create_chat():
         return url_for("chat", chat_id=chat_id)
     else:
         with OpenConnectionToBD(db):
-            friends = db.return_friendslist(current_user.username)
+            friends = db.get_user_friends(current_user.username, 10)
         return render_template("create_chat.html", friends=friends, name=current_user.username)
 
 
@@ -334,7 +345,6 @@ def load_messages_v2():
 def chat(chat_id):
     with OpenConnectionToBD(db):
         chat_obj = db.get_chat_byid(chat_id)
-        avatar = db.get_avatar_by_name(current_user.username)
         messages = chat_obj.serialize['messages']
     for message in messages:
         message.fromuserid = db.get_name_by_userid(message.fromuserid)
@@ -348,7 +358,7 @@ def upload_settings():
     data = request.get_json()
     if data:
         image = data.get("image")
-        fo = FileOperations(session.get('userid'))
+        fo = FileOperations(current_user.id)
         response = fo.save_image(image, 'avatar')
         return jsonify(response)
     username = str(request.form["username"])
@@ -378,6 +388,15 @@ def user_settings():
     return render_template('settings.html', name=current_user.username, email=current_user.email,
                            descrip=current_user.description, can_post=current_user.other_publish,
                            m_p_lvl=current_user.min_posting_lvl)
+
+
+@app.route('/search', methods=['POST'])
+def search():
+    data = request.get_json()
+    search_input = data['search_input']
+    with OpenConnectionToBD(db):
+        results = db.search_for(search_input)
+    return jsonify(results)
 
 
 @app.route('/login', methods=['GET', 'POST'])

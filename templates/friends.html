@@ -5,13 +5,13 @@
     <link type="text/css" rel="stylesheet" href="/static/css/friends.css">
 {% endblock %}
 {% block main_row %}
-    {% if friends['success'] %}
-        {% for friend in friends['friendslist'] %}
+    {% if friends %}
+        {% for friend in friends %}
             <div class="friend-block">
                 <button class="new-button"
-                        onclick="location.href='/users/{{ friend['name'] }}'">{{ friend['name'] }}</button>
+                        onclick="location.href='/users/{{ friend['username'] }}'">{{ friend['username'] }}</button>
                 {#                <a href="/users/{{ friend['name'] }}">{{ friend['name'] }}</a>#}
-                <button class="new-button" onclick="location.href='/dialog/{{ friend['name'] }}'">Write message</button>
+                <button class="new-button" onclick="location.href='/dialog/{{ friend['username'] }}'">Write message</button>
             </div>
         {% endfor %}
     {% else %}

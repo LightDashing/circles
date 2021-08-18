@@ -89,7 +89,7 @@
 {% endblock %}
 {% block scripts %}
     <script type="text/javascript">
-        init("{{name}}", "{{session.get("username")}}");
+        init("{{name}}", "{{current_user.username}}");
         $("#add_friend").click(function () {
             add_friend('{{name}}')
         })

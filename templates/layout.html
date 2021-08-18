@@ -1,32 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    {% block head %}
-        <meta charset="UTF-8">
-        <title>{% block title %}{% endblock %} - InRole</title>
-        <link href="/static/css/golos_text.css" rel="stylesheet">
-        <link href="/static/css/main.css" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
-        <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
-              rel="stylesheet">
-        <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round"
-              rel="stylesheet">
-        <script>window.jQuery || document.write('<script src="{{
+{% block head %}
+    <meta charset="UTF-8">
+    <title>{% block title %}{% endblock %} - InRole</title>
+    <link href="/static/css/golos_text.css" rel="stylesheet">
+    <link href="/static/css/main.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+          rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round"
+          rel="stylesheet">
+    <script>window.jQuery || document.write('<script src="{{
   url_for('static', filename='jquery3.6.0.js') }}">\x3C/script>')</script>
-        <script type=text/javascript>
-            $SCRIPT_ROOT = {{ request.script_root|tojson }};
-        </script>
-    {% endblock %}
+    <script type=text/javascript>
+        $SCRIPT_ROOT = {{ request.script_root|tojson }};
+    </script>
+    <script type="text/javascript" src="{{ url_for("static", filename="search.js") }}"></script>
+{% endblock %}
 </head>
 <body>
 <div class="header">
     <div class="header-content">
         <span class="header-title"><img src="../static/img/site-logo.png" alt="site logo"></span>
         <span class="header-label">role-based social network</span>
-        <label class="label-search">
-            <input type="text" placeholder="search for users">
-        </label>
-        <i class="material-icons">search</i>
+        <div class="dropdown-container">
+            <label class="search-label">
+                <input type="text" placeholder="search for users" id="search_users">
+                <span class="material-icons">search</span>
+            </label>
+            <div id="dropdown-search" class="dropdown-content">
+            </div>
+        </div>
         {% if not current_user.is_anonymous %}
             <button class="new-button" style="width: max-content" id="logout-button"
                     onclick="location.href='{{ url_for("logout") }}'"><i

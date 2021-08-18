@@ -33,19 +33,32 @@ class User(UserMixin, Base):
 
     chats = relationship("Chat")
     groups = relationship("Group", secondary="user_group_link", backref="groups")
-    user_friends = relationship("Friend", cascade="all, delete-orphan")
+    # user_friends = relationship("Friend", cascade="all, delete-orphan")
     user_posts = relationship("UserPost", cascade="all, delete-orphan")
     user_characters = relationship("UserCharacter", cascade='all, delete')
+
+    @property
+    def serialize(self):
+        return {
+            "id": self.id,
+            "username": self.username,
+            "avatar": self.avatar,
+            "status": self.status,
+            "friends_count": self.friend_count
+        }
 
 
 class Friend(Base):
     __tablename__ = 'friends'
-    first_user = Column(INTEGER, ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
-    second_user = Column(INTEGER, primary_key=True)
+    first_user_id = Column(INTEGER, ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
+    second_user_id = Column(INTEGER, ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
     is_request = Column(Boolean, nullable=False, default=True)
     date_added = Column(DateTime, nullable=False, default=datetime.datetime.now())
     first_ulevel = Column(INTEGER, nullable=False, default=5)
     second_ulevel = Column(INTEGER, nullable=False, default=5)
+
+    first_user = relationship("User", foreign_keys=[first_user_id])
+    second_user = relationship("User", foreign_keys=[second_user_id])
 
 
 class UserPost(Base):

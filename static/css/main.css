@@ -23,7 +23,7 @@
     flex-direction: row;
     align-content: space-evenly;
     align-items: center;
-    gap: 10px;
+    gap: 20px;
     height: 40px;
 }
 
@@ -31,15 +31,15 @@
     height: 30px;
 }
 
-#login-button{
+#login-button {
     margin-left: 40px;
 }
 
-.header-content > .new-button:hover{
+.header-content > .new-button:hover {
     background: var(--object-hover-color)
 }
 
-.header-content > .new-button:active{
+.header-content > .new-button:active {
     background: #56658A;
 }
 
@@ -49,36 +49,90 @@
     margin-left: 3%;
 }
 
-.header-title > img{
+.header-title > img {
     width: 130px;
     height: auto;
 }
 
-.header-label{
+.header-label {
     margin-left: 6%;
     font-size: 0.9em;
     color: var(--object-bg-text-color);
 }
 
-.header-avatar{
+.header-avatar {
     height: 50px;
     width: 50px;
     border-radius: 40px;
     margin-right: 10%;
 }
 
-.label-search {
+.dropdown-container {
     padding: 0 0 0 30px;
     margin-left: auto;
+    position: relative;
+    display: inline-block;
 }
 
-.label-search input{
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #ffffff;
+    min-width: 200px;
+    max-width: 200px;
+    border: 1px solid #ddd;
+    z-index: 1;
+}
+
+.dropdown-profile {
+    display: flex;
+    flex-direction: row;
+    cursor: pointer;
+}
+
+.dropdown-profile:hover {
+    background: var(--object-hover-color);
+}
+
+.dropdown-profile-avatar {
+    width: 40%;
+    max-width: 50px;
+    height: auto;
+    max-height: 50px;
+    border-radius: 30px;
+}
+
+.dropdown-profile-description {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-left: 10px;
+    font-size: 0.9em;
+    word-wrap: break-word;
+    overflow: hidden;
+}
+
+.dropdown-profile-description-status {
+    font-size: 0.86em;
+    color: var(--object-bg-text-color);
+}
+
+.dropdown-profile-description-type {
+    font-size: 0.82em;
+    color: var(--object-bg-text-color);
+}
+
+.search-label > input[type=text] {
     font-family: "Golos Text", sans-serif;
     border-radius: 5px;
     border: 2px solid var(--object-bg-text-color);
     padding-left: 5px;
     height: 20px;
-    width: 150px;
+    width: 190px;
+}
+
+.search-label > .material-icons {
+    vertical-align: middle;
 }
 
 .left-row {
@@ -176,7 +230,7 @@
     text-align: center;
 }
 
-.left-row > .new-button{
+.left-row > .new-button {
     text-align: left;
 }
 
@@ -188,12 +242,12 @@
     background: rgba(157, 185, 222, 0.7);
 }
 
-.material-icons{
+.material-icons {
     display: inline-flex;
     vertical-align: text-bottom;
 }
 
-.material-icons-round{
+.material-icons-round {
     display: inline-flex;
     vertical-align: text-bottom;
 }
@@ -221,7 +275,7 @@
     padding: 10px;
 }
 
-.tag-button-small{
+.tag-button-small {
     border-radius: 8px;
     background: #d5d6e4;
     font-size: 0.8em;
