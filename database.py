@@ -45,6 +45,10 @@ class DataBase:
         else:
             return False
 
+    def set_online(self, user_id: int, online: bool):
+        self.session.query(User).filter(User.id == user_id).update({User.is_online: online})
+        self.session.commit()
+
     def get_user(self, userid):
         user = self.session.query(User).filter(User.id == userid).first()
         return user
@@ -61,12 +65,10 @@ class DataBase:
             return False
 
     # TODO: ВАЖНО! Необходимо получать всю информацию не по юзернейму, а по айди! По-идее так более безопасно
-    def userdata_by_name(self, name: str):
-        user = self.session.query(User).filter(User.username == name).first()
+    def userdata_by_name(self, userid: str):
+        user = self.session.query(User).filter(User.id == userid).first()
         if user:
-            return {"friends_count": user.friend_count, "avatar": user.avatar, "description": user.description,
-                    "can_post": user.other_publish, "email": user.email, "success": True,
-                    "min_post_lvl": user.min_posting_lvl}
+            return user.serialize
         else:
             return {"success": False}
 
@@ -155,10 +157,9 @@ class DataBase:
 
     def search_for(self, search_query: str, search_type: str = 'user') -> list:
         if search_type == 'user':
-            query = self.session.query(User).filter(User.username.like(f"%{search_query.lower()}%")).limit(5) \
+            query = self.session.query(User).filter(User.username.like(f"%{search_query}%")).limit(5) \
                 .all()
             users = [user.serialize for user in query]
-            print(users)
         else:
             query = self.session.query().all()
         return users
@@ -338,10 +339,9 @@ class DataBase:
             new_messages[0] = str(message.message_date)
         return new_messages
 
-    def send_message(self, user: str, chat_id: int, msg: str, attachment: str = None) -> bool:
-        userid = self.get_userid_by_name(user)
+    def send_message(self, user: int, chat_id: int, msg: str, attachment: str = None) -> bool:
         chat = self.session.query(Chat).filter(Chat.id == chat_id).first()
-        self.session.add(Message(fromuserid=userid, message_date=datetime.datetime.now(), message=msg, chat_id=chat.id,
+        self.session.add(Message(fromuserid=user, message_date=datetime.datetime.now(), message=msg, chat_id=chat.id,
                                  attachments=attachment))
         self.session.commit()
         return True
@@ -363,51 +363,49 @@ class DataBase:
     def add_friend(self, user: int, second_user: int) -> bool:
         """This function is checking if friend already exists and if it isn't, adds a new entry to database\n
         returns boolean value, true if new entry was created and false if entry already existed"""
-        if self.session.query(Friend).filter(
+        if self.session.query(Friend).filter(  # Checking if there already existing entry
                 or_(and_(Friend.first_user_id == user, Friend.second_user_id == second_user),
                     and_(Friend.first_user_id == second_user, Friend.second_user_id == user))):
             return False
         else:
-            self.session.add(Friend(first_user_id=user, second_user_id=second_user))
+            self.session.add(Friend(first_user_id=user, second_user_id=second_user))  # Adding new entry
             self.session.commit()
             return True
 
-    # TODO: при отмене запроса, кол-во друзей не нужно уменьшать
-    def remove_friend(self, user, second_user):
-        user = self.get_userid_by_name(user)
-        second_user = self.get_userid_by_name(second_user)
-        self.session.query(Friend).filter(Friend.first_user == user, Friend.second_user == second_user).delete()
-        self.session.query(Friend).filter(Friend.first_user == second_user, Friend.second_user == user).delete()
-        self.session.query(User).filter(User.id == user).update({User.friend_count: User.friend_count - 1})
-        self.session.query(User).filter(User.id == second_user).update({User.friend_count: User.friend_count - 1})
+    def remove_friend(self, user: int, second_user: int) -> bool:
+        """This function removes friend and decreases amount of friends both users have\n
+        returns boolean value, true if deletion was successful and false if there was no rows deleted"""
+        rows = self.session.query(Friend).filter(  # Getting existing rows
+            or_(and_(Friend.first_user_id == user, Friend.second_user_id == second_user),
+                and_(Friend.first_user_id == second_user, Friend.second_user_id == user))).first()
+        if not rows:  # If there is no existing entries, then no need for further actions
+            return False
+        if rows > 0 and not rows.is_request:
+            # If entry is just a friend request then no need to change amount of friends
+            rows.delete()
+            self.session.query(User).filter(User.id == user).update({User.friend_count: User.friend_count - 1})
+            self.session.query(User).filter(User.id == second_user).update({User.friend_count: User.friend_count - 1})
+            self.session.commit()
+            return True
+        rows.delete()
         self.session.commit()
-        return True
+        return False
 
-    def accept_request(self, user, second_user):
-        userid = self.get_userid_by_name(user)
-        s_userid = self.get_userid_by_name(second_user)
-        self.session.query(Friend).filter(Friend.first_user == userid, Friend.second_user == s_userid).update(
+    def accept_request(self, user: int, second_user: int) -> bool:
+        self.session.query(Friend).filter(Friend.first_user_id == user, Friend.second_user_id == second_user).update(
             {Friend.is_request: False, Friend.first_ulevel: 4, Friend.second_ulevel: 4})
-        self.session.query(User).filter(User.id == userid).update({User.friend_count: User.friend_count + 1})
-        self.session.query(User).filter(User.id == s_userid).update({User.friend_count: User.friend_count + 1})
+        self.session.query(User).filter(User.id == user).update({User.friend_count: User.friend_count + 1})
+        self.session.query(User).filter(User.id == second_user).update({User.friend_count: User.friend_count + 1})
         self.session.commit()
         return True
 
-    def is_friend(self, user: str, second_user: str) -> dict:
-        userid = self.get_userid_by_name(user)
-        s_userid = self.get_userid_by_name(second_user)
-        req = self.session.query(Friend).filter(Friend.first_user == userid, Friend.second_user == s_userid).first()
-        if req:
-            if not req.is_request:
-                return {"friend": True, "request": False, "sent_by": user, "u1_lvl": req.second_ulevel,
-                        "u2_lvl": req.first_ulevel}
-            else:
-                return {"friend": True, "request": True, "sent_by": user, "u1_lvl": 5}
-        req = self.session.query(Friend).filter(Friend.first_user == s_userid, Friend.second_user == userid).first()
-        if req:
-            if not req.is_request:
-                return {"friend": True, "request": False, "sent_by": second_user, "u1_lvl": req.first_ulevel,
-                        "u2_lvl": req.second_ulevel}
-            else:
-                return {"friend": True, "request": True, "sent_by": second_user, "u1_lvl": 5}
-        return {"friend": False, "request": False, "sent_by": None, "u1_lvl": 5}
+    def is_friend(self, user: int, second_user: int):
+        """This function checks if user is a friend of current user\n
+        returns either a dict with all friend connection data or just bool false"""
+        friend = self.session.query(Friend).filter(
+            or_(and_(Friend.first_user_id == user, Friend.second_user_id == second_user),
+                and_(Friend.first_user_id == second_user, Friend.second_user_id == user))).first()
+        if not friend:
+            return False
+        else:
+            return friend.serialize

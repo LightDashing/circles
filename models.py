@@ -1,4 +1,4 @@
-from sqlalchemy import Column, INTEGER, Text, ForeignKey, DateTime, Boolean, or_, and_
+from sqlalchemy import Column, INTEGER, Text, ForeignKey, DateTime, Boolean, or_, and_, Index
 from sqlalchemy.dialects.postgresql import ARRAY, VARCHAR
 from sqlalchemy.engine import create_engine
 from sqlalchemy.orm import relationship
@@ -18,10 +18,12 @@ class User(UserMixin, Base):
     email = Column(VARCHAR(30), unique=True, nullable=False)
     password = Column(VARCHAR(512), nullable=False)
     registration_date = Column(DateTime, nullable=False, default=datetime.datetime.now())
+    last_time_online = Column(DateTime, nullable=False)
+    is_online = Column(Boolean)
     # email_active = Column(Boolean, nullable=False, default=False)
     description = Column(VARCHAR())
     status = Column(VARCHAR(30), nullable=False, default=' ')
-    avatar = Column(VARCHAR(128))
+    avatar = Column(VARCHAR(128), default='..\\static\\img\\user-avatar.svg')
     friend_count = Column(INTEGER, nullable=False, default=0)
     # Могут ли другие люди оставлять у этого пользователя записи на стене
     other_publish = Column(Boolean, nullable=False, default=True)
@@ -33,7 +35,7 @@ class User(UserMixin, Base):
 
     chats = relationship("Chat")
     groups = relationship("Group", secondary="user_group_link", backref="groups")
-    # user_friends = relationship("Friend", cascade="all, delete-orphan")
+    # user_friends = relationship("Friend", backref="id",cascade="all, delete-orphan")
     user_posts = relationship("UserPost", cascade="all, delete-orphan")
     user_characters = relationship("UserCharacter", cascade='all, delete')
 
@@ -44,10 +46,16 @@ class User(UserMixin, Base):
             "username": self.username,
             "avatar": self.avatar,
             "status": self.status,
-            "friends_count": self.friend_count
+            "friends_count": self.friend_count,
+            "is_online": self.is_online,
+            "last_time_online": self.last_time_online,
+            "description": self.description,
+            "v_lvl": self.min_posting_lvl,
         }
 
 
+#  TODO: Новая система, теперь друзья должны хранить не уровень доверия, а теги и по тегам будут показываться посты,
+#   нужно переделать для этого
 class Friend(Base):
     __tablename__ = 'friends'
     first_user_id = Column(INTEGER, ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
@@ -59,6 +67,17 @@ class Friend(Base):
 
     first_user = relationship("User", foreign_keys=[first_user_id])
     second_user = relationship("User", foreign_keys=[second_user_id])
+
+    @property
+    def serialize(self):
+        return {
+            "first_user_id": self.first_user_id,
+            "second_user_id": self.second_user_id,
+            "is_request": self.is_request,
+            "date_added": self.date_added,
+            "first_ulevel": self.first_ulevel,
+            "second_ulevel": self.second_ulevel
+        }
 
 
 class UserPost(Base):

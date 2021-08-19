@@ -17,6 +17,7 @@
         $SCRIPT_ROOT = {{ request.script_root|tojson }};
     </script>
     <script type="text/javascript" src="{{ url_for("static", filename="search.js") }}"></script>
+    <script>const current_userid = '{{ current_user.id }}'</script>
 {% endblock %}
 </head>
 <body>

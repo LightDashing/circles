@@ -10,18 +10,32 @@
     <div class="user-card">
         <div class="user-card-avatar-section">
             <div class="avatar-div">
-                <img class="avatar" alt="User doesn't have avatar" src="{{ avatar }}">
+                <img class="avatar" alt="User doesn't have avatar" src="{{ user.avatar }}">
             </div>
             <div class="user-card-nickname-section">
-                <span class="user-nickname">{{ name }}</span>
+                <span class="user-nickname">{{ user.username }}</span>
                 <span style="font-size: 0.8em">common user</span>
-                <span style="font-size: 0.8em">last seen yesterday</span>
-                <span class="tag-button-small">change cover</span>
+                {% if user.is_online %}
+                    <span style="font-size: 0.8em; color: green">online</span>
+                {% else %}
+                    <span style="font-size: 0.8em">{{ user.last_time_online }}</span>
+                {% endif %}
+                <div class="user-card-other-block">
+                    {% if name != current_user.username %}
+                        <button class="tag-button-small" id="add_friend" value="Add friend">Add friend</button>
+                        <button class="tag-button-small" id="remove_friend" value="">Remove friend</button>
+                        <button class="tag-button-small" id="decline_request" value="">Decline request</button>
+                        <button class="tag-button-small" id="accept_request" value="">Accept request</button>
+                        <button class="tag-button-small" id="cancel_request" value="">Cancel request</button>
+                    {% else %}
+                        <span class="tag-button-small">change cover</span>
+                    {% endif %}
+                </div>
             </div>
         </div>
         <div class="user-card-description">
             <span style="color: var(--object-bg-text-color)">About me</span>
-            <a class="user-description">{{ descrip }}</a>
+            <a class="user-description">{{ user.description }}</a>
         </div>
     </div>
     {% if not current_user.is_anonymous %}
@@ -29,7 +43,7 @@
         <div class="create_post" id="create_post">
             <label class="create_post-label" for="user_post">Create new post</label>
             <textarea id="user_post"></textarea>
-            {% if name == session['username'] %}
+            {% if name == current_user.username %}
                 <label for="view_level">Select post view level</label>
                 <select class="post-button" name="view_level" id="view_level">
                     <option value="5">5 (For everyone)</option>
@@ -77,44 +91,35 @@
 {% block right_row %}
     {{ super() }}
     {% block your_profile %}{% endblock %}
-    {% if name != session['username'] %}
-        <div class="friend_buttons">
-            <button class="new-button" id="add_friend" value="Add friend">Add friend</button>
-            <button class="new-button" id="remove_friend" value="">Remove friend</button>
-            <button class="new-button" id="decline_request" value="">Decline request</button>
-            <button class="new-button" id="accept_request" value="">Accept request</button>
-            <button class="new-button" id="cancel_request" value="">Cancel request</button>
-        </div>
-    {% endif %}
 {% endblock %}
 {% block scripts %}
     <script type="text/javascript">
-        init("{{name}}", "{{current_user.username}}");
+        init("{{user.username}}", "{{current_user.username}}");
         $("#add_friend").click(function () {
-            add_friend('{{name}}')
+            add_friend('{{user.username}}')
         })
         $("#cancel_request").click(function () {
-            remove_friend('{{name}}')
+            remove_friend('{{user.username}}')
         })
         $("#accept_request").click(function () {
-            accept_request('{{ name }}')
+            accept_request('{{ user.username }}')
         })
         $("#decline_request").click(function () {
-            remove_friend('{{ name }}')
+            remove_friend('{{ user.username }}')
         })
         $("#remove_friend").click(function () {
-            remove_friend('{{ name }}')
+            remove_friend('{{ user.username }}')
         })
         $(function () {
             $("#publish_post").click(function () {
-                {% if v_lvl == 0 %}
+                {% if user.v_lvl == 0 %}
                     let view_lvl = document.getElementById("view_level").value
                     let whereid = null
                     let fromid = null
                 {% else %}
-                    let view_lvl = {{v_lvl}}
-                        let whereid = "{{name}}"
-                    let fromid = "{{session.get('username')}}"
+                    let view_lvl = {{user.v_lvl}}
+                        let whereid = "{{user.username}}"
+                    let fromid = "{{current_user.username}}"
                 {% endif %}
                 publish_post($("#user_post").val(), null, view_lvl, whereid, fromid)
             })

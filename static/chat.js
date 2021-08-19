@@ -3,7 +3,7 @@ function send_message(message, user, chat_id) {
     $.ajax({
         url: '/chat/send_message',
         method: 'POST',
-        data: JSON.stringify({"user": user, "message": message, "chat_id": chat_id, "attachment": null}),
+        data: JSON.stringify({"message": message, "chat_id": chat_id, "attachment": null}),
         dataType: 'json',
         contentType: 'application/json',
         success: function () {

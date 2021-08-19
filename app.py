@@ -47,6 +47,7 @@ login_manager.init_app(app)
 @login_manager.user_loader
 def load_user(user_id):
     with OpenConnectionToBD(db):
+        db.set_online(user_id, True)
         user = db.get_user(user_id)
     return user
 
@@ -112,13 +113,16 @@ def users_page(name):
         if current_user.is_anonymous:
             view_level = 5
         elif name != current_user.username:
-            view_level = db.is_friend(name, current_user.username)['u1_lvl']
+            friend_data = db.is_friend(db.get_userid_by_name(name), current_user.id)
+            if friend_data:
+                view_level = friend_data['first_ulevel']
+            else:
+                view_level = 5
         else:
             view_level = 0
-        user = db.userdata_by_name(name)
+        user = db.userdata_by_name(db.get_userid_by_name(name))
         posts = db.get_posts_by_id(name, view_level)
-    return render_template('user.html', name=name, descrip=user['description'], posts=posts, v_lvl=view_level,
-                           avatar=user['avatar'])
+    return render_template('user.html', name=name, posts=posts, user=user)
 
 
 @app.route('/groups/<group_name>', methods=['GET'])
@@ -168,7 +172,7 @@ def create_group():
 def user_groups():
     with OpenConnectionToBD(db):
         user_subs = db.get_user_groups(current_user.username)
-    return render_template('user_groups.html', groups=user_subs, name=current_user.username)
+    return render_template('user_groups.html', groups=user_subs)
 
 
 @app.route('/_publish_post', methods=['POST'])
@@ -216,7 +220,7 @@ def accept_friend():
     if request.method == 'POST':
         username = request.get_json()['name']
         with OpenConnectionToBD(db):
-            db.accept_request(username, current_user.username)
+            db.accept_request(current_user.id, db.get_userid_by_name(username))
         return jsonify(True)
     return url_for(error_404(Exception("Such page doesn't exists")))
 
@@ -227,7 +231,7 @@ def cancel_request():
     if request.method == 'POST':
         username = request.get_json()['name']
         with OpenConnectionToBD(db):
-            db.remove_friend(current_user.username, username)
+            db.remove_friend(current_user.id, db.get_userid_by_name(username))
         return jsonify(True)
     return url_for(error_404(Exception("Such page doesn't exists")))
 
@@ -238,7 +242,7 @@ def check_is_friend():
     if request.method == 'POST':
         username = request.get_json()['name']
         with OpenConnectionToBD(db):
-            fr_check = db.is_friend(current_user.username, username)
+            fr_check = db.is_friend(current_user.id, db.get_userid_by_name(username))
             return jsonify(fr_check)
 
 
@@ -323,7 +327,7 @@ def send_message_v2():
     cleaner = re.compile('<.*?>')
     message = re.sub(cleaner, '', data['message'])
     with OpenConnectionToBD(db):
-        db.send_message(data['user'], data['chat_id'], message, data['attachment'])
+        db.send_message(current_user.id, data['chat_id'], message, data['attachment'])
     return jsonify(True)
 
 
@@ -420,6 +424,8 @@ def login():
 @app.route('/logout')
 @login_required
 def logout():
+    with OpenConnectionToBD(db):
+        db.set_online(current_user.id, False)
     logout_user()
     return redirect(request.path)
 

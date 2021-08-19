@@ -18,15 +18,16 @@ function init(name, username) {
         dataType: 'json',
         contentType: 'application/json',
         success: function (data) {
-            if (data['friend'] && data['request'] && data['sent_by'] === username) {
-                $("#cancel_request").show();
-            } else if (!data['friend']) {
-                $("#add_friend").show();
-            } else if (data['friend'] && !data['request']) {
-                $("#remove_friend").show();
-            } else if (data['friend'] && data['request'] && data['sent_by'] !== username) {
-                $("#accept_request").show()
+            console.log(data)
+            if (data['first_user_id'] === current_userid && data['is_request']) {
+                $("#cancel_request").show()
+            } else if (data['second_user_id'] === current_userid && data['is_request']) {
                 $("#decline_request").show()
+                $("#accept_request").show()
+            } else if (!data['is_request'] && data) {
+                $("#remove_friend").show()
+            } else if (data === false) {
+                $("#add_friend").show();
             }
         },
         error: function (data) {

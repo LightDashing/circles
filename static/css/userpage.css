@@ -46,6 +46,20 @@
     background: linear-gradient(90deg, rgba(206, 214, 231, 1) 4%, rgba(209, 218, 235, 1) 30%, rgba(246, 247, 251, 1) 63%);
 }
 
+.user-card-other-block{
+    display: inline-block;
+}
+
+.user-card-other-block > .tag-button-small{
+    border: none;
+    height: 30px;
+    background: #B9C9EC;
+    cursor: pointer;
+}
+.user-card-other-block > .tag-button-small:hover{background: #AEC4F2;}
+.user-card-other-block > .tag-button-small:active{background: #A9C2F8}
+
+
 .avatar {
     border-radius: 15px;
     width: 150px;
