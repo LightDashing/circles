@@ -18,7 +18,6 @@ function init(name, username) {
         dataType: 'json',
         contentType: 'application/json',
         success: function (data) {
-            console.log(data)
             if (data['first_user_id'] === current_userid && data['is_request']) {
                 $("#cancel_request").show()
             } else if (data['second_user_id'] === current_userid && data['is_request']) {
@@ -42,7 +41,8 @@ function add_friend(name) {
         data: JSON.stringify({'name': name}),
         dataType: 'json',
         contentType: 'application/json',
-        success: function () {
+        success: function (data) {
+            console.log(data)
             $("#add_friend").hide()
             $("#cancel_request").show()
         }
@@ -96,10 +96,8 @@ function publish_post(post_msg, post_attach, view_level, whereid, fromid) {
         dataType: 'json',
         contentType: 'application/json',
         success: function (data) {
-            console.log(data)
         },
         error: function () {
-            console.log('Failure')
         }
     })
 }

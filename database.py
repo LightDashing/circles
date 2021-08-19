@@ -1,4 +1,4 @@
-from sqlalchemy import or_, and_, func
+from sqlalchemy import or_, and_, func, delete
 from sqlalchemy.engine import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -73,12 +73,14 @@ class DataBase:
             return {"success": False}
 
     def change_username(self, old_name: str, new_name: str) -> int:
-        """This function changes username, returns one of the codes
+        """
+        This function changes username, returns one of the codes
         0: username was changed successfully
         1: user with that username already exists
         2: username length is incorrect
         3: new username same as old username
-        -1: some unknown error occurred on database side"""
+        -1: some unknown error occurred on database side
+        """
         if not new_name or len(new_name) < 3 or len(new_name) > 30:
             return 2
         if old_name == new_name:
@@ -93,9 +95,11 @@ class DataBase:
             return -1
 
     def change_description(self, name: str, desc: str) -> int:
-        """This function changes user description, it returns one of the codes
+        """
+        This function changes user description, it returns one of the codes
         0: description was successfully changed
-        -1: some unknown error occurred on database side"""
+        -1: some unknown error occurred on database side
+        """
         if not desc:
             desc = 'None was provided'
         try:
@@ -106,12 +110,14 @@ class DataBase:
             return -1
 
     def change_mail(self, name: str, email: str) -> int:
-        """This function changes user e-mail, it returns one of the codes
+        """
+        This function changes user e-mail, it returns one of the codes
         0: email was successfully changed
         1: email isn't valid
         2: there already exist user with such email
         3: new email same as old email
-        -1: some unknown error occurred on database side"""
+        -1: some unknown error occurred on database side
+        """
         pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
         if not re.fullmatch(pattern, email):
             return 1
@@ -127,10 +133,12 @@ class DataBase:
             return -1
 
     def ch_min_posting_lvl(self, name: str, lvl: int) -> int:
-        """This function changes minimum level other users need, to post on your wall, it returns one of the codes
+        """
+        his function changes minimum level other users need, to post on your wall, it returns one of the codes
         0: level was changed successfully
         1: level was incorrect
-        -1: some unknown error occurred on database side"""
+        -1: some unknown error occurred on database side
+        """
         if lvl > 5 or lvl < 0:
             return 1
         try:
@@ -141,9 +149,11 @@ class DataBase:
             return -1
 
     def change_publish_settings(self, name: str, publish: bool) -> int:
-        """This function can change if other users may post on your wall or not, it returns one of the codes
+        """
+        This function can change if other users may post on your wall or not, it returns one of the codes
         0: publish settings was successfully changed
-        1: some unknown error occurred on database side"""
+        1: some unknown error occurred on database side
+        """
         try:
             self.session.query(User).filter(User.username == name).update({User.other_publish: publish})
             self.session.commit()
@@ -361,11 +371,13 @@ class DataBase:
     # TODO: ВАЖНО! в следствии изменения таблицы с друзьями весь этот ад не работает, нужно переделывать!
 
     def add_friend(self, user: int, second_user: int) -> bool:
-        """This function is checking if friend already exists and if it isn't, adds a new entry to database\n
-        returns boolean value, true if new entry was created and false if entry already existed"""
+        """
+        This function is checking if friend already exists and if it isn't, adds a new entry to database\n
+        returns boolean value, true if new entry was created and false if entry already existed
+        """
         if self.session.query(Friend).filter(  # Checking if there already existing entry
                 or_(and_(Friend.first_user_id == user, Friend.second_user_id == second_user),
-                    and_(Friend.first_user_id == second_user, Friend.second_user_id == user))):
+                    and_(Friend.first_user_id == second_user, Friend.second_user_id == user))).all():
             return False
         else:
             self.session.add(Friend(first_user_id=user, second_user_id=second_user))  # Adding new entry
@@ -373,25 +385,31 @@ class DataBase:
             return True
 
     def remove_friend(self, user: int, second_user: int) -> bool:
-        """This function removes friend and decreases amount of friends both users have\n
-        returns boolean value, true if deletion was successful and false if there was no rows deleted"""
-        rows = self.session.query(Friend).filter(  # Getting existing rows
+        """
+        This function removes friend and decreases amount of friends both users have\n
+        returns boolean value, true if deletion was successful and false if there was no rows deleted
+        """
+        row = self.session.query(Friend).filter(  # Getting existing rows
             or_(and_(Friend.first_user_id == user, Friend.second_user_id == second_user),
                 and_(Friend.first_user_id == second_user, Friend.second_user_id == user))).first()
-        if not rows:  # If there is no existing entries, then no need for further actions
+        if not row:  # If there is no existing entries, then no need for further actions
             return False
-        if rows > 0 and not rows.is_request:
+        if not row.is_request:
             # If entry is just a friend request then no need to change amount of friends
-            rows.delete()
+            self.session.query(Friend).filter(and_(Friend.first_user_id == row.first_user_id,
+                                                   row.second_user_id == Friend.second_user_id)).delete()
+            # There we are deleting entry and decreasing friends count
             self.session.query(User).filter(User.id == user).update({User.friend_count: User.friend_count - 1})
             self.session.query(User).filter(User.id == second_user).update({User.friend_count: User.friend_count - 1})
             self.session.commit()
             return True
-        rows.delete()
+        # Just deleting entry
+        self.session.query(Friend).filter(and_(Friend.first_user_id == row.first_user_id,
+                                               row.second_user_id == Friend.second_user_id)).delete()
         self.session.commit()
         return False
 
-    def accept_request(self, user: int, second_user: int) -> bool:
+    def accept_request(self, second_user: int, user: int) -> bool:
         self.session.query(Friend).filter(Friend.first_user_id == user, Friend.second_user_id == second_user).update(
             {Friend.is_request: False, Friend.first_ulevel: 4, Friend.second_ulevel: 4})
         self.session.query(User).filter(User.id == user).update({User.friend_count: User.friend_count + 1})
@@ -400,8 +418,10 @@ class DataBase:
         return True
 
     def is_friend(self, user: int, second_user: int):
-        """This function checks if user is a friend of current user\n
-        returns either a dict with all friend connection data or just bool false"""
+        """
+        This function checks if user is a friend of current user\n
+        returns either a dict with all friend connection data or just bool false
+        """
         friend = self.session.query(Friend).filter(
             or_(and_(Friend.first_user_id == user, Friend.second_user_id == second_user),
                 and_(Friend.first_user_id == second_user, Friend.second_user_id == user))).first()

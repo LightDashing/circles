@@ -209,8 +209,8 @@ def add_friend():
     if request.method == 'POST':
         username = request.get_json()['name']
         with OpenConnectionToBD(db):
-            db.add_friend(current_user.id, db.get_userid_by_name(username))
-        return jsonify(True)
+            result = db.add_friend(current_user.id, db.get_userid_by_name(username))
+        return jsonify(result)
     return url_for(error_404(Exception("Such page doesn't exists")))
 
 
