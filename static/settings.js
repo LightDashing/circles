@@ -3,17 +3,16 @@ const IMAGES_EXTENSIONS = ['png', 'jpg', 'jpeg', 'jfif', 'pjpeg', 'pjp']
 function send_avatar(data) {
     let base64img = data.toDataURL()
     $.ajax({
-        url: '/user/_upload_settings',
+        url: '/api/upload_settings',
         method: 'POST',
         dataType: 'json',
         contentType: 'application/json',
         data: JSON.stringify({"image": base64img}),
         success: function updateModal(data) {
             console.log(data)
-            if (data === 2){
+            if (data === 2) {
                 alert('This file is too large!')
-            }
-            else if (data === 1){
+            } else if (data === 1) {
                 alert('You little cheater')
             }
         }
@@ -22,7 +21,7 @@ function send_avatar(data) {
 
 function send_settings(form) {
     $.ajax({
-        url: '/user/_upload_settings',
+        url: '/api/upload_settings',
         method: 'POST',
         processData: false,
         contentType: false,

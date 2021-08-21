@@ -1,5 +1,5 @@
 from sqlalchemy import Column, INTEGER, Text, ForeignKey, DateTime, Boolean, or_, and_, Index
-from sqlalchemy.dialects.postgresql import ARRAY, VARCHAR
+from sqlalchemy.dialects.postgresql import VARCHAR
 from sqlalchemy.engine import create_engine
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
@@ -11,6 +11,7 @@ Base = declarative_base()
 
 # TODO: ВАЖНО! вернуть ограничения по полям, сделать его большим, но существующим, чтобы нельзя было сохранять
 #  десятки мегабайт текста
+
 class User(UserMixin, Base):
     __tablename__ = 'users'
     id = Column(INTEGER, primary_key=True, autoincrement=True)
@@ -29,12 +30,14 @@ class User(UserMixin, Base):
     other_publish = Column(Boolean, nullable=False, default=True)
     # Здесь можно указать уровень людей, способных постить на стене
     min_posting_lvl = Column(INTEGER, nullable=False, default=5)
-    fandom_tags = ARRAY(VARCHAR(128))
     # TODO: в группах можно ограничить очки с которыми человек может начинать постить, пока очки не реализованы
     # user_points = Column(INTEGER, default=0)
+    # TODO: ещё одна фишка! добавить возможность, чтобы пользователя можно было просматривать в списках состоящих
+    #  в группе, либо чтобы его видели только друзья, либо чтобы только друзья тоже состоящие в этой группе
 
-    chats = relationship("Chat")
-    groups = relationship("Group", secondary="user_group_link", backref="groups")
+    # chats = relationship("Chat")
+    groups = relationship("Group", secondary="user_group_link", back_populates="users")
+    chats = relationship("Chat", secondary="user_chat_link", back_populates="users")
     # user_friends = relationship("Friend", backref="id",cascade="all, delete-orphan")
     user_posts = relationship("UserPost", cascade="all, delete-orphan")
     user_characters = relationship("UserCharacter", cascade='all, delete')
@@ -91,8 +94,6 @@ class UserPost(Base):
     view_level = Column(INTEGER, nullable=False, default=5)
     date_added = Column(DateTime, nullable=False, default=datetime.datetime.now())
     message = Column(VARCHAR())
-    tags = Column(ARRAY(VARCHAR(128)))
-    attachment = Column(ARRAY(VARCHAR(128)))
 
 
 class UserCharacter(Base):
@@ -104,7 +105,6 @@ class UserCharacter(Base):
     ch_desc_short = Column(VARCHAR(128), nullable=False, default="None")
     ch_desc_long = Column(VARCHAR(), nullable=False, default="None")
     ch_main_fandom = Column(INTEGER, nullable=False, default=1)
-    ch_fandom_tags = Column(ARRAY(VARCHAR(128)))
     ch_skills = Column(VARCHAR())
 
     @property
@@ -134,14 +134,15 @@ class Group(Base):
     status = Column(VARCHAR(128))
     group_name = Column(VARCHAR(128), nullable=False, unique=True)
     owner = Column(INTEGER, nullable=False)
-    fandom_tags = Column(ARRAY(VARCHAR(128)))
-    moderators = Column(ARRAY(INTEGER))
+    # TODO: и теги и модераторов нужно сделать отдельной таблицей
+    # fandom_tags = Column(ARRAY(VARCHAR(128)))
+    # moderators = Column(ARRAY(INTEGER))
     description = Column(VARCHAR(), nullable=False, default='This group have no description')
     rules = Column(VARCHAR(1024), nullable=False, default='This group does not have rules. Anarchy rules!')
     # Очки группы. Для чего-нибудь придумать?
     # group_points = Column(INTEGER, default=0)
 
-    users = relationship(User, secondary='user_group_link', cascade="all, delete")
+    users = relationship(User, secondary='user_group_link', cascade="all, delete", back_populates="groups")
     posts = relationship("GroupPost", cascade='all, delete-orphan')
 
     @property
@@ -152,12 +153,8 @@ class Group(Base):
             "group_name": self.group_name,
             "status": self.status,
             "owner": self.owner,
-            "fandom_tags": self.fandom_tags,
-            "moderators": self.moderators,
             "description": self.description,
             "rules": self.rules,
-            "users": self.users,
-            "posts": self.posts
         }
 
 
@@ -167,32 +164,33 @@ class GroupPost(Base):
     group_id = Column(INTEGER, ForeignKey('groups.id', ondelete='CASCADE'))
     post_short = Column(VARCHAR(128), nullable=False, default=' ')
     post_text = Column(VARCHAR())
-    post_attachments = Column(ARRAY(VARCHAR(128)))
-    post_tags = Column(ARRAY(VARCHAR(128)))
+
+
+class UserChatLink(Base):
+    __tablename__ = 'user_chat_link'
+    user_id = Column(INTEGER, ForeignKey("users.id"), primary_key=True)
+    chat_id = Column(INTEGER, ForeignKey("chats.id"), primary_key=True)
 
 
 class Chat(Base):
     __tablename__ = "chats"
     id = Column(INTEGER, primary_key=True, autoincrement=True)
     chatname = Column(VARCHAR(128), nullable=False)
-    userids = Column(ARRAY(INTEGER), nullable=False)
     admin = Column(INTEGER, ForeignKey('users.id'))
-    moders = Column(ARRAY(INTEGER))
     rules = Column(VARCHAR(1024))
-    fandom_tags = Column(ARRAY(VARCHAR(128)))
+    is_dialog = Column(Boolean, nullable=False, default=False)
+
     messages = relationship("Message", cascade="all, delete-orphan")
+    users = relationship(User, secondary='user_chat_link', cascade="all, delete", back_populates="chats")
 
     @property
     def serialize(self):
         return {
             "id": self.id,
             "chatname": self.chatname,
-            "userids": self.userids,
             "admin": self.admin,
-            "moders": self.moders,
             "rules": self.rules,
-            "fandoms": self.fandom_tags,
-            "messages": self.messages
+            "is_dialog": self.is_dialog
         }
 
 
@@ -203,7 +201,6 @@ class Message(Base):
     message_date = Column(DateTime, nullable=False, default=datetime.datetime.now())
     message = Column(VARCHAR(), nullable=False)
     chat_id = Column(INTEGER, ForeignKey('chats.id', ondelete='CASCADE'), nullable=False)
-    attachments = Column(ARRAY(VARCHAR(128)))
 
     @property
     def serialize(self):
@@ -212,5 +209,4 @@ class Message(Base):
             "fromuserid": self.fromuserid,
             "message_date": self.message_date,
             "message": self.message,
-            "attachments": self.attachments
         }

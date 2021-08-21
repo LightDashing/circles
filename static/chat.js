@@ -1,7 +1,7 @@
 function send_message(message, user, chat_id) {
     chat_id = parseInt(chat_id)
     $.ajax({
-        url: '/chat/send_message',
+        url: '/api/send_message',
         method: 'POST',
         data: JSON.stringify({"message": message, "chat_id": chat_id, "attachment": null}),
         dataType: 'json',
@@ -17,7 +17,7 @@ function update_messages(username, chat_id, last_msg_time) {
     chat_id = parseInt(chat_id)
     window.setInterval(function () {
         $.ajax({
-            url: '/chat/load_messages',
+            url: '/api/load_messages',
             method: 'POST',
             data: JSON.stringify({"user": username, "msg_time": msg_time, "type": 'update', "chat_id": chat_id}),
             dataType: 'json',
@@ -27,7 +27,7 @@ function update_messages(username, chat_id, last_msg_time) {
                     try {
                         data[1].forEach(function (el, index) {
                             let element;
-                            if (el["user"] === username){
+                            if (el["user"] === username) {
                                 element = `<div class="message-box" style="align-self: end; background: #CEC5C3">
                                      <span class="from-user"> ${el["user"]}: </span> 
                                     <span class="message-text"> ${el["message"]}</span></div>`
@@ -35,12 +35,6 @@ function update_messages(username, chat_id, last_msg_time) {
                                 element = `<div class="message-box"><span class="from-user"> ${el["user"]}: </span> 
                                     <span class="message-text"> ${el["message"]}</span></div>`
                             }
-                            // let div = document.createElement("div")
-                            // let author = document.createElement("span")
-                            // author.innerHTML = el['user'] + ": "
-                            // let message = document.createElement("span")
-                            // message.innerHTML = el['message'] + "<br>"
-                            // $("#incoming_msg").append(author, message)
                             $("#incoming_msg").append(element)
                         })
                     } catch (TypeError) {
@@ -50,5 +44,5 @@ function update_messages(username, chat_id, last_msg_time) {
                 }
             }
         });
-    }, 1250);
+    }, 4);
 }

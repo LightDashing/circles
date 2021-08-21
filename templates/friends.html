@@ -11,7 +11,10 @@
                 <button class="new-button"
                         onclick="location.href='/users/{{ friend['username'] }}'">{{ friend['username'] }}</button>
                 {#                <a href="/users/{{ friend['name'] }}">{{ friend['name'] }}</a>#}
-                <button class="new-button" onclick="location.href='/dialog/{{ friend['username'] }}'">Write message</button>
+                <button class="new-button"
+                        onclick="location.href='{{ url_for("dialog_page", username=friend['username']) }}'">Write
+                    message
+                </button>
             </div>
         {% endfor %}
     {% else %}
@@ -19,6 +22,6 @@
     {% endif %}
 {% endblock %}
 {% block right_row %}
-{{ super() }}
-{% block other_profile %}{% endblock %}
+    {{ super() }}
+    {% block other_profile %}{% endblock %}
 {% endblock %}

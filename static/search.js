@@ -29,7 +29,7 @@ $(function initSearch() {
 function searchUsers(query) {
     console.log(query)
     $.ajax({
-        url: '/search',
+        url: '/api/search',
         method: 'POST',
         dataType: 'json',
         contentType: 'application/json',
@@ -49,7 +49,7 @@ function searchUsers(query) {
 
 function searchInit() {
     $.ajax({
-        url: '/_get_user_friends',
+        url: '/api/get_user_friends',
         method: 'POST',
         success: function (data) {
             data.forEach(function createDropdown(element) {

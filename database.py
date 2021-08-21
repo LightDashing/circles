@@ -15,8 +15,7 @@ class OpenConnectionToBD:
     def __enter__(self):
         self.db.session = Session(bind=self.db.engine)
 
-    # TODO: Почему exit принимает 3 пустых аргумента none none none?
-    def __exit__(self, x1, x2, x3):
+    def __exit__(self, *args):
         self.db.close()
 
 
@@ -216,22 +215,31 @@ class DataBase:
         user = self.session.query(User).filter(User.username == username).first()
         return user.avatar
 
-    def get_user_chats(self, name: str) -> list:
-        userid = self.get_userid_by_name(name)
-        chats = self.session.query(Chat).filter(Chat.userids.contains([userid])).all()
+    def get_user_chats(self, user_id: int) -> list:
+        """
+        This function is gets all chats which user are member of and returns their serialize property\n
+        :param user_id: int
+        :return: list[dict], "id", "chatname", "admin", "rules"
+        """
+        user = self.session.query(User).filter(User.id == user_id).first()
+        chats = []
+        for chat in user.chats:
+            chats.append(chat.serialize)
         return chats
 
-    def get_user_groups(self, name: str) -> list:
-        user = self.session.query(User).filter(User.username == name).first()
-        user_groups = self.session.query(Group).filter(Group.users.contains(user)).all()
-        return user_groups
-        # userid = self.get_userid_by_name(name)
-        # usergroups = self.session.query(UserGroupLink).filter(UserGroupLink.user_id == userid).all()
-        # groups = []
-        # for group in usergroups:
-        #     groups.append(self.session.query(Group).filter(Group.id == group.id).first())
-        # return groups
+    def get_user_groups(self, user_id: int) -> list:
+        """
+        This function is requesting database and returning all groups user are member of\n
+        :param user_id: int:
+        :return: list[Group]:
+        """
+        user = self.session.query(User).filter(User.id == user_id).first()
+        groups = []
+        for group in user.groups:
+            groups.append(group.serialize)
+        return groups
 
+    # TODO: переписать
     def create_group(self, username: str, group_name: str, group_desc: str, group_rules: str, group_tags: list = None):
         userid = self.get_userid_by_name(username)
         self.session.add(Group(group_name=group_name, owner=userid, fandom_tags=group_tags, description=group_desc,
@@ -239,62 +247,109 @@ class DataBase:
         self.session.commit()
         return True
 
-    def join_group(self, username, group_name):
+    def join_group(self, group_name: str, current_user: User):
+        """
+        This function get current user and add him to group\n
+        :param group_name: str
+        :param current_user: User class
+        :return: None
+        """
         group = self.session.query(Group).filter(Group.group_name == group_name).first()
-        user = self.session.query(User).filter(User.username == username).first()
-        group.users.append(user)
+        group.users.append(current_user)
         self.session.commit()
 
-    def leave_group(self, username, group_name):
+    def leave_group(self, group_name: str, current_user: User):
+        """
+        This function get current user and deletes him from group users list\n
+        :param group_name: str
+        :param current_user: User class
+        :return: None
+        """
         group = self.session.query(Group).filter(Group.group_name == group_name).first()
-        user = self.session.query(User).filter(User.username == username).first()
-        group.users.remove(user)
+        group.users.remove(current_user)
         self.session.commit()
 
-    def is_joined(self, username, group_name):
+    def is_joined(self, group_name: str, current_user: User) -> bool:
+        """
+        This function get current user and check if he is in the group users list\n
+        :param group_name: str
+        :param current_user: User class
+        :return: True if user in group, False if isn't
+        """
         group = self.session.query(Group).filter(Group.group_name == group_name).first()
-        user = self.session.query(User).filter(User.username == username).first()
-        if user in group.users:
+        if current_user in group.users:
             return True
         else:
             return False
 
-    def get_group_data(self, group_name: str):
+    def get_group_data(self, group_name: str) -> dict:
+        """
+        This function returns group.serialize property with it's all info\n
+        :param group_name: str
+        :return: dict, "id", "avatar", "group_name", "status", "owner", "description", "rules"
+        """
         group = self.session.query(Group).filter(Group.group_name == group_name).first()
-        return group
+        return group.serialize
 
-    def create_dialog_chat(self, name: str, username: str) -> str:
-        userid = self.get_userid_by_name(name)
-        s_userid = self.get_userid_by_name(username)
-        chat = Chat(chatname=str(name + ", " + username), userids=[userid, s_userid])
-        self.session.add(chat)
-        user = self.session.query(User).filter(User.id == userid).first()
-        user.chats.append(chat)
-        user = self.session.query(User).filter(User.id == s_userid).first()
-        user.chats.append(chat)
+    def get_user_dialog(self, user_id: int, s_user_id: int) -> Chat:
+        """
+        This function gets chat (dialog) between two users and returns it, if there is no chats, it creates new\n
+        :param user_id: int, User.id
+        :param s_user_id: int, User.id
+        :return: Chat object
+        """
+        users = self.session.query(User).filter(or_(User.id == user_id, User.id == s_user_id)).all()
+        # Getting two users in array with this query
+        chats = self.session.query(Chat).join(User). \
+            filter(and_(Chat.users.any(id=users[0].id), Chat.users.any(id=users[1].id))).all()
+        # Getting all chats which are those two users part of
+        for chat in chats:
+            if chat.is_dialog:
+                return chat
+        # If there are chat where is_dialog is True, then it's right chat, else we create new
+        chat = self.create_dialog_chat(users[0], users[1])
+
+    def create_dialog_chat(self, user: User, s_user: User) -> Chat:
+        """
+        This function creates chat only for two users with "is_dialog" set to True, it's usual chat but in
+        html it would be displayed as dialog\n
+        :param user: User object
+        :param s_user: User object
+        :return: created Chat object
+        """
+        dialog = Chat(chatname=f"{user.username}, {s_user.username}", is_dialog=True)
+        # chatname isn't really matters because in html it would be displayed as friends name
+        self.session.add(dialog)
+        dialog.users.append(user), dialog.users.append(s_user)
         self.session.commit()
-        return str(name + ", " + username + str(chat.id))
+        return dialog
 
-    def get_messages_chatid(self, chatid: int) -> list:
-        chat = self.session.query(Chat).filter(Chat.id == chatid).first()
+    # TODO: redo, not all messages needs to be loaded, only like 30?
+    def get_messages_chat_id(self, chat_id: int) -> list:
+        """
+        This function returns list with all messages in chat\n
+        :param chat_id: int, Chat.id
+        :return: list with all chat messages
+        """
+        chat = self.session.query(Chat).filter(Chat.id == chat_id).first()
         return chat.messages
 
-    def get_chat_byid(self, chatid: int) -> Chat:
-        chat = self.session.query(Chat).filter(Chat.id == chatid).first()
+    def get_chat_by_id(self, chat_id: int) -> Chat:
+        """
+        This function returns Chat object by it's id\n
+        :param chat_id: int, Chat.id
+        :return: Chat object
+        """
+        chat = self.session.query(Chat).filter(Chat.id == chat_id).first()
         return chat
 
-    def create_chat(self, users: list, chat_name: str, admin: str, rules: str = None, fandoms: list = None,
-                    moderators: list = None) -> int:
+    def create_chat(self, users: list, chat_name: str, admin: str, rules: str = "There is no rules!") -> int:
         admin = self.get_userid_by_name(admin)
-        for i in range(len(users)):
-            users[i] = self.get_userid_by_name(users[i])
-        if moderators:
-            for i in range(len(moderators)):
-                moderators[i] = self.get_userid_by_name(moderators[i])
-        chat = Chat(chatname=chat_name, userids=users, admin=admin, moders=moderators, rules=rules, fandom_tags=fandoms)
+        chat = Chat(chatname=chat_name, admin=admin, rules=rules)
         self.session.add(chat)
-        for userid in users:
-            user = self.session.query(User).filter(User.id == userid).first()
+        for user in users:
+            user_id = self.get_userid_by_name(user)
+            user = self.session.query(User).filter(User.id == user_id).first()
             user.chats.append(chat)
         self.session.commit()
         return chat.id
@@ -334,6 +389,7 @@ class DataBase:
         else:
             return False
 
+    # TODO: переделать как-нибудь чтобы было не так затратно по ресурсам
     def update_messages(self, chat_id: int, msg_time: str):
         if not msg_time:
             msg_time = str(datetime.datetime.now())
@@ -344,15 +400,13 @@ class DataBase:
             if message.message_date > msg_time:
                 new_messages[1].append(
                     {"user": self.get_name_by_userid(message.fromuserid), "message": message.message,
-                     "attachment": message.attachments,
                      "date": message.message_date})
             new_messages[0] = str(message.message_date)
         return new_messages
 
-    def send_message(self, user: int, chat_id: int, msg: str, attachment: str = None) -> bool:
+    def send_message(self, user: int, chat_id: int, msg: str) -> bool:
         chat = self.session.query(Chat).filter(Chat.id == chat_id).first()
-        self.session.add(Message(fromuserid=user, message_date=datetime.datetime.now(), message=msg, chat_id=chat.id,
-                                 attachments=attachment))
+        self.session.add(Message(fromuserid=user, message_date=datetime.datetime.now(), message=msg, chat_id=chat.id))
         self.session.commit()
         return True
 
@@ -367,8 +421,6 @@ class DataBase:
                                       date_added=datetime.datetime.now()))
         self.session.commit()
         return True
-
-    # TODO: ВАЖНО! в следствии изменения таблицы с друзьями весь этот ад не работает, нужно переделывать!
 
     def add_friend(self, user: int, second_user: int) -> bool:
         """
@@ -410,6 +462,12 @@ class DataBase:
         return False
 
     def accept_request(self, second_user: int, user: int) -> bool:
+        """
+        This function gets two users and finds a friend entry, updating it with is_request to False\n
+        :param second_user: int, User.id
+        :param user: int, User.id
+        :return: True if updating was successful
+        """
         self.session.query(Friend).filter(Friend.first_user_id == user, Friend.second_user_id == second_user).update(
             {Friend.is_request: False, Friend.first_ulevel: 4, Friend.second_ulevel: 4})
         self.session.query(User).filter(User.id == user).update({User.friend_count: User.friend_count + 1})

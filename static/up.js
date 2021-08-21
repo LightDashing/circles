@@ -12,7 +12,7 @@ function init(name, username) {
         }
     })
     $.ajax({
-        url: '/_check_friend',
+        url: '/api/check_friend',
         method: 'POST',
         data: JSON.stringify({'name': name}),
         dataType: 'json',
@@ -36,7 +36,7 @@ function init(name, username) {
 
 function add_friend(name) {
     $.ajax({
-        url: '/_add_friend',
+        url: '/api/add_friend',
         method: 'POST',
         data: JSON.stringify({'name': name}),
         dataType: 'json',
@@ -51,7 +51,7 @@ function add_friend(name) {
 
 function accept_request(name) {
     $.ajax({
-        url: '/_accept_friend',
+        url: '/api/accept_friend',
         method: 'POST',
         data: JSON.stringify({'name': name}),
         dataType: 'json',
@@ -65,7 +65,7 @@ function accept_request(name) {
 
 function remove_friend(name) {
     $.ajax({
-        url: '/_remove_friend',
+        url: '/api/remove_friend',
         method: 'POST',
         data: JSON.stringify({'name': name}),
         dataType: 'json',
@@ -87,7 +87,7 @@ function hide_all() {
 
 function publish_post(post_msg, post_attach, view_level, whereid, fromid) {
     $.ajax({
-        url: '/_publish_post',
+        url: '/api/publish_post',
         method: 'POST',
         data: JSON.stringify({
             "message": post_msg, "attach": post_attach,
