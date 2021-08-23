@@ -95,6 +95,17 @@ class UserPost(Base):
     date_added = Column(DateTime, nullable=False, default=datetime.datetime.now())
     message = Column(VARCHAR())
 
+    @property
+    def serialize(self):
+        return {
+            "id": self.id,
+            "user_id": self.userid,
+            "whereid": self.whereid,
+            "view_level": self.view_level,
+            "date_added": self.date_added,
+            "message": self.message
+        }
+
 
 class UserCharacter(Base):
     __tablename__ = 'usercharacters'
@@ -197,7 +208,7 @@ class Chat(Base):
 class Message(Base):
     __tablename__ = 'messages'
     id = Column(INTEGER, primary_key=True, autoincrement=True)
-    fromuserid = Column(INTEGER, nullable=False)
+    from_user_id = Column(INTEGER, nullable=False)
     message_date = Column(DateTime, nullable=False, default=datetime.datetime.now())
     message = Column(VARCHAR(), nullable=False)
     chat_id = Column(INTEGER, ForeignKey('chats.id', ondelete='CASCADE'), nullable=False)
@@ -206,7 +217,7 @@ class Message(Base):
     def serialize(self):
         return {
             "id": self.id,
-            "fromuserid": self.fromuserid,
-            "message_date": self.message_date,
+            "from_user_id": self.from_user_id,
+            "message_date": str(self.message_date),
             "message": self.message,
         }

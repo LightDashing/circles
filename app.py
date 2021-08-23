@@ -1,8 +1,8 @@
 import datetime
 
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, redirect, url_for, jsonify, g
 from flask_login import LoginManager, login_user, login_required, current_user, logout_user
-from database import DataBase, OpenConnectionToBD
+from database import DataBase
 from files import FileOperations
 from api.api import api_bp
 import re
@@ -10,6 +10,7 @@ import re
 # from smtp_mail import Email
 # from flask_mail import Message, Mail
 # import jwt
+DBC = DataBase()
 app = Flask(__name__)
 app.register_blueprint(api_bp, url_prefix='/api')
 app.config['SECRET_KEY'] = 'SomeSuperDuperSecretKey'
@@ -23,7 +24,6 @@ app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 20
 # app.config['MAIL_PASSWORD'] = 'add your password'
 # email_app = Email(app)
 
-db = DataBase()
 login_manager = LoginManager()
 login_manager.login_view = '/login'
 login_manager.init_app(app)
@@ -47,9 +47,7 @@ login_manager.init_app(app)
 
 @login_manager.user_loader
 def load_user(user_id):
-    with OpenConnectionToBD(db):
-        db.set_online(int(user_id), True)
-        user = db.get_user(int(user_id))
+    user = DBC.get_user(int(user_id))
     return user
 
 
@@ -59,18 +57,16 @@ def utility_processor():
         return date_time.strftime("%R, %e %b, %Y")
 
     def get_username(userid):
-        with OpenConnectionToBD(db):
-            user_name = db.get_name_by_userid(userid)
+        user_name = DBC.get_name_by_userid(userid)
         return user_name
 
     def get_user_avatar(userid=None, username=None):
-        with OpenConnectionToBD(db):
-            if userid:
-                username = db.get_name_by_userid(userid)
-            elif not username:
-                return None
-            avatar = db.get_avatar_by_name(username)
-            return avatar
+        if userid:
+            username = DBC.get_name_by_userid(userid)
+        elif not username:
+            return None
+        avatar = DBC.get_avatar_by_name(username)
+        return avatar
 
     def get_current_datetime():
         return datetime.datetime.now()
@@ -97,39 +93,36 @@ def index():
         password_check = request.form['pw2']
         if password != password_check:
             return render_template('index.html', error="passwords_dont_match")
-        with OpenConnectionToBD(db):
-            created = db.add_user(name, email, password)
+        created = DBC.add_user(name, email, password)
         if not created:
             return render_template('index.html', error='already_exist')
         else:
-            userid = db.get_userid_by_name(name)
+            userid = DBC.get_userid_by_name(name)
         return redirect(url_for('users_page', name=name))
 
 
 @app.route('/users/<name>', methods=['GET'])
 def users_page(name):
-    with OpenConnectionToBD(db):
-        if current_user.is_anonymous:
-            view_level = 5
-        elif name != current_user.username:
-            friend_data = db.is_friend(db.get_userid_by_name(name), current_user.id)
-            db.get_user_dialog(current_user.id, db.get_userid_by_name(name))
-            if friend_data:
-                view_level = friend_data['first_ulevel']
-            else:
-                view_level = 5
+    if current_user.is_anonymous:
+        view_level = 5
+    elif name != current_user.username:
+        friend_data = DBC.is_friend(DBC.get_userid_by_name(name), current_user.id)
+        # DBC.get_user_dialog(current_user.id, DBC.get_userid_by_name(name))
+        if friend_data:
+            view_level = friend_data['first_ulevel']
         else:
-            view_level = 0
-        user = db.userdata_by_name(db.get_userid_by_name(name))
-        posts = db.get_posts_by_id(name, view_level)
+            view_level = 5
+    else:
+        view_level = 0
+    user = DBC.userdata_by_name(DBC.get_userid_by_name(name))
+    posts = DBC.get_posts_by_id(name, view_level)
     return render_template('user.html', name=name, posts=posts, user=user)
 
 
 @app.route('/groups/<group_name>', methods=['GET'])
 def group_page(group_name):
-    with OpenConnectionToBD(db):
-        data = db.get_group_data(group_name)
-        is_in_group = db.is_joined(group_name, current_user)
+    data = DBC.get_group_data(group_name)
+    is_in_group = DBC.is_joined(group_name, current_user)
     return render_template('group.html', group=data, joined=is_in_group)
 
 
@@ -138,10 +131,9 @@ def group_page(group_name):
 def create_group():
     if request.method == 'POST':
         data = request.get_json()
-        with OpenConnectionToBD(db):
-            db.create_group(current_user.username, data['group_name'], data['group_description'],
-                            data['group_rules'], data['group_tags'])
-            db.join_group(current_user.username, data['group_name'])
+        DBC.create_group(current_user.username, data['group_name'], data['group_description'],
+                         data['group_rules'], data['group_tags'])
+        DBC.join_group(current_user.username, data['group_name'])
         # TODO: редирект не работает? исправить
         return redirect(url_for("group_page", group_name=data['group_name']))
     else:
@@ -151,8 +143,7 @@ def create_group():
 @app.route('/user/groups', methods=['GET'])
 @login_required
 def user_groups():
-    with OpenConnectionToBD(db):
-        user_subs = db.get_user_groups(current_user.id)
+    user_subs = DBC.get_user_groups(current_user.id)
     return render_template('user_groups.html', groups=user_subs)
 
 
@@ -160,18 +151,15 @@ def user_groups():
 @login_required
 def friends_page():
     if request.method == 'GET':
-        with OpenConnectionToBD(db):
-            friends = db.get_user_friends(current_user.id, 10)
-            print(friends)
+        friends = DBC.get_user_friends(current_user.id, 10)
         return render_template("friends.html", friends=friends, name=current_user.username)
 
 
 @app.route('/dialog/<username>', methods=['GET', 'POST'])
 @login_required
 def dialog_page(username):
-    with OpenConnectionToBD(db):
-        chat_obj = db.get_user_dialog(current_user.id, db.get_userid_by_name(username)).serialize
-        chat_messages = db.get_messages_chat_id(chat_obj["id"])
+    chat_obj = DBC.get_user_dialog(current_user.id, DBC.get_userid_by_name(username))
+    chat_messages = DBC.get_messages_chat_id(chat_obj["id"])
     return render_template("chat.html", chat=chat_obj,
                            name=current_user.username, messages=chat_messages)
 
@@ -179,8 +167,7 @@ def dialog_page(username):
 @app.route('/user/messages', methods=['GET'])
 @login_required
 def messages():
-    with OpenConnectionToBD(db):
-        chats = db.get_user_chats(current_user.id)
+    chats = DBC.get_user_chats(current_user.id)
     return render_template("messages.html", chats=chats, name=current_user.username)
 
 
@@ -189,25 +176,22 @@ def messages():
 def create_chat():
     if request.method == 'POST':
         data = request.get_json()
-        with OpenConnectionToBD(db):
-            chat_id = db.create_chat(data['users'], data['chat_name'], data['admin'])
+        chat_id = DBC.create_chat(data['users'], data['chat_name'], data['admin'])
         return url_for("chat", chat_id=chat_id)
     else:
-        with OpenConnectionToBD(db):
-            friends = db.get_user_friends(current_user.username, 10)
+        friends = DBC.get_user_friends(current_user.username, 10)
         return render_template("create_chat.html", friends=friends, name=current_user.username)
 
 
 @app.route('/chat/<chat_id>', methods=['GET'])
 @login_required
 def chat(chat_id):
-    with OpenConnectionToBD(db):
-        chat_obj = db.get_chat_by_id(chat_id)
-        messages = db.get_messages_chat_id(chat_id)
-    for message in messages:
-        message.fromuserid = db.get_name_by_userid(message.fromuserid)
-    return render_template("chat.html", chat=chat_obj.serialize,
-                           name=current_user.username, messages=messages)
+    chat_obj = DBC.get_chat_by_id(chat_id)
+    user_messages = DBC.get_messages_chat_id(chat_id)
+    for message in user_messages:
+        message["from_user_id"] = DBC.get_name_by_userid(message["from_user_id"])
+    return render_template("chat.html", chat=chat_obj,
+                           name=current_user.username, messages=user_messages)
 
 
 @app.route('/user/settings', methods=['GET'])
@@ -223,11 +207,11 @@ def login():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['pw1']
-        with OpenConnectionToBD(db):
-            if not db.login_user(email, password):
-                return render_template('login.html', error='dont_match')
-            user_id = db.get_userid(email)
-            login_user(user_id, remember=True)
+        if not DBC.login_user(email, password):
+            return render_template('login.html', error='dont_match')
+        user_id = DBC.get_userid(email)
+        login_user(user_id, remember=True)
+        DBC.set_online(int(user_id), True)
         return redirect(url_for('users_page', name=current_user.username))
     else:
         if not current_user.is_anonymous:
@@ -239,8 +223,7 @@ def login():
 @app.route('/logout')
 @login_required
 def logout():
-    with OpenConnectionToBD(db):
-        db.set_online(current_user.id, False)
+    DBC.set_online(current_user.id, False)
     logout_user()
     return redirect(request.path)
 

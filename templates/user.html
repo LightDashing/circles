@@ -63,26 +63,26 @@
             {% for post in posts %}
                 <div class="post">
                     <div class="post-header">
-                        <img class="post-avatar" alt="User avatar" src="{{ get_user_avatar(post.userid) }}">
+                        <img class="post-avatar" alt="User avatar" src="{{ get_user_avatar(post['user_id']) }}">
                         <a class="post-nick"
-                           href="{{ url_for("users_page", name=get_username(post.userid)) }}"><b>{{ get_username(post.userid) }}</b></a>
-                        <span class="post-date">posted at {{ formate_datetime(post.date_added) }}</span><br>
+                           href="{{ url_for("users_page", name=get_username(post['user_id'])) }}"><b>{{ get_username(post['user_id']) }}</b></a>
+                        <span class="post-date">posted at {{ formate_datetime(post['date_added']) }}</span><br>
                         {% if current_user.username == name %}
                             <div class="private-info">
-                                {% if post.view_level > 4 %}
+                                {% if post['view_level'] > 4 %}
                                     <span class="tag-button-small">public</span>
                                 {% else %}
                                     <span class="tag-button-small">private</span>
                                 {% endif %}
                                 <span class="private-role-info">only for: </span>
                                 <span class="tag-button-small"
-                                      style="background: #eca7a7">role: {{ post.view_level }}</span>
+                                      style="background: #eca7a7">role: {{ post['view_level'] }}</span>
                             </div>
                         {% endif %}
                         <span class="material-icons" id="post-more">more_horiz</span>
                     </div>
 
-                    <a class="post-message">{{ post.message }}</a>
+                    <a class="post-message">{{ post['message'] }}</a>
                 </div>
             {% endfor %}
         {% endif %}
@@ -94,21 +94,21 @@
 {% endblock %}
 {% block scripts %}
     <script type="text/javascript">
-        init("{{user.username}}", "{{current_user.username}}");
+        init("{{user['username']}}", "{{current_user.username}}");
         $("#add_friend").click(function () {
-            add_friend('{{user.username}}')
+            add_friend('{{user['username']}}')
         })
         $("#cancel_request").click(function () {
-            remove_friend('{{user.username}}')
+            remove_friend('{{user['username']}}')
         })
         $("#accept_request").click(function () {
-            accept_request('{{ user.username }}')
+            accept_request('{{ user['username'] }}')
         })
         $("#decline_request").click(function () {
-            remove_friend('{{ user.username }}')
+            remove_friend('{{ user['username'] }}')
         })
         $("#remove_friend").click(function () {
-            remove_friend('{{ user.username }}')
+            remove_friend('{{ user['username'] }}')
         })
         $(function () {
             $("#publish_post").click(function () {

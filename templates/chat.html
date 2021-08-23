@@ -13,14 +13,14 @@
     <div class="all_messages">
         <div id="incoming_msg">
             {% for message in messages %}
-                {% if message.fromuserid == current_user.id %}
+                {% if message.from_user_id == current_user.id %}
                     <div class='message-box' style="align-self: end; background: #CEC5C3">
-                        <span class="from-user">{{ get_username(message.fromuserid) }}:</span>
+                        <span class="from-user">{{ get_username(message.from_user_id) }}:</span>
                         <span class="message-text">{{ message.message }}</span>
                     </div>
                 {% else %}
                     <div class='message-box'>
-                        <span class="from-user">{{ get_username(message.fromuserid) }}:</span>
+                        <span class="from-user">{{ get_username(message.from_user_id) }}:</span>
                         <span class="message-text">{{ message.message }}</span>
                     </div>
                 {% endif %}
@@ -43,8 +43,8 @@
         {% endif %}
 
         $("#send_message").click(function () {
-            send_message($("#message").val(), "{{ name }}", "{{ chat.id }}")
+            send_message($("#message").val(), "{{ current_user.username }}", "{{ chat.id }}")
         })
-        update_messages("{{ name }}", "{{ chat.id }}", last_msg_time)
+        update_messages("{{ current_user.username }}", "{{ chat.id }}", last_msg_time)
     </script>
 {% endblock %}

@@ -24,25 +24,21 @@ function update_messages(username, chat_id, last_msg_time) {
             contentType: 'application/json',
             success: function (data) {
                 if (data) {
-                    try {
-                        data[1].forEach(function (el, index) {
-                            let element;
-                            if (el["user"] === username) {
-                                element = `<div class="message-box" style="align-self: end; background: #CEC5C3">
-                                     <span class="from-user"> ${el["user"]}: </span> 
+                    data.forEach(function (el) {
+                        let element;
+                        if (el["from_user_id"] === username) {
+                            element = `<div class="message-box" style="align-self: end; background: #CEC5C3">
+                                     <span class="from-user"> ${el["from_user_id"]}: </span> 
                                     <span class="message-text"> ${el["message"]}</span></div>`
-                            } else {
-                                element = `<div class="message-box"><span class="from-user"> ${el["user"]}: </span> 
+                        } else {
+                            element = `<div class="message-box"><span class="from-user"> ${el["user"]}: </span> 
                                     <span class="message-text"> ${el["message"]}</span></div>`
-                            }
-                            $("#incoming_msg").append(element)
-                        })
-                    } catch (TypeError) {
-
-                    }
-                    msg_time = data[0]
+                        }
+                        $("#incoming_msg").append(element)
+                        msg_time = el['message_date']
+                    })
                 }
             }
         });
-    }, 4);
+    }, 1550);
 }

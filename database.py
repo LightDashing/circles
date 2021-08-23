@@ -1,99 +1,107 @@
-from sqlalchemy import or_, and_, func, delete
+import time
+
+from sqlalchemy import or_, and_, func, delete, select, update
 from sqlalchemy.engine import create_engine
-from sqlalchemy.orm import Session
+from sqlalchemy.pool import NullPool, AssertionPool, QueuePool
+from sqlalchemy.orm import Session, sessionmaker, scoped_session
 from sqlalchemy.exc import IntegrityError
 import datetime
 import re
 from models import User, UserPost, Message, Friend, Chat, Group, GroupPost, UserGroupLink
-
-
-class OpenConnectionToBD:
-
-    def __init__(self, db):
-        self.db = db
-
-    def __enter__(self):
-        self.db.session = Session(bind=self.db.engine)
-
-    def __exit__(self, *args):
-        self.db.close()
+from user_exceptions import UserAlreadyExist
 
 
 class DataBase:
-    def __init__(self):
-        # self.engine = create_engine('postgresql://postgres:YourPassword@localhost/postgres')
-        # self.engine = create_engine('sqlite:///test.db')
-        self.session = None
+    class ConnectionHandler:
 
-    def close(self):
-        self.session.close()
+        def __init__(self):
+            # ВНИМАНИЕ! AssertionPool разрешает только одно соединение и используется для тестирования
+            # Для дальнейшей работы нужно будет подумать над пределами БД и сколько разрешать подключений
+            # На данный момент всё работает относительно хорошо и стабильно
+            self.engine = create_engine('postgresql+pg8000://postgres:YourPassword@localhost/postgres',
+                                        poolclass=AssertionPool)
+            self.g_session = scoped_session(sessionmaker(self.engine))
+
+        def __enter__(self):
+            self.sp_sess = self.g_session()
+
+        def __exit__(self, *args):
+            try:
+                self.sp_sess.commit()
+            except IntegrityError:  # TODO: это просто затычка, нужно придумать что-то лучше
+                self.sp_sess.rollback()
+                raise UserAlreadyExist
+            finally:
+                self.g_session.remove()
+
+    def __init__(self):
+        self.conn_handler = self.ConnectionHandler()
 
     # TODO: пароль должен быть защищён, необходимо хранить пароль в солёном md5 хеше
     def add_user(self, username, email, password):
-        self.session.add(User(username=username, email=email, password=password))
         try:
-            self.session.commit()
+            with self.conn_handler:
+                self.conn_handler.sp_sess.add(User(username=username, email=email, password=password))
             return True
-        except IntegrityError:
+        except UserAlreadyExist:
             return False
 
     def login_user(self, email: str, password: str):
-        user = self.session.query(User).filter(User.email == email, User.password == password).first()
+        with self.conn_handler:
+            statement = select(User).filter(User.email == email, User.password == password)
+            user = self.conn_handler.sp_sess.execute(statement).first()
         if user:
             return True
         else:
             return False
 
     def set_online(self, user_id: int, online: bool):
-        self.session.query(User).filter(User.id == user_id).update({User.is_online: online})
-        self.session.commit()
+        with self.conn_handler:
+            statement = update(User).filter(User.id == user_id).values(is_online=online)
+            self.conn_handler.sp_sess.execute(statement)
 
     def get_user(self, userid):
-        user = self.session.query(User).filter(User.id == userid).first()
+        with self.conn_handler:
+            statement = select(User).filter(User.id == userid)
+            user = self.conn_handler.sp_sess.execute(statement).scalar()
+            self.conn_handler.sp_sess.expunge(user)
         return user
 
     def get_userid(self, email):
-        user = self.session.query(User).filter(User.email == email).first()
-        return user
+        with self.conn_handler:
+            statement = select(User).filter(User.email == email)
+            user = self.conn_handler.sp_sess.execute(statement).scalar()
+            return user.id
 
-    def name_by_mail(self, email: str):
-        user = self.session.query(User).filter(User.email == email).first()
-        if user:
-            return user.username
-        else:
-            return False
-
-    # TODO: ВАЖНО! Необходимо получать всю информацию не по юзернейму, а по айди! По-идее так более безопасно
-    def userdata_by_name(self, userid: str):
-        user = self.session.query(User).filter(User.id == userid).first()
-        if user:
-            return user.serialize
-        else:
-            return {"success": False}
+    def userdata_by_name(self, userid: int):
+        with self.conn_handler:
+            statement = select(User).filter(User.id == userid)
+            user = self.conn_handler.sp_sess.execute(statement).scalar()
+            if user:
+                return user.serialize
+            else:
+                return {"success": False}
 
     def change_username(self, old_name: str, new_name: str) -> int:
         """
-        This function changes username, returns one of the codes
-        0: username was changed successfully
-        1: user with that username already exists
-        2: username length is incorrect
-        3: new username same as old username
-        -1: some unknown error occurred on database side
+        This function changes username, returns one of the codes\n
+        0 - username was changed successfully
+        1 - user with that username already exists
+        2 - username length is incorrect
+        3 - new username same as old username
         """
         if not new_name or len(new_name) < 3 or len(new_name) > 30:
             return 2
-        if old_name == new_name:
-            return 3
-        elif self.session.query(User).filter(User.username == new_name).first():
-            return 1
-        try:
-            self.session.query(User).filter(User.username == old_name).update({User.username: new_name})
-            self.session.commit()
-            return 0
-        except IntegrityError:
-            return -1
+        with self.conn_handler:
+            statement = select(User).filter(User.username == new_name)
+            if old_name == new_name:
+                return 3
+            elif self.conn_handler.sp_sess.execute(statement).first():
+                return 1
+            statement = update(User).filter(User.username == old_name).values(username=new_name)
+            self.conn_handler.sp_sess.execute(statement)
 
-    def change_description(self, name: str, desc: str) -> int:
+    def change_description(self, user_id: int, desc: str) -> int:
         """
         This function changes user description, it returns one of the codes
         0: description was successfully changed
@@ -101,13 +109,12 @@ class DataBase:
         """
         if not desc:
             desc = 'None was provided'
-        try:
-            self.session.query(User).filter(User.username == name).update({User.description: desc})
-            self.session.commit()
-            return 0
-        except IntegrityError:
-            return -1
+        with self.conn_handler:
+            statement = update(User).filter(User.id == user_id).values(description=desc)
+            self.conn_handler.sp_sess.execute(statement)
+        return 0
 
+    # TODO: ПеределатЬ!
     def change_mail(self, name: str, email: str) -> int:
         """
         This function changes user e-mail, it returns one of the codes
@@ -131,6 +138,7 @@ class DataBase:
         except IntegrityError:
             return -1
 
+    # TODO: переделать!
     def ch_min_posting_lvl(self, name: str, lvl: int) -> int:
         """
         his function changes minimum level other users need, to post on your wall, it returns one of the codes
@@ -147,6 +155,7 @@ class DataBase:
         except IntegrityError:
             return -1
 
+    # TODO: переделать!
     def change_publish_settings(self, name: str, publish: bool) -> int:
         """
         This function can change if other users may post on your wall or not, it returns one of the codes
@@ -160,60 +169,91 @@ class DataBase:
         except IntegrityError:
             return -1
 
+    # TODO: переделать!
     def change_avatar(self, userid: int, filepath: str):
         self.session.query(User).filter(User.id == userid).update({User.avatar: filepath})
         self.session.commit()
 
-    def search_for(self, search_query: str, search_type: str = 'user') -> list:
+    def search_for(self, search_query: str, search_type: str = 'user') -> list[dict]:
+        """
+        This function search users by their name and then returns result with limit of 5 users\n
+        :param search_query: str
+        :param search_type: str, user or group
+        :return: array of dicts, User.serialize
+        """
         if search_type == 'user':
-            query = self.session.query(User).filter(User.username.like(f"%{search_query}%")).limit(5) \
-                .all()
-            users = [user.serialize for user in query]
+            with self.conn_handler:
+                query = select(User).filter(User.username.like(f"%{search_query}%"))
+                result = self.conn_handler.sp_sess.execute(query).scalars().fetchmany(5)
+                users = [user.serialize for user in result]
+        # TODO: сделать поиск по группам
         else:
-            query = self.session.query().all()
+            query = self.session.query().scalars()
         return users
 
     # TODO: сделать систему дозагрузки при прокрутке страницы
-    def get_user_friends(self, userid: int, amount: int = 5):
-        if amount == -1:
-            friends = self.session.query(Friend).filter(
-                or_(Friend.first_user_id == userid, Friend.second_user_id == userid)).all()
-        else:
-            friends = self.session.query(Friend).filter(
-                or_(Friend.first_user_id == userid, Friend.second_user_id == userid)).limit(amount).all()
-        user_friends = []
-        for friend in friends:
-            if friend.first_user.serialize['id'] == userid:
-                user_friends.append(friend.second_user.serialize)
-            else:
-                user_friends.append(friend.first_user.serialize)
+    def get_user_friends(self, userid: int, amount: int = 5) -> list[dict]:
+        """
+        This function returns user friends in specified amount\n
+        :param userid: int, User.id
+        :param amount: int, amount of friends to return
+        :return: array of User.serialize
+        """
+        with self.conn_handler:
+            statement = select(Friend).filter(or_(Friend.first_user_id == userid, Friend.second_user_id == userid))
+            friends = self.conn_handler.sp_sess.execute(statement).scalars().fetchmany(amount)
+            user_friends = []
+            for friend in friends:
+                if friend.first_user.id == userid:
+                    user_friends.append(friend.second_user.serialize)
+                else:
+                    user_friends.append(friend.first_user.serialize)
         return user_friends
 
-    def get_userid_by_name(self, name: str):
-        user = self.session.query(User).filter(User.username == name).first()
-        if user:
-            return user.id
-        else:
-            return False
+    def get_userid_by_name(self, name: str) -> int:
+        """
+        Returns user User.id by their name\n
+        :param name: str, User.username
+        :return: int, User.id or None if there was no user
+        """
+        with self.conn_handler:
+            statement = select(User).filter(User.username == name)
+            user = self.conn_handler.sp_sess.execute(statement).scalar()
+            if user:
+                return user.id
 
-    def get_name_by_userid(self, id: int):
-        user = self.session.query(User).filter(User.id == id).first()
-        if user:
-            return user.username
-        else:
-            return False
+    def get_name_by_userid(self, user_id: int) -> str:
+        """
+        Returns User.username by their id\n
+        :param user_id: int, User.id
+        :return: str, User.username or None if there was no user
+        """
+        with self.conn_handler:
+            statement = select(User).filter(User.id == user_id)
+            user = self.conn_handler.sp_sess.execute(statement).scalar()
+            if user:
+                return user.username
 
-    def get_posts_by_id(self, username: str, view_level):
-        userid = self.get_userid_by_name(username)
-        posts = self.session.query(UserPost).filter(UserPost.whereid == userid, UserPost.view_level >= view_level).all()
-        if posts:
-            return posts
-        else:
-            return False
+    def get_posts_by_id(self, username: str, view_level) -> list[UserPost]:
+        """
+        This function gets all posts on user page with specified view level\n
+        :param username: str, User.username
+        :param view_level: int, UserPost.view_level
+        :return: list of UserPost objects or None if there was no UserPosts
+        """
+        user_id = self.get_userid_by_name(username)
+        with self.conn_handler:
+            statement = select(UserPost).filter(UserPost.whereid == user_id, UserPost.view_level >= view_level)
+            posts = self.conn_handler.sp_sess.execute(statement).scalars()
+            if posts:
+                posts = [post.serialize for post in posts]
+                return posts
 
     def get_avatar_by_name(self, username: str) -> str:
-        user = self.session.query(User).filter(User.username == username).first()
-        return user.avatar
+        with self.conn_handler:
+            statement = select(User).filter(User.username == username)
+            user = self.conn_handler.sp_sess.execute(statement).scalar()
+            return user.avatar
 
     def get_user_chats(self, user_id: int) -> list:
         """
@@ -221,10 +261,12 @@ class DataBase:
         :param user_id: int
         :return: list[dict], "id", "chatname", "admin", "rules"
         """
-        user = self.session.query(User).filter(User.id == user_id).first()
-        chats = []
-        for chat in user.chats:
-            chats.append(chat.serialize)
+        with self.conn_handler:
+            statement = select(User).filter(User.id == user_id)
+            user = self.conn_handler.sp_sess.execute(statement).scalar()
+            chats = []
+            for chat in user.chats:
+                chats.append(chat.serialize)
         return chats
 
     def get_user_groups(self, user_id: int) -> list:
@@ -233,11 +275,13 @@ class DataBase:
         :param user_id: int:
         :return: list[Group]:
         """
-        user = self.session.query(User).filter(User.id == user_id).first()
-        groups = []
-        for group in user.groups:
-            groups.append(group.serialize)
-        return groups
+        with self.conn_handler:
+            statement = select(User).filter(User.id == user_id)
+            user = self.conn_handler.sp_sess.execute(statement).scalar()
+            groups = []
+            for group in user.groups:
+                groups.append(group.serialize)
+            return groups
 
     # TODO: переписать
     def create_group(self, username: str, group_name: str, group_desc: str, group_rules: str, group_tags: list = None):
@@ -254,9 +298,10 @@ class DataBase:
         :param current_user: User class
         :return: None
         """
-        group = self.session.query(Group).filter(Group.group_name == group_name).first()
-        group.users.append(current_user)
-        self.session.commit()
+        with self.conn_handler:
+            statement = select(Group).filter(Group.group_name == group_name)
+            group = self.conn_handler.sp_sess.execute(statement).scalar()
+            group.users.append(current_user)
 
     def leave_group(self, group_name: str, current_user: User):
         """
@@ -265,9 +310,10 @@ class DataBase:
         :param current_user: User class
         :return: None
         """
-        group = self.session.query(Group).filter(Group.group_name == group_name).first()
-        group.users.remove(current_user)
-        self.session.commit()
+        with self.conn_handler:
+            statement = select(Group).filter(Group.group_name == group_name)
+            group = self.conn_handler.sp_sess.execute(statement).scalar()
+            group.users.remove(current_user)
 
     def is_joined(self, group_name: str, current_user: User) -> bool:
         """
@@ -276,11 +322,15 @@ class DataBase:
         :param current_user: User class
         :return: True if user in group, False if isn't
         """
-        group = self.session.query(Group).filter(Group.group_name == group_name).first()
-        if current_user in group.users:
-            return True
-        else:
-            return False
+        test_user = current_user
+        with self.conn_handler:
+            assert test_user == current_user
+            statement = select(Group).filter(Group.group_name == group_name)
+            group = self.conn_handler.sp_sess.execute(statement).scalar()
+            if current_user in group.users:
+                return True
+            else:
+                return False
 
     def get_group_data(self, group_name: str) -> dict:
         """
@@ -288,8 +338,10 @@ class DataBase:
         :param group_name: str
         :return: dict, "id", "avatar", "group_name", "status", "owner", "description", "rules"
         """
-        group = self.session.query(Group).filter(Group.group_name == group_name).first()
-        return group.serialize
+        with self.conn_handler:
+            statement = select(Group).filter(Group.group_name == group_name)
+            group = self.conn_handler.sp_sess.execute(statement).scalar()
+            return group.serialize
 
     def get_user_dialog(self, user_id: int, s_user_id: int) -> Chat:
         """
@@ -298,16 +350,20 @@ class DataBase:
         :param s_user_id: int, User.id
         :return: Chat object
         """
-        users = self.session.query(User).filter(or_(User.id == user_id, User.id == s_user_id)).all()
-        # Getting two users in array with this query
-        chats = self.session.query(Chat).join(User). \
-            filter(and_(Chat.users.any(id=users[0].id), Chat.users.any(id=users[1].id))).all()
-        # Getting all chats which are those two users part of
-        for chat in chats:
-            if chat.is_dialog:
-                return chat
+        with self.conn_handler:
+            # This statement is to get both users entries
+            statement = select(User).filter(or_(User.id == user_id, User.id == s_user_id))
+            users = self.conn_handler.sp_sess.execute(statement).scalars().fetchmany(2)
+            # This statement is to get all shared chats between users
+            statement = select(Chat).join(User).filter(
+                and_(Chat.users.any(id=users[0].id), Chat.users.any(id=users[1].id)))
+            chats = self.conn_handler.sp_sess.execute(statement).scalars()
+            for chat in chats:
+                if chat.is_dialog:
+                    return chat.serialize
         # If there are chat where is_dialog is True, then it's right chat, else we create new
         chat = self.create_dialog_chat(users[0], users[1])
+        return chat
 
     def create_dialog_chat(self, user: User, s_user: User) -> Chat:
         """
@@ -319,10 +375,10 @@ class DataBase:
         """
         dialog = Chat(chatname=f"{user.username}, {s_user.username}", is_dialog=True)
         # chatname isn't really matters because in html it would be displayed as friends name
-        self.session.add(dialog)
-        dialog.users.append(user), dialog.users.append(s_user)
-        self.session.commit()
-        return dialog
+        with self.conn_handler:
+            self.conn_handler.sp_sess.add(dialog)
+            dialog.users.append(user), dialog.users.append(s_user)
+            return dialog.serialize
 
     # TODO: redo, not all messages needs to be loaded, only like 30?
     def get_messages_chat_id(self, chat_id: int) -> list:
@@ -331,8 +387,11 @@ class DataBase:
         :param chat_id: int, Chat.id
         :return: list with all chat messages
         """
-        chat = self.session.query(Chat).filter(Chat.id == chat_id).first()
-        return chat.messages
+        with self.conn_handler:
+            statement = select(Chat).filter(Chat.id == chat_id)
+            chat = self.conn_handler.sp_sess.execute(statement).scalar()
+            messages = [message.serialize for message in chat.messages]
+            return messages
 
     def get_chat_by_id(self, chat_id: int) -> Chat:
         """
@@ -340,9 +399,12 @@ class DataBase:
         :param chat_id: int, Chat.id
         :return: Chat object
         """
-        chat = self.session.query(Chat).filter(Chat.id == chat_id).first()
-        return chat
+        with self.conn_handler:
+            statement = select(Chat).filter(Chat.id == chat_id)
+            chat = self.conn_handler.sp_sess.execute(statement).scalar()
+            return chat.serialize
 
+    # TODO: переделать
     def create_chat(self, users: list, chat_name: str, admin: str, rules: str = "There is no rules!") -> int:
         admin = self.get_userid_by_name(admin)
         chat = Chat(chatname=chat_name, admin=admin, rules=rules)
@@ -354,72 +416,65 @@ class DataBase:
         self.session.commit()
         return chat.id
 
-    def get_messages_with_user(self, name: str, username: str):
-        userid = self.get_userid_by_name(name)
-        s_userid = self.get_userid_by_name(username)
-        chat = self.session.query(Chat).filter(Chat.userids.contains([userid, s_userid]),
-                                               func.array_length(Chat.userids, 1) == 2).first()
-        if chat:
-            messages = [0, []]
-            for message in chat.messages:
-                messages[1].append(
-                    {"user": self.get_name_by_userid(message.fromuserid), "message": message.message,
-                     "attachment": message.attachments,
-                     "date": message.message_date})
-                messages[0] = str(message.message_date)
-            return messages
-        else:
-            chat_name = self.create_dialog_chat(name, username)
-            return [{"chat-name": chat_name, 'messages': None}]
-
-    def get_dialog_chat_id(self, name: str, username: str) -> int:
-        userid = self.get_userid_by_name(name)
-        s_userid = self.get_userid_by_name(username)
-        chat = self.session.query(Chat).filter(Chat.userids.contains([userid, s_userid]),
-                                               func.array_length(Chat.userids, 1) == 2).first()
-        return chat.id
-
     def load_messages(self, user: str, chat_id: int):
         userid = self.get_userid_by_name(user)
-        chat = self.session.query(Chat).filter(Chat.id == chat_id).first()
-        if chat.messages:
-            for message in chat.messages:
-                message.fromuserid = self.get_name_by_userid(message.fromuserid)
-            return chat.messages
-        else:
-            return False
+        with self.conn_handler:
+            statement = select(Chat).filter(Chat.id == chat_id)
+            chat = self.conn_handler.sp_sess.execute(statement).first()
+            if chat.messages:
+                messages = []
+                for message in chat.messages:
+                    message[0].from_user_id = self.get_name_by_userid(message.from_user_id)
+                    messages.append(message[0].serialize)
+                return messages
+            else:
+                return False
 
     # TODO: переделать как-нибудь чтобы было не так затратно по ресурсам
     def update_messages(self, chat_id: int, msg_time: str):
         if not msg_time:
             msg_time = str(datetime.datetime.now())
         msg_time = datetime.datetime.strptime(msg_time, "%Y-%m-%d %H:%M:%S.%f")
-        chat = self.session.query(Chat).filter(Chat.id == chat_id).first()
-        new_messages = [0, []]
-        for message in chat.messages:
-            if message.message_date > msg_time:
-                new_messages[1].append(
-                    {"user": self.get_name_by_userid(message.fromuserid), "message": message.message,
-                     "date": message.message_date})
-            new_messages[0] = str(message.message_date)
-        return new_messages
+        with self.conn_handler:
+            statement = select(Message).join(Chat).filter(and_(Chat.id == chat_id, Message.message_date > msg_time))
+            # statement = select(Chat).filter(Chat.id == chat_id)
+            messages = self.conn_handler.sp_sess.execute(statement).all()
+            all_messages = []
+            if messages:
+                # ВАЖНО! Какая-то странная ошибка, почему-то если я вызываю сначала get_name_by_userid, а лишь потом
+                # message.serialize, то message открепляется от сессии и та сессия с которой текущей with просрачивается
+                # Скорее всего это какой-то баг внутри sqlaclhemy, и при закрытии локальной сессии закрывается та,
+                # которая находится внизу стека, а не вверху, другого объяснения почему так происходить я найти не могу
+                for message in messages:
+                    message = message[0].serialize
+                    message['from_user_id'] = self.get_name_by_userid(message['from_user_id'])
+                    all_messages.append(message)
+            else:
+                return []
+        return all_messages
 
     def send_message(self, user: int, chat_id: int, msg: str) -> bool:
-        chat = self.session.query(Chat).filter(Chat.id == chat_id).first()
-        self.session.add(Message(fromuserid=user, message_date=datetime.datetime.now(), message=msg, chat_id=chat.id))
-        self.session.commit()
+        with self.conn_handler:
+            statement = select(Chat).filter(Chat.id == chat_id)
+            chat = self.conn_handler.sp_sess.execute(statement).scalar()
+            self.conn_handler.sp_sess.add(
+                Message(from_user_id=user, message_date=datetime.datetime.now(), message=msg, chat_id=chat.id))
         return True
 
-    def publish_post(self, msg: str, v_lvl: int, user: str, whereid: str = None, att: str = None) -> bool:
+    def publish_post(self, msg: str, v_lvl: int, user: str, where_id: str = None, att: str = None) -> bool:
         userid = self.get_userid_by_name(user)
-        if whereid:
-            whereid = self.get_userid_by_name(whereid)
-            self.session.add(UserPost(userid=userid, message=msg, view_level=v_lvl, attachment=att, whereid=whereid,
-                                      date_added=datetime.datetime.now()))
+        if where_id:
+            where_id = self.get_userid_by_name(where_id)
+            with self.conn_handler:
+                self.conn_handler.sp_sess.add(
+                    UserPost(userid=userid, message=msg, view_level=v_lvl, attachment=att, whereid=where_id,
+                             date_added=datetime.datetime.now()))
         else:
-            self.session.add(UserPost(userid=userid, message=msg, view_level=v_lvl, attachment=att, whereid=userid,
-                                      date_added=datetime.datetime.now()))
-        self.session.commit()
+            with self.conn_handler:
+                self.conn_handler.sp_sess.add(
+                    UserPost(userid=userid, message=msg, view_level=v_lvl, attachment=att, whereid=userid,
+                             date_added=datetime.datetime.now())
+                )
         return True
 
     def add_friend(self, user: int, second_user: int) -> bool:
@@ -427,15 +482,19 @@ class DataBase:
         This function is checking if friend already exists and if it isn't, adds a new entry to database\n
         returns boolean value, true if new entry was created and false if entry already existed
         """
-        if self.session.query(Friend).filter(  # Checking if there already existing entry
+        with self.conn_handler:  # Checking if there already existing entry
+            statement = select(Friend).filter(
                 or_(and_(Friend.first_user_id == user, Friend.second_user_id == second_user),
-                    and_(Friend.first_user_id == second_user, Friend.second_user_id == user))).all():
-            return False
-        else:
-            self.session.add(Friend(first_user_id=user, second_user_id=second_user))  # Adding new entry
-            self.session.commit()
-            return True
+                    and_(Friend.first_user_id == second_user, Friend.second_user_id == user)))
+            users = self.conn_handler.sp_sess.execute(statement).scalars()
+            if users:
+                return False
+            else:
+                self.conn_handler.sp_sess.add(
+                    Friend(first_user_id=user, second_user_id=second_user))  # Adding new entry
+                return True
 
+    # TODO: переделать
     def remove_friend(self, user: int, second_user: int) -> bool:
         """
         This function removes friend and decreases amount of friends both users have\n
@@ -461,6 +520,7 @@ class DataBase:
         self.session.commit()
         return False
 
+    # TODO: переделать
     def accept_request(self, second_user: int, user: int) -> bool:
         """
         This function gets two users and finds a friend entry, updating it with is_request to False\n
@@ -480,10 +540,12 @@ class DataBase:
         This function checks if user is a friend of current user\n
         returns either a dict with all friend connection data or just bool false
         """
-        friend = self.session.query(Friend).filter(
-            or_(and_(Friend.first_user_id == user, Friend.second_user_id == second_user),
-                and_(Friend.first_user_id == second_user, Friend.second_user_id == user))).first()
-        if not friend:
-            return False
-        else:
-            return friend.serialize
+        with self.conn_handler:
+            statement = select(Friend).filter(
+                or_(and_(Friend.first_user_id == user, Friend.second_user_id == second_user),
+                    and_(Friend.first_user_id == second_user, Friend.second_user_id == user)))
+            friend = self.conn_handler.sp_sess.execute(statement).scalar()
+            if not friend:
+                return False
+            else:
+                return friend.serialize
