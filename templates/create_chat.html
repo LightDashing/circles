@@ -1,53 +1,34 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Create chat</title>
-    <link type="text/css" rel="stylesheet" href="/static/css/friends.css">
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script>window.jQuery || document.write('<script src="{{
-  url_for('static', filename='jquery3.6.0.js') }}">\x3C/script>')</script>
-    <script type=text/javascript>
-        $SCRIPT_ROOT = {{ request.script_root|tojson }};
-    </script>
+{% extends "layout.html" %}
+{% block title %}Create chat{% endblock %}
+{% block head %}
+    {{ super() }}
+    <link href="/static/css/create_chat.css" rel="stylesheet">
     <script type="text/javascript" src="{{ url_for("static", filename="create_chat.js") }}"></script>
-</head>
-<body>
-<div class="header">
-    <div class="logo"></div>
-    <div class="friends-header"></div>
-</div>
-<div class="left-row">
-    <a>Profile</a><br>
-    <a>Messages</a><br>
-    <a>Friends</a><br>
-    <a>Fandom Groups</a><br>
-    <a>Your characters</a><br>
-</div>
-<div class="main-row">
-    {% if friends['success'] %}
-    <label>Chat name</label>
-    <input type="text" id="chat_name"><br>
-    {% for friend in friends['friendslist'] %}
-    <!-- Сверху сначала должен быть аватар -->
-    <a href="/users/{{friend['name']}}" id="friend_{{loop.index}}">{{friend['name']}}</a>
-    <a href="/dialog/{{friend['name']}}">Write message</a>
-    <button id="add_friend_{{loop.index}}">Add friend</button>
-    <button id="remove_friend_{{loop.index}}">Remove friend</button>
-    <label>Is moderator</label>
-    <input type="checkbox" id='is_moderator_{{loop.index}}'><br>
-    {% endfor %}
+{% endblock %}
+{% block main_row %}
+    {% if friends %}
+        <div class="create-chat">
+            <label>Chat name
+                <input type="text" id="chat_name">
+            </label>
+            {% for friend in friends %}
+                <div class="create-chat-friend">
+                    <!-- Сверху сначала должен быть аватар -->
+                    <a href="/users/{{ friend.username }}" id="friend_{{ loop.index - 1 }}">{{ friend.username }}</a>
+                    <button id="add_friend_{{ loop.index - 1 }}">Add friend</button>
+                    <button id="remove_friend_{{ loop.index - 1 }}">Remove friend</button>
+                    <label>Is moderator</label>
+                    <input type="checkbox" id='is_moderator_{{ loop.index - 1 }}'><br>
+                </div>
+            {% endfor %}
+        </div>
     {% else %}
-    <a>You don't have friends</a>
+        <a>You don't have friends</a>
     {% endif %}
-    <button id="create_chat">Create chat</button>
-</div>
-<div class="right-row">
-    <a>Friends count: ad</a><br>
-    <a>Your fandoms: {{ fandoms_list }}</a><br>
-</div>
-<script>
-    init("{{name}}", "{{friends|length}}")
-</script>
-</body>
-</html>
+    <button id="create_chat" class="new-button">Create chat</button>
+{% endblock %}
+{% block scripts %}
+    <script>
+        init({{ current_user.friend_count }})
+    </script>
+{% endblock %}

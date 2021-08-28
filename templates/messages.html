@@ -5,18 +5,14 @@
     <link type="text/css" rel="stylesheet" href="/static/css/messages.css">
 {% endblock %}
 {% block main_row %}
-    {% if name != session['username'] %}
-        <a>Error 403, access denied</a>
-    {% else %}
-        <div class="all-chats">
-            {% for chat in chats %}
-                <div class="new-button" onclick="location.href='{{ url_for('chat', chat_id=chat["id"]) }}'">
-                    <a>{{ chat.chatname }}</a><br>
-                </div>
-            {% endfor %}
-            <a href="/user/create_chat">Create new chat</a>
-        </div>
-    {% endif %}
+    <div class="all-chats">
+        {% for chat in chats %}
+            <div class="new-button" onclick="location.href='{{ url_for('chat', chat_id=chat["id"]) }}'">
+                <a>{{ chat.chatname }}</a><br>
+            </div>
+        {% endfor %}
+        <a href="/user/create_chat">Create new chat</a>
+    </div>
 {% endblock %}
 {% block right_row %}
     {{ super() }}

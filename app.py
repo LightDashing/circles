@@ -101,7 +101,7 @@ def index():
         return redirect(url_for('users_page', name=name))
 
 
-@app.route('/users/<name>', methods=['GET'])
+@app.route('/users/<string:name>', methods=['GET'])
 def users_page(name):
     if current_user.is_anonymous:
         view_level = 5
@@ -119,7 +119,7 @@ def users_page(name):
     return render_template('user.html', name=name, posts=posts, user=user)
 
 
-@app.route('/groups/<group_name>', methods=['GET'])
+@app.route('/groups/<string:group_name>', methods=['GET'])
 def group_page(group_name):
     data = DBC.get_group_data(group_name)
     is_in_group = DBC.is_joined(group_name, current_user)
@@ -155,7 +155,7 @@ def friends_page():
         return render_template("friends.html", friends=friends, name=current_user.username)
 
 
-@app.route('/dialog/<username>', methods=['GET', 'POST'])
+@app.route('/dialog/<string:username>', methods=['GET'])
 @login_required
 def dialog_page(username):
     chat_obj = DBC.get_user_dialog(current_user.id, DBC.get_userid_by_name(username))
@@ -171,25 +171,18 @@ def messages():
     return render_template("messages.html", chats=chats, name=current_user.username)
 
 
-@app.route('/user/create_chat', methods=['GET', 'POST'])
+@app.route('/user/create_chat', methods=['GET'])
 @login_required
-def create_chat():
-    if request.method == 'POST':
-        data = request.get_json()
-        chat_id = DBC.create_chat(data['users'], data['chat_name'], data['admin'])
-        return url_for("chat", chat_id=chat_id)
-    else:
-        friends = DBC.get_user_friends(current_user.username, 10)
-        return render_template("create_chat.html", friends=friends, name=current_user.username)
+def create_chat_page():
+    friends = DBC.get_user_friends(current_user.id, 10)
+    return render_template("create_chat.html", friends=friends, name=current_user.username)
 
 
-@app.route('/chat/<chat_id>', methods=['GET'])
+@app.route('/chat/<int:chat_id>', methods=['GET'])
 @login_required
 def chat(chat_id):
     chat_obj = DBC.get_chat_by_id(chat_id)
     user_messages = DBC.get_messages_chat_id(chat_id)
-    for message in user_messages:
-        message["from_user_id"] = DBC.get_name_by_userid(message["from_user_id"])
     return render_template("chat.html", chat=chat_obj,
                            name=current_user.username, messages=user_messages)
 

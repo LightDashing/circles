@@ -2,10 +2,15 @@
     margin: auto;
     display: flex;
     flex-direction: column;
-    width: 50%;
+    width: 70%;
     background: #9694A8;
-    padding: 10px;
+    /*padding: 10px;*/
     border-radius: 8px;
+}
+
+.main-row {
+    justify-content: left;
+    width: 64%;
 }
 
 .textarea {
@@ -14,14 +19,22 @@
     margin: 10px 0;
 }
 
-#incoming_msg {
+.incoming_msg {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    max-height: 25rem;
-    overflow-y: auto;
     scrollbar-width: thin;
-    padding: 0 5px;
+    padding: 15px 10px;
+}
+
+.message-input {
+    position: sticky;
+    position: -webkit-sticky;
+    background: gray;
+    padding: 15px;
+    bottom: 0;
+    /*width: 921px;*/
+    /*max-width: 100%;*/
 }
 
 .message-box {
@@ -37,7 +50,7 @@
     margin: auto;
 }
 
-.all_messages label{
+.all_messages label {
     padding: 10px 0;
 }
 

@@ -1,10 +1,10 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, render_template
 from database import DataBase
 from flask_login import login_required, current_user
 from files import FileOperations
 import re
 
-api_bp = Blueprint('api_bp', __name__)
+api_bp = Blueprint('api_bp', __name__, template_folder='templates')
 DBC = DataBase()
 
 
@@ -94,16 +94,34 @@ def send_message():
     return jsonify(True)
 
 
+# TODO: ВАЖНО! Исправить проблему безопасности, необходимо проверить, есть ли юзвер в чате для которого приходит реквест
+#  а иначе сейчас можно отправить рандомный чат и получить инфу о нём и его сообщениях, что совсем не есть хорошо
 @api_bp.route('/load_messages', methods=['POST'])
 @login_required
 def load_messages():
-    if request.method == 'POST':
-        data = request.get_json()
-        if data['type'] == 'load':
-            user_messages = DBC.load_messages(current_user.username, data['chat_id'])
-        elif data['type'] == 'update':
-            user_messages = DBC.update_messages(data['chat_id'], data['msg_time'])
+    data = request.get_json()
+    if data['type'] == 'load':
+        user_messages = DBC.load_messages(current_user.username, data['chat_id'])
+    else:
+        user_messages = DBC.update_messages(data['chat_id'], data['msg_time'])
     return jsonify(user_messages)
+
+
+@api_bp.route('/load_chat_template', methods=['GET'])
+@login_required
+def load_chat_template():
+    chat_id = request.args.get('id')
+    chat = DBC.get_chat_by_id(chat_id)
+    messages = DBC.load_messages(current_user.username, chat_id)
+    return render_template("chat_template.html", chat=chat, messages=messages)
+
+
+@api_bp.route('/create_chat', methods=['POST'])
+@login_required
+def create_chat():
+    data = request.get_json()
+    chat_id = DBC.create_chat(data['users'], data['chat_name'], data['admin'])
+    return jsonify(chat_id)
 
 
 @api_bp.route('/upload_settings', methods=['POST'])

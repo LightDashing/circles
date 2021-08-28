@@ -6,30 +6,57 @@
     <script type="text/javascript" src="{{ url_for("static", filename="chat.js") }}"></script>
 {% endblock %}
 {% block main_row %}
-    <h1>{{ chat.chatname }}</h1>
-    {% if not chat.is_dialog %}
-        <h3>{{ chat.rules }}</h3>
-    {% endif %}
-    <div class="all_messages">
-        <div id="incoming_msg">
-            {% for message in messages %}
-                {% if message.from_user_id == current_user.id %}
-                    <div class='message-box' style="align-self: end; background: #CEC5C3">
-                        <span class="from-user">{{ get_username(message.from_user_id) }}:</span>
-                        <span class="message-text">{{ message.message }}</span>
-                    </div>
-                {% else %}
-                    <div class='message-box'>
-                        <span class="from-user">{{ get_username(message.from_user_id) }}:</span>
-                        <span class="message-text">{{ message.message }}</span>
-                    </div>
+    <div class="chat-container">
+        <div class="chat-content" id="chat_content_{{ chat.id }}">
+            <div class="chat-header">
+                <h1>{{ chat.chatname }}</h1>
+                {% if not chat.is_dialog %}
+                    <h3>{{ chat.rules }}</h3>
                 {% endif %}
-            {% endfor %}
+            </div>
+            <div class="all_messages">
+                <div id="incoming_msg_{{ chat.id }}" class="incoming_msg">
+                    <p style="align-self: center">Start of dialog</p>
+                    {% for message in messages %}
+                        {% if message.from_user_id == current_user.id %}
+                            <div class='message-box' style="align-self: end; background: #CEC5C3">
+                                <span class="from-user">{{ get_username(message.from_user_id) }}:</span>
+                                <span class="message-text">{{ message.message }}</span>
+                            </div>
+                        {% else %}
+                            <div class='message-box'>
+                                <span class="from-user">{{ get_username(message.from_user_id) }}:</span>
+                                <span class="message-text">{{ message.message }}</span>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <div class="message-input">
+                    <label> Input some message...
+                        <textarea class="textarea" id="message_{{ chat.id }}"></textarea>
+                    </label>
+                    <button class="new-button" id="send_message_{{ chat.id }}">Send</button>
+                </div>
+            </div>
         </div>
-        <label> Input some message...
-            <textarea class="textarea" id="message"></textarea>
-        </label>
-        <button class="new-button" id="send_message">Send</button>
+    </div>
+    <div id="all_messages" style="display: none">
+        <div class="all-chats">
+            {% for chat in chats %}
+                <div class="new-button" onclick="location.href='{{ url_for('chat', chat_id=chat["id"]) }}'">
+                    <a>{{ chat.chatname }}</a><br>
+                </div>
+            {% endfor %}
+            <a href="/user/create_chat">Create new chat</a>
+        </div>
+    </div>
+{% endblock %}
+{% block right_row %}
+    <div class="chat-control-buttons">
+        <button class="new-button" id="all_messages_button">All messages</button>
+        <div class="chat-messages-buttons">
+            
+        </div>
     </div>
 {% endblock %}
 {% block scripts %}
@@ -42,9 +69,9 @@
             last_msg_time = "{{ get_current_datetime() }}"
         {% endif %}
 
-        $("#send_message").click(function () {
-            send_message($("#message").val(), "{{ current_user.username }}", "{{ chat.id }}")
+        $("#send_message_{{ chat.id }}").click(function () {
+            send_message($("#message_{{ chat.id }}").val(), "{{ current_user.username }}", "{{ chat.id }}")
         })
-        update_messages("{{ current_user.username }}", "{{ chat.id }}", last_msg_time)
+        update_messages("{{ current_user.username }}", "{{ chat.id }}", last_msg_time, "update")
     </script>
 {% endblock %}

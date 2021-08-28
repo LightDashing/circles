@@ -3,39 +3,37 @@ let admin = null
 let moderators = []
 let chat_name = null
 
-function init(username, friendscount){
-    usernames.push(username)
-    admin = username
-    console.log(friendscount)
-    for (let i = 1; i < friendscount + 1; i++){
+function init(friends_count) {
+    admin = current_username
+    for (let i = 0; i < friends_count; i++) {
         bind_button(i)
         bind_checkbox(i)
     }
-    $("#create_chat").click(function (){
+    $("#create_chat").click(function () {
         create_chat()
     })
 }
 
-function add_friend(friendname){
-    usernames.push(friendname)
+function add_friend(friend_name) {
+    usernames.push(friend_name)
 }
 
 
-function remove_friend(friendname){
-    for (let i = 0; i < usernames.length; i++){
-        if (usernames[i] === friendname){
+function remove_friend(friend_name) {
+    for (let i = 0; i < usernames.length; i++) {
+        if (usernames[i] === friend_name) {
             usernames.splice(i, 1)
         }
     }
 }
 
-function add_moderator(friendname){
-    moderators.push(friendname)
+function add_moderator(friend_name) {
+    moderators.push(friend_name)
 }
 
-function remove_moderator(friendname){
-    for (let i = 0; i < moderators.length; i++){
-        if (moderators[i] === friendname){
+function remove_moderator(friend_name) {
+    for (let i = 0; i < moderators.length; i++) {
+        if (moderators[i] === friend_name) {
             moderators.splice(i, 1)
         }
     }
@@ -79,6 +77,7 @@ function create_chat(){
     if (chat_name === ''){
         alert("Enter chat name!")
     } else if (usernames.length < 2){
+        // TODO: здесь нужно поменять на кнопку "перейти в диалог"
         alert("Add friends to chat!")
     } else {
         console.log(chat_name)

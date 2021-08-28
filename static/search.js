@@ -22,7 +22,7 @@ $(function initSearch() {
     $search_input.on('focusout', function () {
         setTimeout(() => {
             dropdown.style.display = "none";
-        }, 100)
+        }, 250)
     })
 })
 

@@ -1,0 +1,36 @@
+<div class="chat-content" id="chat_content_{{ chat.id }}">
+    <div class="chat-header">
+        <h1>{{ chat.chatname }}</h1>
+        {% if not chat.is_dialog %}
+            <h3>{{ chat.rules }}</h3>
+        {% endif %}
+    </div>
+    <div class="all_messages">
+        <div id="incoming_msg_{{ chat.id }}" class="incoming_msg">
+            <p style="align-self: center">Start of dialog</p>
+            {% for message in messages %}
+                {% if message.from_user_id == current_user.id %}
+                    <div class='message-box' style="align-self: end; background: #CEC5C3">
+                        <span class="from-user">{{ get_username(message.from_user_id) }}:</span>
+                        <span class="message-text">{{ message.message }}</span>
+                    </div>
+                {% else %}
+                    <div class='message-box'>
+                        <span class="from-user">{{ get_username(message.from_user_id) }}:</span>
+                        <span class="message-text">{{ message.message }}</span>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        <div class="message-input">
+            <label> Input some message...
+                <textarea class="textarea" id="message_{{ chat.id }}"></textarea>
+            </label>
+            <button class="new-button" id="send_message_{{ chat.id }}">Send</button>
+        </div>
+    </div>
+</div>
+<script>
+    {% set item = messages|last %}
+    last_msg_time = "{{item.message_date}}"
+</script>

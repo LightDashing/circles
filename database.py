@@ -18,7 +18,7 @@ class DataBase:
             # ВНИМАНИЕ! AssertionPool разрешает только одно соединение и используется для тестирования
             # Для дальнейшей работы нужно будет подумать над пределами БД и сколько разрешать подключений
             # На данный момент всё работает относительно хорошо и стабильно
-            self.engine = create_engine('postgresql+pg8000://postgres:YourPassword@localhost/postgres',
+            self.engine = create_engine('postgresql://postgres:YourPassword@localhost/postgres',
                                         poolclass=AssertionPool)
             self.g_session = scoped_session(sessionmaker(self.engine))
 
@@ -60,7 +60,19 @@ class DataBase:
             statement = update(User).filter(User.id == user_id).values(is_online=online)
             self.conn_handler.sp_sess.execute(statement)
 
-    def get_user(self, userid):
+    def get_user(self, userid: int, scoped: bool = False) -> User:
+        """
+        This function returns user by their userid, if user exists. If user exists it's expunge him to be outside
+        scoped session, so be careful when using this function on big arrays of data without scoped = True!\n
+        :param userid: User.id
+        :param scoped: If true, function will not create it's own scoped session, also it won't expunge it, default false
+        :return: object User
+        """
+        if scoped:
+            statement = select(User).filter(User.id == userid)
+            user = self.conn_handler.sp_sess.execute(statement).scalar()
+            return user
+
         with self.conn_handler:
             statement = select(User).filter(User.id == userid)
             user = self.conn_handler.sp_sess.execute(statement).scalar()
@@ -210,26 +222,38 @@ class DataBase:
                     user_friends.append(friend.first_user.serialize)
         return user_friends
 
-    def get_userid_by_name(self, name: str) -> int:
+    def get_userid_by_name(self, name: str, scoped: bool = False) -> int:
         """
         Returns user User.id by their name\n
         :param name: str, User.username
+        :param scoped: bool, if true function will not create it's own scoped session and will use existing one
         :return: int, User.id or None if there was no user
         """
+        if scoped:
+            statement = select(User).filter(User.username == name)
+            user = self.conn_handler.sp_sess.execute(statement).scalar()
+            if user:
+                return user.id
+
         with self.conn_handler:
             statement = select(User).filter(User.username == name)
             user = self.conn_handler.sp_sess.execute(statement).scalar()
             if user:
                 return user.id
 
-    def get_name_by_userid(self, user_id: int) -> str:
+    def get_name_by_userid(self, user_id: int, scoped: bool = False) -> str:
         """
         Returns User.username by their id\n
+        :param scoped: boolean, if true it will not create new scoped database session
         :param user_id: int, User.id
         :return: str, User.username or None if there was no user
         """
+        statement = select(User).filter(User.id == user_id)
+        if scoped:
+            user = self.conn_handler.sp_sess.execute(statement).scalar()
+            if user:
+                return user.username
         with self.conn_handler:
-            statement = select(User).filter(User.id == user_id)
             user = self.conn_handler.sp_sess.execute(statement).scalar()
             if user:
                 return user.username
@@ -399,6 +423,7 @@ class DataBase:
         :param chat_id: int, Chat.id
         :return: Chat object
         """
+        print(type(chat_id))
         with self.conn_handler:
             statement = select(Chat).filter(Chat.id == chat_id)
             chat = self.conn_handler.sp_sess.execute(statement).scalar()
@@ -406,29 +431,28 @@ class DataBase:
 
     # TODO: переделать
     def create_chat(self, users: list, chat_name: str, admin: str, rules: str = "There is no rules!") -> int:
-        admin = self.get_userid_by_name(admin)
-        chat = Chat(chatname=chat_name, admin=admin, rules=rules)
-        self.session.add(chat)
-        for user in users:
-            user_id = self.get_userid_by_name(user)
-            user = self.session.query(User).filter(User.id == user_id).first()
-            user.chats.append(chat)
-        self.session.commit()
-        return chat.id
+        admin_id = self.get_userid_by_name(admin)
+        admin = self.get_user(admin_id)
+        chat = Chat(chatname=chat_name, admin=admin_id, rules=rules)
+        chat.users.append(admin)
+        with self.conn_handler:
+            self.conn_handler.sp_sess.add(chat)
+            for user in users:
+                user = self.get_user(self.get_userid_by_name(user, scoped=True), scoped=True)
+                if user:
+                    chat.users.append(user)
+            return chat.id
 
     def load_messages(self, user: str, chat_id: int):
         userid = self.get_userid_by_name(user)
         with self.conn_handler:
-            statement = select(Chat).filter(Chat.id == chat_id)
-            chat = self.conn_handler.sp_sess.execute(statement).first()
-            if chat.messages:
-                messages = []
-                for message in chat.messages:
-                    message[0].from_user_id = self.get_name_by_userid(message.from_user_id)
-                    messages.append(message[0].serialize)
-                return messages
-            else:
-                return False
+            statement = select(Message).join(Chat).filter(Chat.id == chat_id)
+            all_messages = self.conn_handler.sp_sess.execute(statement).all()
+            messages = []
+            for message in all_messages:
+                message = message[0].serialize
+                messages.append(message)
+        return messages
 
     # TODO: переделать как-нибудь чтобы было не так затратно по ресурсам
     def update_messages(self, chat_id: int, msg_time: str):
