@@ -116,6 +116,13 @@ def load_chat_template():
     return render_template("chat_template.html", chat=chat, messages=messages)
 
 
+@api_bp.route('/load_chats', methods=['POST'])
+@login_required
+def load_chats():
+    chats = DBC.get_user_chats(current_user.id)
+    return jsonify(chats)
+
+
 @api_bp.route('/create_chat', methods=['POST'])
 @login_required
 def create_chat():

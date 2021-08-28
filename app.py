@@ -203,8 +203,9 @@ def login():
         if not DBC.login_user(email, password):
             return render_template('login.html', error='dont_match')
         user_id = DBC.get_userid(email)
-        login_user(user_id, remember=True)
-        DBC.set_online(int(user_id), True)
+        user = DBC.get_user(user_id)
+        login_user(user, remember=True)
+        DBC.set_online(user_id, True)
         return redirect(url_for('users_page', name=current_user.username))
     else:
         if not current_user.is_anonymous:

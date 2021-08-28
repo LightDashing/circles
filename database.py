@@ -510,7 +510,7 @@ class DataBase:
             statement = select(Friend).filter(
                 or_(and_(Friend.first_user_id == user, Friend.second_user_id == second_user),
                     and_(Friend.first_user_id == second_user, Friend.second_user_id == user)))
-            users = self.conn_handler.sp_sess.execute(statement).scalars()
+            users = self.conn_handler.sp_sess.execute(statement).scalar()
             if users:
                 return False
             else:
@@ -518,33 +518,29 @@ class DataBase:
                     Friend(first_user_id=user, second_user_id=second_user))  # Adding new entry
                 return True
 
-    # TODO: переделать
     def remove_friend(self, user: int, second_user: int) -> bool:
         """
         This function removes friend and decreases amount of friends both users have\n
-        returns boolean value, true if deletion was successful and false if there was no rows deleted
+        :param user: id of first user, usually current_user
+        :param second_user: id of second user, someone else
+        :return: True if deletion was successful, false if there was no friend entry
         """
-        row = self.session.query(Friend).filter(  # Getting existing rows
-            or_(and_(Friend.first_user_id == user, Friend.second_user_id == second_user),
-                and_(Friend.first_user_id == second_user, Friend.second_user_id == user))).first()
-        if not row:  # If there is no existing entries, then no need for further actions
-            return False
-        if not row.is_request:
-            # If entry is just a friend request then no need to change amount of friends
-            self.session.query(Friend).filter(and_(Friend.first_user_id == row.first_user_id,
-                                                   row.second_user_id == Friend.second_user_id)).delete()
-            # There we are deleting entry and decreasing friends count
-            self.session.query(User).filter(User.id == user).update({User.friend_count: User.friend_count - 1})
-            self.session.query(User).filter(User.id == second_user).update({User.friend_count: User.friend_count - 1})
-            self.session.commit()
+        with self.conn_handler:
+            statement = select(Friend).filter(
+                or_(and_(Friend.first_user_id == user, Friend.second_user_id == second_user),
+                    and_(Friend.first_user_id == second_user, Friend.second_user_id == user)))
+            friend = self.conn_handler.sp_sess.execute(statement).scalar()  # Getting existing rows
+            if not friend:  # If there is no friend entry like that
+                return False
+            if not friend.is_request:  # If friend already accepted
+                statement = update(User).filter((User.id == user) | (User.id == second_user)).values(
+                    friend_count=User.friend_count - 1)
+                self.conn_handler.sp_sess.execute(statement)  # Decreasing number of friends
+            statement = delete(Friend).filter((Friend.first_user_id == friend.first_user_id) &
+                                              (Friend.second_user_id == friend.second_user_id))
+            self.conn_handler.sp_sess.execute(statement)
             return True
-        # Just deleting entry
-        self.session.query(Friend).filter(and_(Friend.first_user_id == row.first_user_id,
-                                               row.second_user_id == Friend.second_user_id)).delete()
-        self.session.commit()
-        return False
 
-    # TODO: переделать
     def accept_request(self, second_user: int, user: int) -> bool:
         """
         This function gets two users and finds a friend entry, updating it with is_request to False\n
@@ -552,11 +548,13 @@ class DataBase:
         :param user: int, User.id
         :return: True if updating was successful
         """
-        self.session.query(Friend).filter(Friend.first_user_id == user, Friend.second_user_id == second_user).update(
-            {Friend.is_request: False, Friend.first_ulevel: 4, Friend.second_ulevel: 4})
-        self.session.query(User).filter(User.id == user).update({User.friend_count: User.friend_count + 1})
-        self.session.query(User).filter(User.id == second_user).update({User.friend_count: User.friend_count + 1})
-        self.session.commit()
+        with self.conn_handler:
+            statement = update(Friend).filter(Friend.first_user_id == user, Friend.second_user_id == second_user) \
+                .values(is_request=False, first_ulevel=4, second_ulevel=4)
+            self.conn_handler.sp_sess.execute(statement)
+            statement = update(User).filter((User.id == user) | (User.id == second_user)).values(
+                friend_count=User.friend_count + 1)
+            self.conn_handler.sp_sess.execute(statement)
         return True
 
     def is_friend(self, user: int, second_user: int):

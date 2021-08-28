@@ -82,13 +82,18 @@ function create_chat(){
     } else {
         console.log(chat_name)
         $.ajax({
-            url: '/user/create_chat',
+            url: '/api/create_chat',
             method: 'POST',
-            data: JSON.stringify({"users":usernames, "admin":admin, "moderators":moderators, "chat_name": chat_name}),
+            data: JSON.stringify({
+                "users": usernames,
+                "admin": admin,
+                "moderators": moderators,
+                "chat_name": chat_name
+            }),
             dataType: 'json',
             contentType: 'application/json',
-            success: function(){
-                
+            success: function () {
+
             }
         })
     }

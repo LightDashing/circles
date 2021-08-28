@@ -42,7 +42,7 @@ function update_messages(username, chat_id, last_msg_time, type) {
                                      <span class="from-user"> ${el["from_user_id"]}: </span> 
                                     <span class="message-text"> ${el["message"]}</span></div>`;
                         } else {
-                            element = `<div class="message-box"><span class="from-user"> ${el["user"]}: </span> 
+                            element = `<div class="message-box"><span class="from-user"> ${el["from_user_id"]}: </span> 
                                     <span class="message-text"> ${el["message"]}</span></div>`;
                         }
                         $(`#incoming_msg_${chat_id}`).append(element);
@@ -59,6 +59,8 @@ function update_messages(username, chat_id, last_msg_time, type) {
 }
 
 function getUserChats() {
+    let chats = $(".all-chats")
+    chats.empty()
     $.ajax({
         url: '/api/load_chats',
         method: 'POST',
@@ -67,7 +69,7 @@ function getUserChats() {
                 let el = `<div class="new-button" onclick="changeChat(${element['id']})"
                     <a>${element['chatname']}</a><br>
                 </div>`;
-                $(".all-chats").append(el);
+                chats.append(el);
             })
         }
     })
