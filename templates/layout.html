@@ -22,6 +22,7 @@
             {{ current_user.id }}
             const current_username = '{{ current_user.username }}'
         </script>
+        <script type="text/javascript" src="{{ url_for("static", filename="updates.js") }}"></script>
     {% endblock %}
 </head>
 <body>

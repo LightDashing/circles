@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, sessionmaker, scoped_session
 from sqlalchemy.exc import IntegrityError
 import datetime
 import re
-from models import User, UserPost, Message, Friend, Chat, Group, GroupPost, UserGroupLink
+from models import User, UserPost, Message, Friend, Chat, Group, GroupPost, UserGroupLink, UserChatLink
 from user_exceptions import UserAlreadyExist
 
 
@@ -85,7 +85,7 @@ class DataBase:
             user = self.conn_handler.sp_sess.execute(statement).scalar()
             return user.id
 
-    def userdata_by_name(self, userid: int):
+    def userdata_by(self, userid: int):
         with self.conn_handler:
             statement = select(User).filter(User.id == userid)
             user = self.conn_handler.sp_sess.execute(statement).scalar()
@@ -139,18 +139,22 @@ class DataBase:
         pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
         if not re.fullmatch(pattern, email):
             return 1
-        elif self.session.query(User).filter(User.username == name).first().email == email:
-            return 3
-        elif self.session.query(User).filter(User.email == email).first():
-            return 2
-        try:
-            self.session.query(User).filter(User.username == name).update({User.email: email})
-            self.session.commit()
-            return 0
-        except IntegrityError:
-            return -1
+        with self.conn_handler:
+            statement = select(User).filter(User.username == name)
+            user = self.conn_handler.sp_sess.execute(statement).scalar()
+            if user.email == email:
+                return 3
 
-    # TODO: переделать!
+            statement = select(User).filter(User.email == email)
+            user = self.conn_handler.sp_sess.execute(statement).scalar()
+            if user.email == email:
+                return 2
+
+            statement = update(User).filter(User.username == name).values(email=email)
+            self.conn_handler.sp_sess.execute(statement)
+            return 0
+
+    # TODO: Когда будет добавлена система ролей эта штука будет переработана
     def ch_min_posting_lvl(self, name: str, lvl: int) -> int:
         """
         his function changes minimum level other users need, to post on your wall, it returns one of the codes
@@ -168,23 +172,57 @@ class DataBase:
             return -1
 
     # TODO: переделать!
-    def change_publish_settings(self, name: str, publish: bool) -> int:
+    def change_publish_settings(self, name: str, publish: bool) -> bool:
         """
-        This function can change if other users may post on your wall or not, it returns one of the codes
-        0: publish settings was successfully changed
-        1: some unknown error occurred on database side
+        This function can change if other users may post on your wall or not, it returns one of the codes\n
+        :param name: user nickname
+        :param publish: boolean, true or false, can other post or not
+        :return: true if operation was successful
         """
-        try:
-            self.session.query(User).filter(User.username == name).update({User.other_publish: publish})
-            self.session.commit()
-            return 0
-        except IntegrityError:
-            return -1
+        with self.conn_handler:
+            statement = update(User).filter(User.username == name).values(other_publish=publish)
+            return True
 
-    # TODO: переделать!
     def change_avatar(self, userid: int, filepath: str):
-        self.session.query(User).filter(User.id == userid).update({User.avatar: filepath})
-        self.session.commit()
+        """
+        This function changes filepath to user avatar on server in database entry\n
+        :param userid: id of user which avatar you need to change, User.id
+        :param filepath: path of new file in server filesystem relative to server directory
+        :return: true if operation was successful
+        """
+        with self.conn_handler:
+            statement = update(User).filter(User.id == userid).values(avatar=filepath)
+            self.conn_handler.sp_sess.execute(statement)
+
+    # TODO: доделать функцию
+    def update_all(self, userid):
+        updates = {}
+        with self.conn_handler:
+            # user = self.get_user(userid, True)
+
+            statement = select(Friend).filter((Friend.is_checked == False) & (Friend.second_user_id == userid))
+            friends = self.conn_handler.sp_sess.execute(statement).all()
+            friends_arr = []
+            for friend in friends:
+                friend = friend[0].serialize
+                friend["first_user_id"] = self.get_name_by_userid(friend["first_user_id"], True)
+                friends_arr.append(friend)
+            updates["friends"] = len(friends_arr)
+
+            statement = select(Message).join(Chat).join(UserChatLink).filter((UserChatLink.user_id == userid) &
+                                                                             (UserChatLink.is_muted != True) &
+                                                                             (UserChatLink.last_visited <
+                                                                              datetime.datetime.now()) &
+                                                                             (Message.message_date >
+                                                                              UserChatLink.last_visited) &
+                                                                             (UserChatLink.is_notified == False))
+
+            messages = self.conn_handler.sp_sess.execute(statement).all()
+            updates['messages'] = len(messages)
+
+            statement = update(UserChatLink).filter(UserChatLink.user_id == userid).values(is_notified=True)
+            self.conn_handler.sp_sess.execute(statement)
+            return updates
 
     def search_for(self, search_query: str, search_type: str = 'user') -> list[dict]:
         """
@@ -379,14 +417,13 @@ class DataBase:
             statement = select(User).filter(or_(User.id == user_id, User.id == s_user_id))
             users = self.conn_handler.sp_sess.execute(statement).scalars().fetchmany(2)
             # This statement is to get all shared chats between users
-            statement = select(Chat).join(User).filter(
-                and_(Chat.users.any(id=users[0].id), Chat.users.any(id=users[1].id)))
-            chats = self.conn_handler.sp_sess.execute(statement).scalars()
+            statement = select(Chat).filter(Chat.users.contains(users[0]) & (Chat.users.contains(users[1])))
+            chats = self.conn_handler.sp_sess.execute(statement).all()
             for chat in chats:
-                if chat.is_dialog:
-                    return chat.serialize
-        # If there are chat where is_dialog is True, then it's right chat, else we create new
-        chat = self.create_dialog_chat(users[0], users[1])
+                if chat[0].is_dialog:
+                    return chat[0].serialize
+            # If there are chat where is_dialog is True, then it's right chat, else we create new
+            chat = self.create_dialog_chat(users[0], users[1])
         return chat
 
     def create_dialog_chat(self, user: User, s_user: User) -> Chat:
@@ -399,10 +436,9 @@ class DataBase:
         """
         dialog = Chat(chatname=f"{user.username}, {s_user.username}", is_dialog=True)
         # chatname isn't really matters because in html it would be displayed as friends name
-        with self.conn_handler:
-            self.conn_handler.sp_sess.add(dialog)
-            dialog.users.append(user), dialog.users.append(s_user)
-            return dialog.serialize
+        self.conn_handler.sp_sess.add(dialog)
+        dialog.users.append(user), dialog.users.append(s_user)
+        return dialog.serialize
 
     # TODO: redo, not all messages needs to be loaded, only like 30?
     def get_messages_chat_id(self, chat_id: int) -> list:
@@ -414,7 +450,10 @@ class DataBase:
         with self.conn_handler:
             statement = select(Chat).filter(Chat.id == chat_id)
             chat = self.conn_handler.sp_sess.execute(statement).scalar()
-            messages = [message.serialize for message in chat.messages]
+            if chat:
+                messages = [message.serialize for message in chat.messages]
+            else:
+                messages = []
             return messages
 
     def get_chat_by_id(self, chat_id: int) -> Chat:
@@ -446,6 +485,7 @@ class DataBase:
     def load_messages(self, user: str, chat_id: int):
         userid = self.get_userid_by_name(user)
         with self.conn_handler:
+            statement = update(UserChatLink).filter(UserChatLink.user_id == userid).values(is_notified=True)
             statement = select(Message).join(Chat).filter(Chat.id == chat_id)
             all_messages = self.conn_handler.sp_sess.execute(statement).all()
             messages = []
@@ -455,14 +495,24 @@ class DataBase:
         return messages
 
     # TODO: переделать как-нибудь чтобы было не так затратно по ресурсам
-    def update_messages(self, chat_id: int, msg_time: str):
+    def update_messages(self, chat_id: int, msg_time: str, user_id: int):
         if not msg_time:
             msg_time = str(datetime.datetime.now())
         msg_time = datetime.datetime.strptime(msg_time, "%Y-%m-%d %H:%M:%S.%f")
         with self.conn_handler:
+            statement = select(UserChatLink).filter(UserChatLink.user_id == user_id, UserChatLink.chat_id == chat_id)
+            users = self.conn_handler.sp_sess.execute(statement).scalar()
+            if not users:
+                return []
+
             statement = select(Message).join(Chat).filter(and_(Chat.id == chat_id, Message.message_date > msg_time))
-            # statement = select(Chat).filter(Chat.id == chat_id)
             messages = self.conn_handler.sp_sess.execute(statement).all()
+
+            statement = update(UserChatLink).filter(
+                (UserChatLink.user_id == user_id) & (UserChatLink.chat_id == chat_id)).values(
+                last_visited=datetime.datetime.now())
+            self.conn_handler.sp_sess.execute(statement)
+
             all_messages = []
             if messages:
                 # ВАЖНО! Какая-то странная ошибка, почему-то если я вызываю сначала get_name_by_userid, а лишь потом
@@ -483,6 +533,8 @@ class DataBase:
             chat = self.conn_handler.sp_sess.execute(statement).scalar()
             self.conn_handler.sp_sess.add(
                 Message(from_user_id=user, message_date=datetime.datetime.now(), message=msg, chat_id=chat.id))
+            statement = update(UserChatLink).filter(UserChatLink.chat_id == chat_id).values(is_notified=False)
+            self.conn_handler.sp_sess.execute(statement)
         return True
 
     def publish_post(self, msg: str, v_lvl: int, user: str, where_id: str = None, att: str = None) -> bool:
@@ -515,7 +567,8 @@ class DataBase:
                 return False
             else:
                 self.conn_handler.sp_sess.add(
-                    Friend(first_user_id=user, second_user_id=second_user))  # Adding new entry
+                    Friend(first_user_id=user, second_user_id=second_user,
+                           date_added=datetime.datetime.now()))  # Adding new entry
                 return True
 
     def remove_friend(self, user: int, second_user: int) -> bool:

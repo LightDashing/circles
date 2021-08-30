@@ -26,6 +26,9 @@ app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 20
 
 login_manager = LoginManager()
 login_manager.login_view = '/login'
+login_manager.blueprint_login_views = {
+    'api': '/404/'
+}
 login_manager.init_app(app)
 
 
@@ -114,7 +117,7 @@ def users_page(name):
             view_level = 5
     else:
         view_level = 0
-    user = DBC.userdata_by_name(DBC.get_userid_by_name(name))
+    user = DBC.userdata_by(DBC.get_userid_by_name(name))
     posts = DBC.get_posts_by_id(name, view_level)
     return render_template('user.html', name=name, posts=posts, user=user)
 

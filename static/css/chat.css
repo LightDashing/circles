@@ -46,6 +46,11 @@
     max-width: 50%;
 }
 
+.chat-messages-buttons {
+    display: flex;
+    flex-direction: column;
+}
+
 .all_messages .new-button {
     margin: auto;
 }

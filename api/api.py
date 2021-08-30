@@ -29,7 +29,7 @@ def publish_post():
     if request.method == 'POST':
         data = request.get_json()
         if data.get("fromid", None):
-            userdata = DBC.userdata_by_name(data['whereid'])
+            userdata = DBC.userdata_by(data['whereid'])
             if not userdata['can_post']:
                 return jsonify(False)
             elif data["view_lvl"] > userdata["min_post_lvl"]:
@@ -103,8 +103,15 @@ def load_messages():
     if data['type'] == 'load':
         user_messages = DBC.load_messages(current_user.username, data['chat_id'])
     else:
-        user_messages = DBC.update_messages(data['chat_id'], data['msg_time'])
+        user_messages = DBC.update_messages(data['chat_id'], data['msg_time'], current_user.id)
     return jsonify(user_messages)
+
+
+@api_bp.route('/update_all', methods=['POST'])
+@login_required
+def update_all():
+    updates = DBC.update_all(current_user.id)
+    return jsonify(updates)
 
 
 @api_bp.route('/load_chat_template', methods=['GET'])

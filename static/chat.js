@@ -1,4 +1,5 @@
 let message_updater;
+let chat_list = []
 
 $(function onReady() {
     $("#all_messages_button").click(function () {
@@ -66,7 +67,7 @@ function getUserChats() {
         method: 'POST',
         success: function (data) {
             data.forEach(function (element) {
-                let el = `<div class="new-button" onclick="changeChat(${element['id']})"
+                let el = `<div class="new-button" onclick="changeChat(${element['id']}, '${element['chatname']}')"
                     <a>${element['chatname']}</a><br>
                 </div>`;
                 chats.append(el);
@@ -75,7 +76,7 @@ function getUserChats() {
     })
 }
 
-function changeChat(chat_id) {
+function changeChat(chat_id, chat_name) {
     let all_messages = $("#all_messages");
     let chat_container = $(".chat-container");
     if (!all_messages.is(":hidden")) {
@@ -88,10 +89,16 @@ function changeChat(chat_id) {
             $(`#send_message_${chat_id}`).click(function () {
                 send_message($(`#message_${chat_id}`).val(), current_username, chat_id);
                 $(`message_${chat_id}`).val("");
+                update_messages(current_username, chat_id, last_msg_time, "update");
             })
+            if (!chat_list.includes(chat_name)) {
+                let new_chat_button = `<button class="new-button" id="chat_${chat_id}" 
+                                    onclick="changeChat(${chat_id}, '${chat_name}')">${chat_name}</button>`
+                chat_list.push(chat_name)
+                $(".chat-messages-buttons").append(new_chat_button)
+            }
         }
     )
-    update_messages(current_username, chat_id, last_msg_time, "update");
 
 }
 

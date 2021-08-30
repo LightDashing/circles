@@ -13,6 +13,7 @@ Base = declarative_base()
 #  десятки мегабайт текста
 
 class User(UserMixin, Base):
+    # TODO: добавить возраст и прочие стандартные вещи
     __tablename__ = 'users'
     id = Column(INTEGER, primary_key=True, autoincrement=True)
     username = Column(VARCHAR(30), unique=True, nullable=False)
@@ -24,6 +25,7 @@ class User(UserMixin, Base):
     # email_active = Column(Boolean, nullable=False, default=False)
     description = Column(VARCHAR())
     status = Column(VARCHAR(30), nullable=False, default=' ')
+    # TODO: переделать чтобы на линуксе путь был с прямым слешем
     avatar = Column(VARCHAR(128), default='..\\static\\img\\user-avatar.svg')
     friend_count = Column(INTEGER, nullable=False, default=0)
     # Могут ли другие люди оставлять у этого пользователя записи на стене
@@ -64,6 +66,7 @@ class Friend(Base):
     first_user_id = Column(INTEGER, ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
     second_user_id = Column(INTEGER, ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
     is_request = Column(Boolean, nullable=False, default=True)
+    is_checked = Column(Boolean, nullable=False, default=False)
     date_added = Column(DateTime, nullable=False, default=datetime.datetime.now())
     first_ulevel = Column(INTEGER, nullable=False, default=5)
     second_ulevel = Column(INTEGER, nullable=False, default=5)
@@ -181,6 +184,9 @@ class UserChatLink(Base):
     __tablename__ = 'user_chat_link'
     user_id = Column(INTEGER, ForeignKey("users.id"), primary_key=True)
     chat_id = Column(INTEGER, ForeignKey("chats.id"), primary_key=True)
+    is_muted = Column(Boolean, nullable=False, default=False)
+    is_notified = Column(Boolean, nullable=False, default=False)
+    last_visited = Column(DateTime, nullable=False, default=datetime.datetime.now())
 
 
 class Chat(Base):

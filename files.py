@@ -58,7 +58,7 @@ class FileOperations:
             with open(filepath, 'wb') as img:
                 img.write(base64.decodebytes(file.encode()))
         if filetype == 'avatar':
-            old_avatar = self.db.userdata_by_name(self.db.get_name_by_userid(self.userid))['avatar']
+            old_avatar = self.db.userdata_by(self.userid)['avatar']
             if old_avatar[old_avatar.rfind('\\') + 1:] != 'user-avatar.svg':
                 os.remove(old_avatar[old_avatar.find('.') + 1:])
             self.db.change_avatar(self.userid, os.path.join("..", filepath))
