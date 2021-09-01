@@ -1,43 +1,30 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>InRole - {{ group.group_name }}</title>
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script>window.jQuery || document.write('<script src="{{
-  url_for('static', filename='jquery3.6.0.js') }}">\x3C/script>')</script>
-    <script type=text/javascript>
-        $SCRIPT_ROOT = {{ request.script_root|tojson }};
-    </script>
+{% extends "layout.html" %}
+{% block title %}{{ group.group_name }}{% endblock %}
+{% block head %}
+    {{ super() }}
     <script type="text/javascript" src="{{ url_for("static", filename="group.js") }}"></script>
-</head>
-<body>
-<div class="left-row">
-
-</div>
-<div class="main-row">
+{% endblock %}
+{% block main_row %}
     <h1 class="group-name">{{ group.group_name }}</h1>
-</div>
-<div class="right-row">
     <button id="join_b">Join community</button>
     <button id="leave_b">Leave community</button>
-</div>
-<script>
-    let leave_b = $("#leave_b")
-    leave_b.hide()
-    let join_b = $("#join_b")
-    join_b.hide()
-    {% if not joined %}
-        join_b.show()
-    {% else %}
-        leave_b.show()
-    {% endif %}
-    join_b.click(function () {
-        join("{{ group.group_name }}")
-    })
-    leave_b.click(function () {
-        leave("{{ group.group_name }}")
-    })
-</script>
-</body>
-</html>
+{% endblock %}
+{% block scripts %}
+    <script>
+        let leave_b = $("#leave_b")
+        leave_b.hide()
+        let join_b = $("#join_b")
+        join_b.hide()
+        {% if not joined %}
+            join_b.show()
+        {% else %}
+            leave_b.show()
+        {% endif %}
+        join_b.click(function () {
+            join("{{ group.group_name }}")
+        })
+        leave_b.click(function () {
+            leave("{{ group.group_name }}")
+        })
+    </script>
+{% endblock %}

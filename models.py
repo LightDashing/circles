@@ -1,5 +1,6 @@
-from sqlalchemy import Column, INTEGER, Text, ForeignKey, DateTime, Boolean, or_, and_, Index
-from sqlalchemy.dialects.postgresql import VARCHAR
+from sqlalchemy import Column, INTEGER, Text, ForeignKey, DateTime, \
+    Boolean, or_, and_, Index, SMALLINT, ForeignKeyConstraint
+from sqlalchemy.dialects.postgresql import VARCHAR, TEXT
 from sqlalchemy.engine import create_engine
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
@@ -13,7 +14,6 @@ Base = declarative_base()
 #  десятки мегабайт текста
 
 class User(UserMixin, Base):
-    # TODO: добавить возраст и прочие стандартные вещи
     __tablename__ = 'users'
     id = Column(INTEGER, primary_key=True, autoincrement=True)
     username = Column(VARCHAR(30), unique=True, nullable=False)
@@ -22,11 +22,12 @@ class User(UserMixin, Base):
     registration_date = Column(DateTime, nullable=False, default=datetime.datetime.now())
     last_time_online = Column(DateTime, nullable=False)
     is_online = Column(Boolean)
+    # age = Column(SMALLINT)
     # email_active = Column(Boolean, nullable=False, default=False)
     description = Column(VARCHAR())
     status = Column(VARCHAR(30), nullable=False, default=' ')
     # TODO: переделать чтобы на линуксе путь был с прямым слешем
-    avatar = Column(VARCHAR(128), default='..\\static\\img\\user-avatar.svg')
+    avatar = Column(TEXT, default='..\\static\\img\\user-avatar.svg')
     friend_count = Column(INTEGER, nullable=False, default=0)
     # Могут ли другие люди оставлять у этого пользователя записи на стене
     other_publish = Column(Boolean, nullable=False, default=True)
@@ -42,7 +43,8 @@ class User(UserMixin, Base):
     chats = relationship("Chat", secondary="user_chat_link", back_populates="users")
     # user_friends = relationship("Friend", backref="id",cascade="all, delete-orphan")
     user_posts = relationship("UserPost", cascade="all, delete-orphan")
-    user_characters = relationship("UserCharacter", cascade='all, delete')
+
+    # notifications = relationship("Notification", cascade='all, delete')
 
     @property
     def serialize(self):
@@ -73,6 +75,14 @@ class Friend(Base):
 
     first_user = relationship("User", foreign_keys=[first_user_id])
     second_user = relationship("User", foreign_keys=[second_user_id])
+    first_user_roles = relationship("UserRole", secondary="friend_role_link",
+                                    primaryjoin="(FriendRoleLink.first_u_id == Friend.first_user_id) & "
+                                                "(FriendRoleLink.second_u_id == Friend.second_user_id)",
+                                    overlaps="second_user_roles")
+    second_user_roles = relationship("UserRole", secondary="friend_role_link",
+                                     primaryjoin="(FriendRoleLink.first_u_id == Friend.second_user_id) &"
+                                                 "(FriendRoleLink.second_u_id == Friend.first_user_id)",
+                                     overlaps="first_user_roles")
 
     @property
     def serialize(self):
@@ -95,8 +105,11 @@ class UserPost(Base):
     whereid = Column(INTEGER, nullable=False)
     # Уровень поста, 5 - виден для всех, 4 - виден для всех друзей и дальше по уменьшению
     view_level = Column(INTEGER, nullable=False, default=5)
+    is_private = Column(Boolean, nullable=False, default=False)
     date_added = Column(DateTime, nullable=False, default=datetime.datetime.now())
-    message = Column(VARCHAR())
+    message = Column(TEXT)
+
+    roles = relationship("UserRole", secondary="user_post_role_link ")
 
     @property
     def serialize(self):
@@ -110,28 +123,45 @@ class UserPost(Base):
         }
 
 
-class UserCharacter(Base):
-    __tablename__ = 'usercharacters'
-    id = Column(INTEGER, primary_key=True, autoincrement=True)
-    userid = Column(INTEGER, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
-    character_name = Column(VARCHAR(64), nullable=False)
-    character_picture = Column(VARCHAR(128))
-    ch_desc_short = Column(VARCHAR(128), nullable=False, default="None")
-    ch_desc_long = Column(VARCHAR(), nullable=False, default="None")
-    ch_main_fandom = Column(INTEGER, nullable=False, default=1)
-    ch_skills = Column(VARCHAR())
+# TODO: переделать систему уведомлений
+# class Notification(Base):
+#     __tablename__ = 'notifications'
+#     id = Column(INTEGER, primary_key=True, autoincrement=True)
+#     type = Column(TEXT, nullable=False)
+#     user = Column(INTEGER, ForeignKey("users.id", ondelete='CASCADE'), nullable=False)
 
-    @property
-    def serialize(self):
-        return {
-            "id": self.id,
-            "userid": self.userid,
-            "character_name": self.character_name,
-            "character_picture": self.character_picture,
-            "ch_desc_short": self.ch_desc_short,
-            "ch_fandom_id": self.ch_fandom_id,
-            "ch_skills": self.ch_skills
-        }
+
+class UserRole(Base):
+    __tablename__ = 'user_roles'
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
+    role_name = Column(VARCHAR(32), unique=True, index=True)
+    role_group = Column(INTEGER, ForeignKey('user_role_group.id', ondelete='CASCADE'), nullable=False)
+    is_checked = Column(Boolean, nullable=False, default=False)
+    creator = Column(INTEGER, ForeignKey('users.id', ondelete='CASCADE'))
+
+    # friends_roles = relationship(Friend, secondary="friend_role_link")
+
+
+class UserRoleGroup(Base):
+    __tablename__ = 'user_role_group'
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
+    group_name = Column(VARCHAR(128), unique=True, index=True)
+
+    roles = relationship(UserRole, cascade="all, delete-orphan")
+
+
+class FriendRoleLink(Base):
+    __tablename__ = 'friend_role_link'
+    first_u_id = Column(INTEGER, primary_key=True)
+    second_u_id = Column(INTEGER, primary_key=True)
+    role_id = Column(INTEGER, ForeignKey("user_roles.id"), primary_key=True)
+    ForeignKeyConstraint(("first_u_id", "second_u_id"), ("friends.first_user_id", "friends.second_user_id"))
+
+
+class UserPostRoleLink(Base):
+    __tablename__ = 'user_post_role_link'
+    post_id = Column(INTEGER, ForeignKey("userposts.id"), primary_key=True)
+    role_id = Column(INTEGER, ForeignKey('user_roles.id'), primary_key=True)
 
 
 class UserGroupLink(Base):
@@ -144,7 +174,7 @@ class UserGroupLink(Base):
 class Group(Base):
     __tablename__ = 'groups'
     id = Column(INTEGER, primary_key=True, autoincrement=True)
-    avatar = Column(VARCHAR(128))
+    avatar = Column(TEXT)
     status = Column(VARCHAR(128))
     group_name = Column(VARCHAR(128), nullable=False, unique=True)
     owner = Column(INTEGER, nullable=False)
@@ -152,7 +182,7 @@ class Group(Base):
     # fandom_tags = Column(ARRAY(VARCHAR(128)))
     # moderators = Column(ARRAY(INTEGER))
     description = Column(VARCHAR(), nullable=False, default='This group have no description')
-    rules = Column(VARCHAR(1024), nullable=False, default='This group does not have rules. Anarchy rules!')
+    rules = Column(TEXT, nullable=False, default='This group does not have rules. Anarchy rules!')
     # Очки группы. Для чего-нибудь придумать?
     # group_points = Column(INTEGER, default=0)
 
@@ -194,7 +224,7 @@ class Chat(Base):
     id = Column(INTEGER, primary_key=True, autoincrement=True)
     chatname = Column(VARCHAR(128), nullable=False)
     admin = Column(INTEGER, ForeignKey('users.id'))
-    rules = Column(VARCHAR(1024))
+    rules = Column(TEXT)
     is_dialog = Column(Boolean, nullable=False, default=False)
 
     messages = relationship("Message", cascade="all, delete-orphan")
@@ -216,7 +246,7 @@ class Message(Base):
     id = Column(INTEGER, primary_key=True, autoincrement=True)
     from_user_id = Column(INTEGER, nullable=False)
     message_date = Column(DateTime, nullable=False, default=datetime.datetime.now())
-    message = Column(VARCHAR(), nullable=False)
+    message = Column(TEXT, nullable=False)
     chat_id = Column(INTEGER, ForeignKey('chats.id', ondelete='CASCADE'), nullable=False)
 
     @property
