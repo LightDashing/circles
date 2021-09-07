@@ -107,18 +107,18 @@ def index():
 @app.route('/users/<string:name>', methods=['GET'])
 def users_page(name):
     if current_user.is_anonymous:
-        view_level = 5
+        user_roles = []
+        posts = DBC.get_posts_by_id(name, user_roles)
     elif name != current_user.username:
-        friend_data = DBC.is_friend(DBC.get_userid_by_name(name), current_user.id)
-        # DBC.get_user_dialog(current_user.id, DBC.get_userid_by_name(name))
-        if friend_data:
-            view_level = friend_data['first_ulevel']
+        user_roles = DBC.get_friend_roles(DBC.get_userid_by_name(name), current_user.id)
+        if user_roles:
+            user_roles = [role['role_name'] for role in user_roles]
+            posts = DBC.get_posts_by_id(name, user_roles)
         else:
-            view_level = 5
+            posts = DBC.get_posts_by_id(name, [])
     else:
-        view_level = 0
+        posts = DBC.get_your_posts(current_user.id)
     user = DBC.userdata_by(DBC.get_userid_by_name(name))
-    posts = DBC.get_posts_by_id(name, view_level)
     return render_template('user.html', name=name, posts=posts, user=user)
 
 

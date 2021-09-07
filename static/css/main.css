@@ -278,6 +278,7 @@
 
 .tag-button-small {
     border-radius: 8px;
+    border: none;
     background: #d5d6e4;
     font-size: 0.8em;
     padding: 3px 8px;

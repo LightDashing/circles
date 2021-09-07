@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, sessionmaker, scoped_session
 from sqlalchemy.exc import IntegrityError
 import datetime
 import re
-from models import User, UserPost, Message, Friend, Chat, Group, GroupPost, UserGroupLink, UserChatLink
+from models import User, UserPost, Message, Friend, Chat, Group, GroupPost, UserGroupLink, UserChatLink, UserRole
 from user_exceptions import UserAlreadyExist
 
 
@@ -36,6 +36,24 @@ class DataBase:
 
     def __init__(self):
         self.conn_handler = self.ConnectionHandler()
+        # Для удобства, здесь будут константы для часто использующихся запросов
+        self.FRIEND_STATEMENT = lambda x, y: select(Friend).filter(
+            ((Friend.first_user_id == x) & (Friend.second_user_id == y)) |
+            ((Friend.first_user_id == y) & (Friend.second_user_id == x)))
+
+    @staticmethod
+    def is_arr_part(main_arr, sub_arr):
+        matches_count = 0
+        if len(main_arr) > len(sub_arr):
+            return False
+        else:
+            for i in range(len(main_arr)):
+                if main_arr[i] in sub_arr:
+                    matches_count += 1
+            if matches_count == len(main_arr):
+                return True
+            else:
+                return False
 
     # TODO: пароль должен быть защищён, необходимо хранить пароль в солёном md5 хеше
     def add_user(self, username, email, password):
@@ -296,20 +314,37 @@ class DataBase:
             if user:
                 return user.username
 
-    def get_posts_by_id(self, username: str, view_level) -> list[UserPost]:
+    def get_your_posts(self, user_id):
+        with self.conn_handler:
+            statement = select(UserPost).filter(UserPost.whereid == user_id)
+            posts = self.conn_handler.sp_sess.execute(statement)
+            if posts:
+                posts = [post[0].serialize for post in posts]
+                return posts
+
+    def get_posts_by_id(self, username: str, user_roles: list[str]) -> list[UserPost]:
         """
         This function gets all posts on user page with specified view level\n
+        :param user_roles:
         :param username: str, User.username
-        :param view_level: int, UserPost.view_level
         :return: list of UserPost objects or None if there was no UserPosts
         """
         user_id = self.get_userid_by_name(username)
         with self.conn_handler:
-            statement = select(UserPost).filter(UserPost.whereid == user_id, UserPost.view_level >= view_level)
-            posts = self.conn_handler.sp_sess.execute(statement).scalars()
-            if posts:
-                posts = [post.serialize for post in posts]
-                return posts
+            if not user_roles:
+                statement = select(UserPost).filter(UserPost.whereid == user_id, UserPost.is_private == False)
+                posts = self.conn_handler.sp_sess.execute(statement).all()
+                if posts:
+                    s_posts = [post[0].serialize for post in posts]
+            else:
+                statement = select(UserPost).filter(UserPost.whereid == user_id)
+                posts = self.conn_handler.sp_sess.execute(statement).all()
+                s_posts = []
+                for post in posts:
+                    role_names = [role.role_name for role in post[0].roles]
+                    if self.is_arr_part(role_names, user_roles):
+                        s_posts.append(post[0].serialize)
+            return s_posts
 
     def get_avatar_by_name(self, username: str) -> str:
         with self.conn_handler:
@@ -537,21 +572,48 @@ class DataBase:
             self.conn_handler.sp_sess.execute(statement)
         return True
 
-    def publish_post(self, msg: str, v_lvl: int, user: str, where_id: str = None, att: str = None) -> bool:
-        userid = self.get_userid_by_name(user)
+    # TODO: добавить ограничение на количество ролей в посте
+    #  также нужно переработать этот код
+    def publish_post(self, msg: str, user_id: int, roles: list[str], is_private: bool, where_id: int = None) -> bool:
         if where_id:
-            where_id = self.get_userid_by_name(where_id)
             with self.conn_handler:
-                self.conn_handler.sp_sess.add(
-                    UserPost(userid=userid, message=msg, view_level=v_lvl, attachment=att, whereid=where_id,
-                             date_added=datetime.datetime.now()))
+                post = UserPost(userid=user_id, message=msg, whereid=where_id,
+                                date_added=datetime.datetime.now())
+                self.conn_handler.sp_sess.add(post)
+                for role in roles:
+                    statement = select(UserRole).filter(UserRole.role_name == role)
+                    role = self.conn_handler.sp_sess.execute(statement)
+                    post.roles.append(role)
+                return post.serialize
+
         else:
             with self.conn_handler:
-                self.conn_handler.sp_sess.add(
-                    UserPost(userid=userid, message=msg, view_level=v_lvl, attachment=att, whereid=userid,
-                             date_added=datetime.datetime.now())
-                )
-        return True
+                post = UserPost(userid=user_id, message=msg, whereid=user_id,
+                                date_added=datetime.datetime.now())
+                self.conn_handler.sp_sess.add(post)
+                for role in roles:
+                    statement = select(UserRole).filter(UserRole.role_name == role)
+                    role = self.conn_handler.sp_sess.execute(statement).scalar()
+                    post.roles.append(role)
+                return post.serialize
+
+    def remove_post(self, post_id):
+        with self.conn_handler:
+            statement = delete(UserPost).filter(UserPost.id == post_id)
+            self.conn_handler.sp_sess.execute(statement)
+
+    def create_role(self, role_name, role_group, user_id: int = None):
+        with self.conn_handler:
+            if user_id:
+                user_role = UserRole(role_name=role_name, role_group=role_group, creator=user_id)
+            else:
+                user_role = UserRole(role_name=role_name, role_group=role_group)
+            self.conn_handler.sp_sess.add(user_role)
+
+    def delete_role(self, role_id):
+        with self.conn_handler:
+            statement = delete(UserRole).filter(UserRole.id == role_id)
+            self.conn_handler.sp_sess.execute(statement)
 
     def add_friend(self, user: int, second_user: int) -> bool:
         """
@@ -559,9 +621,7 @@ class DataBase:
         returns boolean value, true if new entry was created and false if entry already existed
         """
         with self.conn_handler:  # Checking if there already existing entry
-            statement = select(Friend).filter(
-                or_(and_(Friend.first_user_id == user, Friend.second_user_id == second_user),
-                    and_(Friend.first_user_id == second_user, Friend.second_user_id == user)))
+            statement = self.FRIEND_STATEMENT(user, second_user)
             users = self.conn_handler.sp_sess.execute(statement).scalar()
             if users:
                 return False
@@ -579,9 +639,7 @@ class DataBase:
         :return: True if deletion was successful, false if there was no friend entry
         """
         with self.conn_handler:
-            statement = select(Friend).filter(
-                or_(and_(Friend.first_user_id == user, Friend.second_user_id == second_user),
-                    and_(Friend.first_user_id == second_user, Friend.second_user_id == user)))
+            statement = self.FRIEND_STATEMENT(user, second_user)
             friend = self.conn_handler.sp_sess.execute(statement).scalar()  # Getting existing rows
             if not friend:  # If there is no friend entry like that
                 return False
@@ -616,11 +674,51 @@ class DataBase:
         returns either a dict with all friend connection data or just bool false
         """
         with self.conn_handler:
-            statement = select(Friend).filter(
-                or_(and_(Friend.first_user_id == user, Friend.second_user_id == second_user),
-                    and_(Friend.first_user_id == second_user, Friend.second_user_id == user)))
+            statement = self.FRIEND_STATEMENT(user, second_user)
             friend = self.conn_handler.sp_sess.execute(statement).scalar()
             if not friend:
                 return False
             else:
                 return friend.serialize
+
+    def get_friend_roles(self, user_id, friend_id):
+        with self.conn_handler:
+            statement = self.FRIEND_STATEMENT(user_id, friend_id)
+            friend = self.conn_handler.sp_sess.execute(statement).scalar()
+            if not friend:
+                return
+
+            if friend.first_user_id == user_id:
+                roles = friend.second_user_roles
+                roles = [role.serialize for role in roles]
+                return roles
+            elif friend.second_user_id == user_id:
+                roles = friend.first_user_roles
+                roles = [role.serialize for role in roles]
+                return roles
+
+    def add_friend_role(self, user_id, friend_id, role_id):
+        with self.conn_handler:
+            statement = self.FRIEND_STATEMENT(user_id, friend_id)
+            friend = self.conn_handler.sp_sess.execute(statement).scalar()
+
+            statement = select(UserRole).filter(UserRole.id == role_id)
+            role = self.conn_handler.sp_sess.execute(statement).scalar()
+
+            if friend.first_user == user_id:
+                friend.second_user_roles.append(role)
+            elif friend.second_user_id == user_id:
+                friend.first_user_roles.append(role)
+
+    def remove_friend_role(self, user_id, friend_id, role_id):
+        with self.conn_handler:
+            statement = self.FRIEND_STATEMENT(user_id, friend_id)
+            friend = self.conn_handler.sp_sess.execute(statement).scalar()
+
+            statement = select(UserRole).filter(UserRole.id == role_id)
+            role = self.conn_handler.sp_sess.execute(statement).scalar()
+
+            if friend.first_user == user_id:
+                friend.second_user_roles.remove(role)
+            elif friend.second_user_id == user_id:
+                friend.first_user_roles.remove(role)

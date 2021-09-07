@@ -38,26 +38,40 @@
             <a class="user-description">{{ user.description }}</a>
         </div>
     </div>
-    {% if not current_user.is_anonymous %}
-        <button id="add_post" class="new-button" style="display: none">Add new post</button>
-        <div class="create_post" id="create_post">
-            <label class="create_post-label" for="user_post">Create new post</label>
-            <textarea id="user_post"></textarea>
-            {% if name == current_user.username %}
-                <label for="view_level">Select post view level</label>
-                <select class="post-button" name="view_level" id="view_level">
-                    <option value="5">5 (For everyone)</option>
-                    <option value="4">4</option>
-                    <option value="3">3</option>
-                    <option value="2">2</option>
-                    <option value="1">1</option>
-                    <option value="0">0 (Just for you)</option>
-                </select>
-            {% endif %}
-            <button class="post-button" id="publish_post">Make post</button>
-        </div>
-    {% endif %}
     <span class="posts-span">Posts</span>
+    <div class="new-post">
+        <div style="flex: 1;" class="new-post-sub">
+            <label>
+                <textarea id="post-input"></textarea>
+            </label>
+            <div class="new-post-sub-tags">
+                <span>Type:</span>
+                <button class="tag-button-small" style="margin-right: 10px" id="private_post">private</button>
+                <span id="roles_label">Roles:</span>
+                <div class="new-post-sub-tags-roles" style="display: inline">
+                    <button class="tag-button-small">test tag</button>
+                </div>
+                <button class="tag-button-small" id="add_roles">Add role</button>
+            </div>
+        </div>
+        <div class="post-buttons">
+            <button class="new-button">Post</button>
+        </div>
+    </div>
+    <div class="tag-modal-window">
+        <div class="tag-modal-window-content">
+            <label id="role_selector" for="roles_selector">
+                Add roles to post
+
+                <select id="roles_selector" multiple="multiple" style="width: 75%">
+                    <optgroup label="Cock">
+                        <option>Some role</option>
+                    </optgroup>
+                    <option>Some role 2</option>
+                </select>
+            </label>
+        </div>
+    </div>
     <div class="posts">
         {% if posts %}
             {% for post in posts %}
@@ -69,14 +83,16 @@
                         <span class="post-date">posted at {{ formate_datetime(post['date_added']) }}</span><br>
                         {% if current_user.username == name %}
                             <div class="private-info">
-                                {% if post['view_level'] > 4 %}
-                                    <span class="tag-button-small">public</span>
-                                {% else %}
+                                {% if post.is_private %}
                                     <span class="tag-button-small">private</span>
+                                {% else %}
+                                    <span class="tag-button-small">public</span>
                                 {% endif %}
                                 <span class="private-role-info">only for: </span>
-                                <span class="tag-button-small"
-                                      style="background: #eca7a7">role: {{ post['view_level'] }}</span>
+                                {% for role in post.roles %}
+                                    <span class="tag-button-small"
+                                          style="background: {{ role.role_color }}">{{ role.role_name }}</span>
+                                {% endfor %}
                             </div>
                         {% endif %}
                         <span class="material-icons" id="post-more">more_horiz</span>
@@ -94,7 +110,9 @@
 {% endblock %}
 {% block scripts %}
     <script type="text/javascript">
-        init("{{user['username']}}", "{{current_user.username}}");
+        $(function () {
+            init("{{user['username']}}", "{{current_user.username}}");
+        })
         $("#add_friend").click(function () {
             add_friend('{{user['username']}}')
         })
@@ -112,16 +130,14 @@
         })
         $(function () {
             $("#publish_post").click(function () {
-                {% if user.v_lvl == 0 %}
+                {% if user.id == current_user.id %}
                     let view_lvl = document.getElementById("view_level").value
                     let whereid = null
-                    let fromid = null
                 {% else %}
                     let view_lvl = {{user.v_lvl}}
-                        let whereid = "{{user.username}}"
-                    let fromid = "{{current_user.username}}"
+                        let whereid = "{{user.id}}"
                 {% endif %}
-                publish_post($("#user_post").val(), null, view_lvl, whereid, fromid)
+                publish_post($("#user_post").val(), null, view_lvl, whereid, is_post_private)
             })
         })
     </script>

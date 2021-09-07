@@ -34,10 +34,10 @@ def publish_post():
                 return jsonify(False)
             elif data["view_lvl"] > userdata["min_post_lvl"]:
                 return jsonify(False)
-            DBC.publish_post(data['message'], data['view_lvl'], data["fromid"], data["whereid"], data['attach'])
+            DBC.publish_post(data['message'], current_user.id, [], data['is_private'], data["where_id"])
         else:
-            DBC.publish_post(data['message'], data['view_lvl'], current_user.username,
-                             data["whereid"], data['attach'])
+            DBC.publish_post(data['message'], current_user.username, [], data['is_private'],
+                             data["where_id"])
     return jsonify(True)
 
 

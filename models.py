@@ -78,11 +78,11 @@ class Friend(Base):
     first_user_roles = relationship("UserRole", secondary="friend_role_link",
                                     primaryjoin="(FriendRoleLink.first_u_id == Friend.first_user_id) & "
                                                 "(FriendRoleLink.second_u_id == Friend.second_user_id)",
-                                    overlaps="second_user_roles")
+                                    overlaps="second_user_roles", cascade="all, delete")
     second_user_roles = relationship("UserRole", secondary="friend_role_link",
                                      primaryjoin="(FriendRoleLink.first_u_id == Friend.second_user_id) &"
                                                  "(FriendRoleLink.second_u_id == Friend.first_user_id)",
-                                     overlaps="first_user_roles")
+                                     overlaps="first_user_roles", cascade="all, delete")
 
     @property
     def serialize(self):
@@ -103,13 +103,11 @@ class UserPost(Base):
     # Если пользователь оставил запись у кого-то другого на стене, эта переменная будет указывать на него,
     # по умолчанию сюда будет записываться id самого пользователя, если запись на его собственной стене
     whereid = Column(INTEGER, nullable=False)
-    # Уровень поста, 5 - виден для всех, 4 - виден для всех друзей и дальше по уменьшению
-    view_level = Column(INTEGER, nullable=False, default=5)
     is_private = Column(Boolean, nullable=False, default=False)
     date_added = Column(DateTime, nullable=False, default=datetime.datetime.now())
     message = Column(TEXT)
 
-    roles = relationship("UserRole", secondary="user_post_role_link ")
+    roles = relationship("UserRole", secondary="user_post_role_link", cascade="all, delete")
 
     @property
     def serialize(self):
@@ -117,9 +115,10 @@ class UserPost(Base):
             "id": self.id,
             "user_id": self.userid,
             "whereid": self.whereid,
-            "view_level": self.view_level,
             "date_added": self.date_added,
-            "message": self.message
+            "message": self.message,
+            "is_private": self.is_private,
+            "roles": [role.serialize for role in self.roles]
         }
 
 
@@ -135,19 +134,19 @@ class UserRole(Base):
     __tablename__ = 'user_roles'
     id = Column(INTEGER, primary_key=True, autoincrement=True)
     role_name = Column(VARCHAR(32), unique=True, index=True)
-    role_group = Column(INTEGER, ForeignKey('user_role_group.id', ondelete='CASCADE'), nullable=False)
     is_checked = Column(Boolean, nullable=False, default=False)
-    creator = Column(INTEGER, ForeignKey('users.id', ondelete='CASCADE'))
+    role_color = Column(VARCHAR(7), nullable=False, default="#eca7a7")
+    creator = Column(INTEGER, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
 
-    # friends_roles = relationship(Friend, secondary="friend_role_link")
-
-
-class UserRoleGroup(Base):
-    __tablename__ = 'user_role_group'
-    id = Column(INTEGER, primary_key=True, autoincrement=True)
-    group_name = Column(VARCHAR(128), unique=True, index=True)
-
-    roles = relationship(UserRole, cascade="all, delete-orphan")
+    @property
+    def serialize(self):
+        return {
+            "id": self.id,
+            "role_name": self.role_name,
+            "is_checked": self.is_checked,
+            "role_color": self.role_color,
+            "creator": self.creator
+        }
 
 
 class FriendRoleLink(Base):
@@ -155,13 +154,14 @@ class FriendRoleLink(Base):
     first_u_id = Column(INTEGER, primary_key=True)
     second_u_id = Column(INTEGER, primary_key=True)
     role_id = Column(INTEGER, ForeignKey("user_roles.id"), primary_key=True)
-    ForeignKeyConstraint(("first_u_id", "second_u_id"), ("friends.first_user_id", "friends.second_user_id"))
+    ForeignKeyConstraint(("first_u_id", "second_u_id"), ("friends.first_user_id", "friends.second_user_id"),
+                         ondelete="CASCADE")
 
 
 class UserPostRoleLink(Base):
     __tablename__ = 'user_post_role_link'
-    post_id = Column(INTEGER, ForeignKey("userposts.id"), primary_key=True)
-    role_id = Column(INTEGER, ForeignKey('user_roles.id'), primary_key=True)
+    post_id = Column(INTEGER, ForeignKey("userposts.id", ondelete="CASCADE"), primary_key=True)
+    role_id = Column(INTEGER, ForeignKey('user_roles.id', ondelete="CASCADE"), primary_key=True)
 
 
 class UserGroupLink(Base):

@@ -27,7 +27,7 @@ function send_settings(form) {
         contentType: false,
         data: form,
         success: function displayErrors(data) {
-            let msg = document.createElement('a');
+            let msg = document.createElement('span');
             if (data['unknown_error']) {
                 msg.innerText = 'Some unknown error occurred!';
                 msg.classList.add('error-message');
