@@ -1,0 +1,19 @@
+{
+  "name": "InRole-js",
+  "version": "1.0.0",
+  "description": "Package for working with npm modules inside flask",
+  "main": "chat.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Nickolay Chugunnikov",
+  "license": "ISC",
+  "dependencies": {
+    "autosize": "^5.0.1",
+    "cropperjs": "^1.5.12",
+    "jquery": "^3.6.0",
+    "jquery-cropper": "^1.0.1",
+    "selectize": "^0.12.6"
+  }
+}

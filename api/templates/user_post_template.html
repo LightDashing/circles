@@ -1,0 +1,23 @@
+<div class="post">
+    <div class="post-header">
+        <img class="post-avatar" alt="User avatar" src="{{ get_user_avatar(post['user_id']) }}">
+        <a class="post-nick"
+           href="{{ url_for("users_page", name=get_username(post['user_id'])) }}"><b>{{ get_username(post['user_id']) }}</b></a>
+        <span class="post-date">posted at {{ formate_datetime(post['date_added']) }}</span><br>
+        <div class="private-info">
+            {% if post.is_private %}
+                <span class="tag-button-small">private</span>
+            {% else %}
+                <span class="tag-button-small">public</span>
+            {% endif %}
+            <span class="private-role-info">only for: </span>
+            {% for role in post.roles %}
+                <span class="tag-button-small role-display-{{ role.id }}"
+                      style="background: {{ role.role_color }}90">{{ role.role_name }}</span>
+            {% endfor %}
+        </div>
+        <span class="material-icons" id="post-more">more_horiz</span>
+    </div>
+
+    <a class="post-message">{{ post['message'] }}</a>
+</div>

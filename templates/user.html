@@ -5,6 +5,11 @@
     {{ super() }}
     <link type="text/css" rel="stylesheet" href="/static/css/userpage.css">
     <script type="text/javascript" src="{{ url_for("static", filename="up.js") }}"></script>
+    <script type="text/javascript"
+            src="{{ url_for("static", filename="node_modules/selectize/dist/js/standalone/selectize.js") }}"></script>
+    <link rel="stylesheet" href="{{ url_for("static", filename="css/selectize_modified.css") }}">
+    <script type="text/javascript"
+            src="{{ url_for("static", filename="js/jscolor.js") }}"></script>
 {% endblock %}
 {% block main_row %}
     <div class="user-card">
@@ -45,31 +50,53 @@
                 <textarea id="post-input"></textarea>
             </label>
             <div class="new-post-sub-tags">
-                <span>Type:</span>
+                <a>Type:</a>
                 <button class="tag-button-small" style="margin-right: 10px" id="private_post">private</button>
-                <span id="roles_label">Roles:</span>
-                <div class="new-post-sub-tags-roles" style="display: inline">
-                    <button class="tag-button-small">test tag</button>
-                </div>
-                <button class="tag-button-small" id="add_roles">Add role</button>
+                <label id="role_selector" for="roles_selector">
+                    Roles:
+                    <select id="roles_selector" multiple="multiple" style="width: 100%; justify-self: center">
+                    </select>
+                </label>
+                <button class="new-button" style="margin-right: auto; margin-left: 0" id="edit_roles">Edit roles
+                </button>
             </div>
         </div>
         <div class="post-buttons">
-            <button class="new-button">Post</button>
+            <button class="new-button" id="make_post">Post</button>
         </div>
     </div>
-    <div class="tag-modal-window">
-        <div class="tag-modal-window-content">
-            <label id="role_selector" for="roles_selector">
-                Add roles to post
-
-                <select id="roles_selector" multiple="multiple" style="width: 75%">
-                    <optgroup label="Cock">
-                        <option>Some role</option>
-                    </optgroup>
-                    <option>Some role 2</option>
-                </select>
+    <div class="modal-window" id="add_role_modal">
+        <div class="modal-window-content" id="add_role_modal_content">
+            <label>
+                Color:
+                <input class="role-inputs" style="margin-top: 5px; padding: 5px" data-jscolor="{}" id="role_color">
             </label>
+            <label>
+                Role name:
+                <input class="role-inputs" style="margin-top: 5px; padding: 5px" type="text" id="role_name"
+                       maxlength="32">
+            </label>
+            <button class="new-button" id="pin_roles">Add new role</button>
+        </div>
+    </div>
+    <div class="modal-window" id="modal_edit_role">
+        <div class="modal-window-role-edit-content" id="modal_edit_role_content">
+            <label>
+                Choose role to edit:
+                <select id="edit_roles_selector"></select>
+            </label>
+            <label>
+                Edit role name:
+                <input class="role-inputs" style="margin-top: 5px; padding: 10px" type="text" id="edit_role_name"
+                       maxlength="32">
+            </label>
+            <label>
+                Edit role color:
+                <input class="role-inputs" style="margin-top: 5px; padding: 10px" data-jscolor="{}"
+                       id="edit_role_color">
+            </label>
+            <button class="new-button" id="edit_role_button">Accept changes</button>
+            <button class="new-button" id="delete_role_button">Delete role</button>
         </div>
     </div>
     <div class="posts">
@@ -90,8 +117,8 @@
                                 {% endif %}
                                 <span class="private-role-info">only for: </span>
                                 {% for role in post.roles %}
-                                    <span class="tag-button-small"
-                                          style="background: {{ role.role_color }}">{{ role.role_name }}</span>
+                                    <span class="tag-button-small role-display-{{ role.id }}"
+                                          style="background: {{ role.role_color }}90">{{ role.role_name }}</span>
                                 {% endfor %}
                             </div>
                         {% endif %}
@@ -110,7 +137,13 @@
 {% endblock %}
 {% block scripts %}
     <script type="text/javascript">
+        let where_id;
         $(function () {
+            {% if user.id == current_user.id %}
+                where_id = null
+            {% else %}
+                where_id = "{{user.id}}"
+            {% endif %}
             init("{{user['username']}}", "{{current_user.username}}");
         })
         $("#add_friend").click(function () {
@@ -127,18 +160,6 @@
         })
         $("#remove_friend").click(function () {
             remove_friend('{{ user['username'] }}')
-        })
-        $(function () {
-            $("#publish_post").click(function () {
-                {% if user.id == current_user.id %}
-                    let view_lvl = document.getElementById("view_level").value
-                    let whereid = null
-                {% else %}
-                    let view_lvl = {{user.v_lvl}}
-                        let whereid = "{{user.id}}"
-                {% endif %}
-                publish_post($("#user_post").val(), null, view_lvl, whereid, is_post_private)
-            })
         })
     </script>
 {% endblock %}

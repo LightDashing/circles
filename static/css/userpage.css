@@ -253,8 +253,10 @@
 }
 
 .new-post-sub-tags {
-    display: inline-block;
     text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
 .new-post-sub-tags .tag-button-small {
@@ -262,10 +264,11 @@
 }
 
 .new-post-sub-tags-roles {
+    display: inline;
     /*transition: linear 300ms;*/
 }
 
-.tag-modal-window {
+.modal-window {
     display: none;
     position: fixed;
     z-index: 2;
@@ -278,7 +281,7 @@
     background-color: rgba(0, 0, 0, 0.4);
 }
 
-.tag-modal-window-content {
+.modal-window-content {
     display: flex;
     background-color: #fefefe;
     max-width: 50%;
@@ -286,19 +289,54 @@
     margin: auto;
     border-radius: 15px;
     padding: 15px;
-    /*transform: translate(-50%, 50%);*/
+    align-items: center;
 }
 
-.tag-modal-window-content > #role_selector {
+.modal-window-role-edit-content {
+    display: flex;
+    flex-direction: column;
+    background-color: #fefefe;
+    max-width: 50%;
+    width: 20%;
+    margin: auto;
+    border-radius: 15px;
+    padding: 15px;
+    align-items: center;
+    gap: 10px;
+}
+
+#role_selector {
     flex: 1;
     margin-right: 10px;
     display: flex;
     gap: 15px;
     align-items: center;
     text-align: left;
+    max-width: 40%;
 }
 
-.tag-modal-window-content > select {
+#edit_tags {
+    margin: 0 auto 0 0;
+}
+
+#private_post {
+    margin: 0 10px 0 10px;
+}
+
+.role-inputs {
+    border-radius: 15px;
+    border: 1px solid grey;
+}
+
+.item-selected {
+    padding: 5px;
+    border-radius: 15px;
+    border: none;
+    font-size: 1.1em;
+    color: black;
+}
+
+.modal-window-content > select {
     padding-left: 15px;
 }
 

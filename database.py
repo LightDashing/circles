@@ -15,11 +15,10 @@ class DataBase:
     class ConnectionHandler:
 
         def __init__(self):
-            # ВНИМАНИЕ! AssertionPool разрешает только одно соединение и используется для тестирования
-            # Для дальнейшей работы нужно будет подумать над пределами БД и сколько разрешать подключений
-            # На данный момент всё работает относительно хорошо и стабильно
+            # Нужно поиграться с параметрами пула, потому что сейчас переодически сыпется с twophase error
             self.engine = create_engine('postgresql://postgres:YourPassword@localhost/postgres',
-                                        poolclass=AssertionPool)
+                                        **{"poolclass": QueuePool, "pool_size": 4, "max_overflow": 1,
+                                           "pool_timeout": 8})
             self.g_session = scoped_session(sessionmaker(self.engine))
 
         def __enter__(self):
@@ -30,7 +29,6 @@ class DataBase:
                 self.sp_sess.commit()
             except IntegrityError:  # TODO: это просто затычка, нужно придумать что-то лучше
                 self.sp_sess.rollback()
-                raise UserAlreadyExist
             finally:
                 self.g_session.remove()
 
@@ -259,6 +257,19 @@ class DataBase:
             query = self.session.query().scalars()
         return users
 
+    def search_role(self, search_query: str, user_id: int) -> list[dict]:
+        """
+        This function is searching for
+        :param search_query:
+        :param user_id:
+        :return:
+        """
+        with self.conn_handler:
+            query = select(UserRole).filter(UserRole.role_name.like(f"%{search_query}%"), UserRole.creator == user_id)
+            results = self.conn_handler.sp_sess.execute(query).scalars()
+            roles = [role.serialize for role in results]
+        return roles
+
     # TODO: сделать систему дозагрузки при прокрутке страницы
     def get_user_friends(self, userid: int, amount: int = 5) -> list[dict]:
         """
@@ -320,7 +331,7 @@ class DataBase:
             posts = self.conn_handler.sp_sess.execute(statement)
             if posts:
                 posts = [post[0].serialize for post in posts]
-                return posts
+                return posts[::-1]
 
     def get_posts_by_id(self, username: str, user_roles: list[str]) -> list[UserPost]:
         """
@@ -344,7 +355,7 @@ class DataBase:
                     role_names = [role.role_name for role in post[0].roles]
                     if self.is_arr_part(role_names, user_roles):
                         s_posts.append(post[0].serialize)
-            return s_posts
+            return s_posts[::-1]
 
     def get_avatar_by_name(self, username: str) -> str:
         with self.conn_handler:
@@ -575,45 +586,77 @@ class DataBase:
     # TODO: добавить ограничение на количество ролей в посте
     #  также нужно переработать этот код
     def publish_post(self, msg: str, user_id: int, roles: list[str], is_private: bool, where_id: int = None) -> bool:
-        if where_id:
-            with self.conn_handler:
-                post = UserPost(userid=user_id, message=msg, whereid=where_id,
-                                date_added=datetime.datetime.now())
-                self.conn_handler.sp_sess.add(post)
-                for role in roles:
-                    statement = select(UserRole).filter(UserRole.role_name == role)
-                    role = self.conn_handler.sp_sess.execute(statement)
-                    post.roles.append(role)
-                return post.serialize
-
-        else:
-            with self.conn_handler:
-                post = UserPost(userid=user_id, message=msg, whereid=user_id,
-                                date_added=datetime.datetime.now())
-                self.conn_handler.sp_sess.add(post)
-                for role in roles:
-                    statement = select(UserRole).filter(UserRole.role_name == role)
-                    role = self.conn_handler.sp_sess.execute(statement).scalar()
-                    post.roles.append(role)
-                return post.serialize
+        with self.conn_handler:
+            if not where_id:
+                if not is_private:
+                    post = UserPost(userid=user_id, message=msg, whereid=user_id, is_private=is_private,
+                                    date_added=datetime.datetime.now())
+                else:
+                    post = UserPost(userid=user_id, message=msg, whereid=user_id, is_private=is_private,
+                                    date_added=datetime.datetime.now())
+                    for role in roles:
+                        statement = select(UserRole).filter(UserRole.role_name == role)
+                        role = self.conn_handler.sp_sess.execute(statement).scalar()
+                        post.roles.append(role)
+            else:
+                # TODO: пока что другие люди не могут постить на стене вообще, нужно придумать как поступать с их
+                #  ролями в случае постинга
+                pass
+            self.conn_handler.sp_sess.add(post)
+            self.conn_handler.sp_sess.flush()
+            self.conn_handler.sp_sess.refresh(post)
+            return post.serialize
 
     def remove_post(self, post_id):
         with self.conn_handler:
             statement = delete(UserPost).filter(UserPost.id == post_id)
             self.conn_handler.sp_sess.execute(statement)
 
-    def create_role(self, role_name, role_group, user_id: int = None):
+    def get_your_post(self, post_id, user_id):
         with self.conn_handler:
-            if user_id:
-                user_role = UserRole(role_name=role_name, role_group=role_group, creator=user_id)
-            else:
-                user_role = UserRole(role_name=role_name, role_group=role_group)
-            self.conn_handler.sp_sess.add(user_role)
+            statement = select(UserPost).filter(UserPost.id == post_id, UserPost.userid == user_id)
+            post = self.conn_handler.sp_sess.execute(statement).scalar()
+            return post.serialize
 
-    def delete_role(self, role_id):
+    def create_role(self, role_name: str, role_color: str, user_id: int):
+        # TODO: добавить донаты для монетизации, максимальное кол-во ролей для обычного пользователя - 5
+        #  для людей которые задонатили можно сделать до 10
         with self.conn_handler:
-            statement = delete(UserRole).filter(UserRole.id == role_id)
+            statement = select(UserRole).filter(UserRole.creator == user_id)
+            roles = self.conn_handler.sp_sess.execute(statement).all()
+            if len(roles) < 6:
+                user_role = UserRole(role_name=role_name, role_color=role_color, creator=user_id)
+                self.conn_handler.sp_sess.add(user_role)
+                self.conn_handler.sp_sess.flush()
+                self.conn_handler.sp_sess.refresh(user_role)
+                return user_role.serialize
+            else:
+                return False
+
+    def delete_role(self, role_id: int, user_id: int):
+        with self.conn_handler:
+            statement = delete(UserRole).filter(UserRole.id == role_id, UserRole.creator == user_id)
             self.conn_handler.sp_sess.execute(statement)
+
+    def get_roles(self, user_id: int) -> list[dict]:
+        with self.conn_handler:
+            statement = select(UserRole).filter(UserRole.creator == user_id)
+            user_roles = self.conn_handler.sp_sess.execute(statement).all()
+            user_roles = [role[0].serialize for role in user_roles]
+        return user_roles
+
+    def change_role(self, role_id: int, user_id: int, new_role_name: str = None, new_role_color: str = None) -> dict:
+        with self.conn_handler:
+            statement = select(UserRole).filter(UserRole.creator == user_id, UserRole.id == role_id)
+            user_role = self.conn_handler.sp_sess.execute(statement).scalar()
+            if user_role:
+                if new_role_name:
+                    user_role.role_name = new_role_name
+                if new_role_color:
+                    user_role.role_color = new_role_color
+                return user_role.serialize
+            else:
+                return {}
 
     def add_friend(self, user: int, second_user: int) -> bool:
         """
@@ -622,7 +665,7 @@ class DataBase:
         """
         with self.conn_handler:  # Checking if there already existing entry
             statement = self.FRIEND_STATEMENT(user, second_user)
-            users = self.conn_handler.sp_sess.execute(statement).scalar()
+            users = self.conn_handler.sp_sess.execute(statement).all()
             if users:
                 return False
             else:
@@ -706,9 +749,15 @@ class DataBase:
             role = self.conn_handler.sp_sess.execute(statement).scalar()
 
             if friend.first_user == user_id:
-                friend.second_user_roles.append(role)
+                if len(friend.second_user_roles) < 5:
+                    friend.second_user_roles.append(role)
+                else:
+                    return None
             elif friend.second_user_id == user_id:
-                friend.first_user_roles.append(role)
+                if len(friend.first_user_roles) < 5:
+                    friend.first_user_roles.append(role)
+                else:
+                    return None
 
     def remove_friend_role(self, user_id, friend_id, role_id):
         with self.conn_handler:

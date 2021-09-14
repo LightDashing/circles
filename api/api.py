@@ -3,7 +3,7 @@ from database import DataBase
 from flask_login import login_required, current_user
 from files import FileOperations
 import re
-
+# TODO: ВАЖНО! Поменять все запросы на GET'ы, которые ничего не меняют
 api_bp = Blueprint('api_bp', __name__, template_folder='templates')
 DBC = DataBase()
 
@@ -28,17 +28,20 @@ def leave_group():
 def publish_post():
     if request.method == 'POST':
         data = request.get_json()
-        if data.get("fromid", None):
-            userdata = DBC.userdata_by(data['whereid'])
-            if not userdata['can_post']:
-                return jsonify(False)
-            elif data["view_lvl"] > userdata["min_post_lvl"]:
-                return jsonify(False)
-            DBC.publish_post(data['message'], current_user.id, [], data['is_private'], data["where_id"])
+        if not data.get("where_id", None):
+            post_data = DBC.publish_post(data["message"], current_user.id, data["roles"], data["is_private"])
         else:
-            DBC.publish_post(data['message'], current_user.username, [], data['is_private'],
-                             data["where_id"])
-    return jsonify(True)
+            post_data = DBC.publish_post(data['message'], current_user.id, [], data['is_private'], data["where_id"])
+        return jsonify(post_data)
+
+
+@api_bp.route('/get_your_post', methods=['GET'])
+@login_required
+def get_post():
+    post_id = request.args.get("p_id")
+    print(post_id)
+    post = DBC.get_your_post(post_id, current_user.id)
+    return render_template('user_post_template.html', post=post)
 
 
 @api_bp.route('/add_friend', methods=['POST'])
@@ -77,6 +80,7 @@ def check_is_friend():
         return jsonify(fr_check)
 
 
+# Здесь должен быть GET
 @api_bp.route('/get_user_friends', methods=['POST'])
 @login_required
 def get_friends_list():
@@ -96,6 +100,7 @@ def send_message():
 
 # TODO: ВАЖНО! Исправить проблему безопасности, необходимо проверить, есть ли юзвер в чате для которого приходит реквест
 #  а иначе сейчас можно отправить рандомный чат и получить инфу о нём и его сообщениях, что совсем не есть хорошо
+# Здесь должен быть GET
 @api_bp.route('/load_messages', methods=['POST'])
 @login_required
 def load_messages():
@@ -107,6 +112,7 @@ def load_messages():
     return jsonify(user_messages)
 
 
+# Здесь должен быть GET
 @api_bp.route('/update_all', methods=['POST'])
 @login_required
 def update_all():
@@ -123,6 +129,7 @@ def load_chat_template():
     return render_template("chat_template.html", chat=chat, messages=messages)
 
 
+# Здесь должен быть GET
 @api_bp.route('/load_chats', methods=['POST'])
 @login_required
 def load_chats():
@@ -167,9 +174,50 @@ def upload_settings():
     return jsonify(response)
 
 
+@api_bp.route('/create_role', methods=['POST'])
+@login_required
+def create_role():
+    data = request.get_json()
+    role = DBC.create_role(data["role_name"], data["role_color"], current_user.id)
+    if role:
+        return jsonify(role)
+
+
+@api_bp.route('/change_user_role', methods=['POST'])
+@login_required
+def change_user_role():
+    data = request.get_json()
+    changed_role = DBC.change_role(data['role_id'], current_user.id, data['role_name'], data['role_color'])
+    return jsonify(changed_role)
+
+
+@api_bp.route('/delete_role', methods=['POST'])
+@login_required
+def delete_user_role():
+    data = request.get_json()
+    DBC.delete_role(data['role_id'], current_user.id)
+    return jsonify(True)
+
+
+# Здесь тоже должен быть GET
 @api_bp.route('/search', methods=['POST'])
 def search():
     data = request.get_json()
     search_input = data['search_input']
     results = DBC.search_for(search_input)
+    return jsonify(results)
+
+
+@api_bp.route('/get_user_roles', methods=['GET'])
+@login_required
+def get_user_roles():
+    roles = DBC.get_roles(current_user.id)
+    return jsonify(roles)
+
+
+@api_bp.route('/search_role', methods=['GET'])
+@login_required
+def search_role():
+    search_input = request.args.get("query")
+    results = DBC.search_role(search_input, current_user.id)
     return jsonify(results)

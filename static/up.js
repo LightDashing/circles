@@ -4,51 +4,264 @@ let roles_list
 function init(name, username) {
     //TODO: потом переделать, выглядит некрасиво
     hide_all()
-
     let create_post = $("#create_post")
     create_post.hide()
 
-    let role_label = $("#roles_label")
-    let roles_selector = $("#add_roles")
+    let roles_selector = $("#role_selector")
     let private_selector = $("#private_post")
-    let roles_container = $(".new-post-sub-tags-roles")
-    let modal_window = $(".tag-modal-window")
-    let modal_window_content = $(".tag-modal-window-content")
+
+    let add_role_modal = $("#add_role_modal")
+    let add_role_modal_content = $("#add_role_modal_content")
+
+    let edit_role_modal = $("#modal_edit_role")
+    let edit_role_modal_content = $("#modal_edit_role_content")
+
+    document.querySelector("#edit_role_color").disabled = true;
+    $("#edit_role_name").prop('disabled', true)
+
+
+    let tags_flexbox = $('.new-post-sub-tags')
     let html = jQuery('html')
+
+    function showModalEditRoles() {
+        edit_role_modal.show()
+        edit_role_modal_content.addClass("showModal")
+        html.css("overflow", "hidden")
+    }
+
+    function hideModalEditRoles() {
+        html.css("overflow", "auto")
+        edit_role_modal_content.removeClass("showModal")
+        edit_role_modal_content.addClass("hideModal")
+        setTimeout(() => edit_role_modal.hide(), 250)
+    }
+
+    function showModalAddRoles() {
+        add_role_modal.show()
+        add_role_modal_content.addClass("showModal")
+        html.css("overflow", "hidden")
+    }
+
+    function hideModalAddRoles() {
+        html.css("overflow", "auto")
+        add_role_modal_content.removeClass("showModal")
+        add_role_modal_content.addClass("hideModal")
+        setTimeout(() => add_role_modal.hide(), 250)
+    }
+
+    $("#edit_roles").click(function () {
+        showModalEditRoles()
+    })
+
+    function renderOptions(item, escape) {
+        return `<div style="font-size: 1.1em; padding: 10px">${item["role_name"]}</div>`
+    }
+
+    function renderItem(item, escape) {
+        return `<div class="item-selected" 
+                        style="background: ${item["role_color"]}80; border: none; border-radius: 15px; color: black;
+                        text-shadow: 0 1px 0 rgba(0, 51, 83, 0.3)"
+                            id="edit_${item["id"]}">${item["role_name"]}</div>`
+    }
+
+    $("#edit_roles_selector").selectize({
+        valueField: 'role_name',
+        labelField: 'role_name',
+        searchField: ['role_name'],
+        preload: true,
+        load: function (query, callback) {
+            $.ajax({
+                url: '/api/get_user_roles', method: 'GET',
+                success: function (data) {
+                    callback(data)
+                }
+            })
+        },
+        render: {
+            option: function (item, escape) {
+                return renderOptions(item, escape)
+            },
+            item: function (item, escape) {
+                return renderItem(item, escape)
+            }
+        },
+        onChange: function (value) {
+            let edit_role_color_picker = document.querySelector("#edit_role_color")
+            edit_role_color_picker.disabled = false;
+            let edit_role_name = $("#edit_role_name")
+            edit_role_name.prop('disabled', false)
+            $("#edit_role_button").prop("disabled", false)
+            $("#delete_role_button").prop("disabled", false)
+
+            let options = $("#edit_roles_selector")[0].selectize.options
+            try {
+                edit_role_name.val(options[value]["role_name"])
+            } catch (TypeError) {
+                $("#edit_roles_selector")[0].selectize.refreshOptions()
+                return
+            }
+            edit_role_color_picker.jscolor.fromString(options[value]["role_color"])
+
+            edit_role_color_picker.jscolor.onInput = function () {
+                $(`#edit_${options[value]["id"]}`).css("background", `${edit_role_color_picker.jscolor.toHEXString()}90`)
+            }
+            edit_role_name.keyup(function () {
+                $(`#edit_${options[value]["id"]}`).html(edit_role_name.val())
+            })
+        }
+
+    })
+
+    let delete_role_button = $("#delete_role_button")
+    delete_role_button.prop("disabled", true)
+
+    delete_role_button.click(function deleteRole() {
+        let selector = $("#edit_roles_selector")
+        let options = selector[0].selectize.options
+        let value = selector[0].selectize.getValue()
+        let role_id = options[value]["id"]
+        selector[0].selectize.removeOption(value)
+        $("#roles_selector")[0].selectize.removeOption(value)
+        $.ajax({
+            url: '/api/delete_role',
+            method: 'POST',
+            data: JSON.stringify({role_id: role_id}),
+            dataType: 'json',
+            contentType: 'application/json',
+            success: function () {
+                hideModalEditRoles()
+
+            }
+        })
+    })
+
+    $("#make_post").click(function () {
+        let post_input = $("#post-input")
+        let roles = $("#roles_selector")[0].selectize.getValue()
+        if (post_input.val() !== '') {
+            publish_post(post_input.val(), where_id, is_post_private, roles)
+        }
+    })
+
+    let edit_role_button = $("#edit_role_button")
+    edit_role_button.prop("disabled", true)
+
+    edit_role_button.click(function changeRole() {
+        let selector = $("#edit_roles_selector")
+
+        let role_id = selector[0].selectize.options[selector[0].selectize.getValue()]["id"]
+        let old_role_name = selector[0].selectize.getValue()
+        let role_name = $("#edit_role_name")
+        let role_color = $("#edit_role_color")[0].jscolor.toHEXString()
+        if (role_name.val() !== '' || role_color !== '#FFFFFF') {
+            $.ajax({
+                url: '/api/change_user_role',
+                method: 'POST',
+                data: JSON.stringify({
+                    role_name: role_name.val(),
+                    role_color: role_color,
+                    role_id: role_id
+                }),
+                dataType: 'json',
+                contentType: 'application/json',
+                success: function (data) {
+                    selector[0].selectize.updateOption(old_role_name, {
+                        role_name: data["role_name"],
+                        role_color: data["role_color"],
+                        id: data["id"],
+                        creator: data["creator"]
+                    })
+                    $("#roles_selector")[0].selectize.updateOption(old_role_name, {
+                        role_name: data["role_name"],
+                        role_color: data["role_color"],
+                        id: data["id"],
+                        creator: data["creator"]
+                    })
+                    for (const [key, value] of Object.entries(selector[0].selectize.options)) {
+                        $(`.role-display-${value["id"]}`).css("background", `${value["role_color"]}90`)
+                    }
+                }
+            })
+        }
+    })
 
     private_selector.click(function () {
         if (is_post_private) {
             is_post_private = false
-            role_label.fadeOut(250)
             roles_selector.fadeOut(250)
-            roles_container.fadeOut(250)
+            setTimeout(() => tags_flexbox.css("display", "inline"), 240)
             private_selector.html("public")
+
         } else {
             is_post_private = true
-            role_label.fadeIn(250)
+            tags_flexbox.css("display", "flex")
             roles_selector.fadeIn(250)
-            roles_container.fadeIn(250)
             private_selector.html("private")
         }
     })
 
-    roles_selector.click(function addRoles() {
-        modal_window.show()
-        modal_window_content.addClass("showModal")
-        html.css("overflow", "hidden")
-    })
-
     window.onclick = function (event) {
-        if (event.target === modal_window[0]) {
-            html.css("overflow", "auto")
-            modal_window_content.removeClass("showModal")
-            modal_window_content.addClass("hideModal")
-            setTimeout(() => modal_window.hide(), 250)
+        if (event.target === add_role_modal[0]) {
+            hideModalAddRoles()
+        } else if (event.target === edit_role_modal[0]) {
+            hideModalEditRoles()
         }
     }
 
     autosize($("#post-input"))
-    $("#roles_selector").select2()
+    $('#roles_selector').selectize({
+        plugins: ['remove_button'],
+        valueField: "role_name",
+        labelField: "role_name",
+        placeholder: 'Start typing something...',
+        searchField: ["role_name"],
+        maxItems: 6,
+        preload: true,
+        render: {
+            option: function (item, escape) {
+                return renderOptions(item, escape)
+            },
+            item: function renderItem(item, escape) {
+                return `<div class="item-selected" 
+                        style="background: ${item["role_color"]}80; border: none; border-radius: 15px; color: black;
+                        text-shadow: 0 1px 0 rgba(0, 51, 83, 0.3)">${item["role_name"]}</div>`
+            }
+        },
+        create: function createElement(input, callback) {
+            showModalAddRoles()
+            $("#role_name").val(input)
+            let role_name, role_color
+            //TODO: при закрытии модального окна кликом в пустое место, каллбек не срабатывает и происходит нечто ужасное
+            $("#pin_roles").click(function () {
+                role_name = $("#role_name").val()
+                role_color = document.querySelector("#role_color").jscolor.toHEXString()
+                hideModalAddRoles()
+                $.ajax({
+                    url: '/api/create_role',
+                    method: 'POST',
+                    data: JSON.stringify({role_name: role_name, role_color: role_color}),
+                    dataType: 'json',
+                    contentType: 'application/json',
+                    success: function (data) {
+                        if (data) {
+                            $("#edit_roles_selector")[0].selectize.addOption(data)
+                            callback(data)
+                        } else {
+                            alert('You already have 6 tags created!')
+                        }
+                    }
+                })
+            })
+        },
+        load: function (query, callback) {
+            $.ajax({
+                url: '/api/get_user_roles', method: 'GET',
+                success: function (data) {
+                    callback(data)
+                }
+            })
+        }
+    })
 
     $.ajax({
         url: '/api/check_friend',
@@ -81,7 +294,6 @@ function add_friend(name) {
         dataType: 'json',
         contentType: 'application/json',
         success: function (data) {
-            console.log(data)
             $("#add_friend").hide()
             $("#cancel_request").show()
         }
@@ -124,16 +336,23 @@ function hide_all() {
     $("#cancel_request").hide();
 }
 
-function publish_post(post_msg, post_attach, where_id, is_private) {
+function publish_post(post_msg, where_id, is_private, roles) {
     $.ajax({
         url: '/api/publish_post',
         method: 'POST',
         data: JSON.stringify({
-            "message": post_msg, "attach": post_attach, "where_id": where_id, "is_private": is_private
+            "message": post_msg, "where_id": where_id, "is_private": is_private, "roles": roles
         }),
         dataType: 'json',
         contentType: 'application/json',
         success: function (data) {
+            $.ajax({
+                url: '/api/get_your_post',
+                data: `p_id=${data["id"]}`,
+                success: function (data) {
+                    $(".posts").prepend(data)
+                }
+            })
         },
         error: function () {
         }
