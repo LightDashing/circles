@@ -162,6 +162,7 @@ def friends_page():
 @login_required
 def dialog_page(username):
     chat_obj = DBC.get_user_dialog(current_user.id, DBC.get_userid_by_name(username))
+    chat_obj["chatname"] = chat_obj["chatname"].replace(current_user.username, "")
     chat_messages = DBC.get_messages_chat_id(chat_obj["id"])
     return render_template("chat.html", chat=chat_obj,
                            name=current_user.username, messages=chat_messages)
@@ -185,6 +186,8 @@ def create_chat_page():
 @login_required
 def chat(chat_id):
     chat_obj = DBC.get_chat_by_id(chat_id)
+    if chat_obj["is_dialog"]:
+        chat_obj["chatname"] = chat_obj["chatname"].replace(current_user.username, "")
     user_messages = DBC.get_messages_chat_id(chat_id)
     return render_template("chat.html", chat=chat_obj,
                            name=current_user.username, messages=user_messages)

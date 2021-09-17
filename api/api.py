@@ -3,6 +3,7 @@ from database import DataBase
 from flask_login import login_required, current_user
 from files import FileOperations
 import re
+
 # TODO: ВАЖНО! Поменять все запросы на GET'ы, которые ничего не меняют
 api_bp = Blueprint('api_bp', __name__, template_folder='templates')
 DBC = DataBase()
@@ -187,7 +188,8 @@ def create_role():
 @login_required
 def change_user_role():
     data = request.get_json()
-    changed_role = DBC.change_role(data['role_id'], current_user.id, data['role_name'], data['role_color'])
+    changed_role = DBC.change_role(data['role_id'], current_user.id, data['role_name'], data['role_color'],
+                                   data['font_color'])
     return jsonify(changed_role)
 
 

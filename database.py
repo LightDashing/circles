@@ -480,7 +480,7 @@ class DataBase:
         :param s_user: User object
         :return: created Chat object
         """
-        dialog = Chat(chatname=f"{user.username}, {s_user.username}", is_dialog=True)
+        dialog = Chat(chatname=f"{user.username} {s_user.username}", is_dialog=True)
         # chatname isn't really matters because in html it would be displayed as friends name
         self.conn_handler.sp_sess.add(dialog)
         dialog.users.append(user), dialog.users.append(s_user)
@@ -645,7 +645,8 @@ class DataBase:
             user_roles = [role[0].serialize for role in user_roles]
         return user_roles
 
-    def change_role(self, role_id: int, user_id: int, new_role_name: str = None, new_role_color: str = None) -> dict:
+    def change_role(self, role_id: int, user_id: int, new_role_name: str = None, new_role_color: str = None,
+                    new_font_color: str = None) -> dict:
         with self.conn_handler:
             statement = select(UserRole).filter(UserRole.creator == user_id, UserRole.id == role_id)
             user_role = self.conn_handler.sp_sess.execute(statement).scalar()
@@ -654,6 +655,8 @@ class DataBase:
                     user_role.role_name = new_role_name
                 if new_role_color:
                     user_role.role_color = new_role_color
+                if new_font_color:
+                    user_role.font_color = new_font_color
                 return user_role.serialize
             else:
                 return {}

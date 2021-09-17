@@ -118,13 +118,12 @@
                                 <span class="private-role-info">only for: </span>
                                 {% for role in post.roles %}
                                     <span class="tag-button-small role-display-{{ role.id }}"
-                                          style="background: {{ role.role_color }}90">{{ role.role_name }}</span>
+                                          style="background: {{ role.role_color }}; color: {{ role.font_color }}">{{ role.role_name }}</span>
                                 {% endfor %}
                             </div>
                         {% endif %}
                         <span class="material-icons" id="post-more">more_horiz</span>
                     </div>
-
                     <a class="post-message">{{ post['message'] }}</a>
                 </div>
             {% endfor %}

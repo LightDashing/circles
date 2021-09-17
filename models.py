@@ -24,14 +24,18 @@ class User(UserMixin, Base):
     is_online = Column(Boolean)
     # age = Column(SMALLINT)
     # email_active = Column(Boolean, nullable=False, default=False)
-    description = Column(VARCHAR())
+    description = Column(VARCHAR(1024))
     status = Column(VARCHAR(30), nullable=False, default=' ')
+    age = Column(INTEGER)
+    name = Column(VARCHAR(60))
+    surname = Column(VARCHAR(60))
     # TODO: переделать чтобы на линуксе путь был с прямым слешем
     avatar = Column(TEXT, default='..\\static\\img\\user-avatar.svg')
     friend_count = Column(INTEGER, nullable=False, default=0)
     # Могут ли другие люди оставлять у этого пользователя записи на стене
     other_publish = Column(Boolean, nullable=False, default=True)
     # Здесь можно указать уровень людей, способных постить на стене
+    # TODO: удалить это и все его упоминания
     min_posting_lvl = Column(INTEGER, nullable=False, default=5)
     # TODO: в группах можно ограничить очки с которыми человек может начинать постить, пока очки не реализованы
     # user_points = Column(INTEGER, default=0)
@@ -108,6 +112,7 @@ class UserPost(Base):
     message = Column(TEXT)
 
     roles = relationship("UserRole", secondary="user_post_role_link", cascade="all, delete")
+    attachment = relationship('ImageAttachment', cascade="all, delete-orphan")
 
     @property
     def serialize(self):
@@ -134,8 +139,8 @@ class UserRole(Base):
     __tablename__ = 'user_roles'
     id = Column(INTEGER, primary_key=True, autoincrement=True)
     role_name = Column(VARCHAR(32), unique=True, index=True)
-    is_checked = Column(Boolean, nullable=False, default=False)
     role_color = Column(VARCHAR(7), nullable=False, default="#eca7a7")
+    font_color = Column(VARCHAR(7), nullable=False, default="#000000")
     creator = Column(INTEGER, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
 
     @property
@@ -143,8 +148,8 @@ class UserRole(Base):
         return {
             "id": self.id,
             "role_name": self.role_name,
-            "is_checked": self.is_checked,
             "role_color": self.role_color,
+            "font_color": self.font_color,
             "creator": self.creator
         }
 
@@ -209,6 +214,8 @@ class GroupPost(Base):
     post_short = Column(VARCHAR(128), nullable=False, default=' ')
     post_text = Column(VARCHAR())
 
+    attachment = relationship('ImageAttachment', cascade="all, delete-orphan")
+
 
 class UserChatLink(Base):
     __tablename__ = 'user_chat_link'
@@ -249,6 +256,8 @@ class Message(Base):
     message = Column(TEXT, nullable=False)
     chat_id = Column(INTEGER, ForeignKey('chats.id', ondelete='CASCADE'), nullable=False)
 
+    attachment = relationship('ImageAttachment', cascade="all, delete-orphan")
+
     @property
     def serialize(self):
         return {
@@ -257,3 +266,36 @@ class Message(Base):
             "message_date": str(self.message_date),
             "message": self.message,
         }
+
+
+class ImageAttachment(Base):
+    __tablename__ = 'image_attachments'
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
+    date_added = Column(DateTime, nullable=False, default=datetime.datetime.now())
+
+    message_id = Column(INTEGER, ForeignKey("messages.id", ondelete='CASCADE'), unique=True)
+    u_post_id = Column(INTEGER, ForeignKey("userposts.id", ondelete='CASCADE'), unique=True)
+    g_post_id = Column(INTEGER, ForeignKey("group_posts.id", ondelete='CASCADE'), unique=True)
+
+    a1_link = Column(TEXT, nullable=False)
+    a2_link = Column(TEXT)
+    a3_link = Column(TEXT)
+    a4_link = Column(TEXT)
+    a5_link = Column(TEXT)
+
+    @property
+    def serialize(self):
+        return {
+            "id": self.id,
+            "date_added": self.date_added,
+            "a1_link": self.a1_link,
+            "a2_link": self.a2_link,
+            "a3_link": self.a3_link,
+            "a4_link": self.a4_link,
+            "a5_link": self.a5_link,
+            "links_array": [self.a1_link, self.a2_link, self.a3_link, self.a4_link, self.a5_link]
+        }
+
+
+engine = create_engine('postgresql://postgres:***REMOVED***@localhost/postgres')
+Base.metadata.create_all(engine)

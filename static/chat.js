@@ -5,6 +5,8 @@ $(function onReady() {
     $("#all_messages_button").click(function () {
         changeLayout();
     })
+    window.scrollTo(0, document.querySelector(".main-row").scrollHeight);
+    autosize($(".textarea"))
 })
 
 function send_message(message, user, chat_id) {
@@ -86,6 +88,7 @@ function changeChat(chat_id, chat_name) {
     }
     chat_container.load('/api/load_chat_template', `id=${chat_id}`,
         function resetSendButton() {
+            window.scrollTo(0, document.querySelector(".main-row").scrollHeight);
             $(`#send_message_${chat_id}`).click(function () {
                 send_message($(`#message_${chat_id}`).val(), current_username, chat_id);
                 $(`message_${chat_id}`).val("");
