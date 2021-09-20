@@ -123,7 +123,8 @@ class UserPost(Base):
             "date_added": self.date_added,
             "message": self.message,
             "is_private": self.is_private,
-            "roles": [role.serialize for role in self.roles]
+            "roles": [role.serialize for role in self.roles],
+            "attachment": [attach.serialize for attach in self.attachment]
         }
 
 
@@ -296,6 +297,20 @@ class ImageAttachment(Base):
             "links_array": [self.a1_link, self.a2_link, self.a3_link, self.a4_link, self.a5_link]
         }
 
+    @property
+    def image_links(self):
+        return [self.a2_link, self.a3_link, self.a4_link, self.a5_link]
 
-engine = create_engine('postgresql://postgres:***REMOVED***@localhost/postgres')
+    @image_links.setter
+    def image_links(self, links):
+        try:
+            self.a2_link = links[0]
+            self.a3_link = links[1]
+            self.a4_link = links[2]
+            self.a5_link = links[3]
+        except IndexError:
+            return
+
+
+engine = create_engine('postgresql://postgres:YourPassword@localhost/postgres')
 Base.metadata.create_all(engine)

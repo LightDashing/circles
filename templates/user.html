@@ -47,8 +47,11 @@
     <div class="new-post">
         <div style="flex: 1;" class="new-post-sub">
             <label>
-                <textarea id="post-input"></textarea>
+                <textarea id="post-input" style="flex: 1"></textarea>
+
             </label>
+            <div class="new-post-sub-pinned" id="pinned_container">
+            </div>
             <div class="new-post-sub-tags">
                 <a>Type:</a>
                 <button class="tag-button-small" style="margin-right: 10px" id="private_post">private</button>
@@ -125,6 +128,17 @@
                         <span class="material-icons" id="post-more">more_horiz</span>
                     </div>
                     <a class="post-message">{{ post['message'] }}</a>
+                    <div class="post-pinned-images">
+                        {% if post.attachment %}
+                            {% for attach in post.attachment %}
+                                {% for image in attach.links_array %}
+                                    {% if image %}
+                                        <img src="{{ image }}" class="post-pinned-image" alt="attach_img">
+                                    {% endif %}
+                                {% endfor %}
+                            {% endfor %}
+                        {% endif %}
+                    </div>
                 </div>
             {% endfor %}
         {% endif %}

@@ -1,7 +1,7 @@
 let is_post_private = true
-let roles_list
+let pinned_num = 0
 
-function init(name, username) {
+function init(name) {
     //TODO: потом переделать, выглядит некрасиво
     hide_all()
     let create_post = $("#create_post")
@@ -21,7 +21,41 @@ function init(name, username) {
 
 
     let tags_flexbox = $('.new-post-sub-tags')
-    let html = jQuery('html')
+    let html = jQuery("html")
+    let post_input = $("#post-input")
+
+    html.on("dragover", function (e) {
+        e.preventDefault()
+        e.stopPropagation()
+        post_input.attr("placeholder", "Drag image here")
+    })
+    html.on("drop", function (e) {
+        e.preventDefault();
+        e.stopPropagation()
+    })
+
+    post_input.on("drop", function loadImage(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        let file = e.originalEvent.dataTransfer.files[0];
+        if (file.size > 1024 * 1024 * 25) {
+            alert("Size of file must be less than 25 megabytes");
+            return;
+        }
+        if (file.type.substring(0, 5) !== 'image') {
+            alert("File must be image!");
+            return;
+        }
+        if (FileReader && file && file.size) {
+            let fr = new FileReader();
+            fr.onload = function loadFile() {
+                pinImage(fr.result)
+                pinned_num++;
+            }
+            fr.readAsDataURL(file);
+        }
+        pinned_file = file
+    })
 
     function showModalEditRoles() {
         edit_role_modal.show()
@@ -138,10 +172,13 @@ function init(name, username) {
     })
 
     $("#make_post").click(function () {
-        let post_input = $("#post-input")
-        let roles = $("#roles_selector")[0].selectize.getValue()
+        let roles = $("#roles_selector")[0].selectize.getValue();
+        let pinned_images = Array.from($(".pinned-image"));
+        for (let i = 0; i < pinned_images.length; i++) {
+            pinned_images[i] = pinned_images[i].src;
+        }
         if (post_input.val() !== '') {
-            publish_post(post_input.val(), where_id, is_post_private, roles)
+            publish_post(post_input.val(), where_id, is_post_private, roles, pinned_images);
         }
     })
 
@@ -217,7 +254,7 @@ function init(name, username) {
         }
     }
 
-    autosize($("#post-input"))
+    autosize(post_input)
     $('#roles_selector').selectize({
         plugins: ['remove_button'],
         valueField: "role_name",
@@ -348,19 +385,19 @@ function hide_all() {
     $("#cancel_request").hide();
 }
 
-function publish_post(post_msg, where_id, is_private, roles) {
+function publish_post(post_msg, where_id, is_private, roles, pinned_images) {
     $.ajax({
         url: '/api/publish_post',
         method: 'POST',
         data: JSON.stringify({
-            "message": post_msg, "where_id": where_id, "is_private": is_private, "roles": roles
+            "message": post_msg, "where_id": where_id, "is_private": is_private, "roles": roles,
+            pinned_images: pinned_images
         }),
         dataType: 'json',
         contentType: 'application/json',
         success: function (data) {
             $.ajax({
-                url: '/api/get_your_post',
-                data: `p_id=${data["id"]}`,
+                url: '/api/get_your_post', data: `p_id=${data["id"]}`,
                 success: function (data) {
                     $(".posts").prepend(data)
                 }
@@ -377,4 +414,19 @@ function fColorByBackground(color) {
         (c_splitted[1] * 587) +
         (c_splitted[2] * 114)) / 1000);
     return (brightness > 125) ? '#000000' : '#FFFFFF';
+}
+
+function pinImage(img_src) {
+    let img = document.createElement("img")
+    let img_description = document.createElement("span")
+    img_description.innerHTML = '&times;';
+    img_description.classList.add("pinned-image-description")
+    img.src = img_src
+    img.classList.add("pinned-image")
+    $("#pinned_container").append(img)
+    $("#pinned_container").append(img_description)
+    img_description.onclick = function () {
+        img.remove()
+        img_description.remove()
+    }
 }

@@ -30,9 +30,11 @@ def publish_post():
     if request.method == 'POST':
         data = request.get_json()
         if not data.get("where_id", None):
-            post_data = DBC.publish_post(data["message"], current_user.id, data["roles"], data["is_private"])
+            post_data = DBC.publish_post(data["message"], current_user.id, data["roles"], data["pinned_images"],
+                                         data["is_private"])
         else:
-            post_data = DBC.publish_post(data['message'], current_user.id, [], data['is_private'], data["where_id"])
+            post_data = DBC.publish_post(data["message"], current_user.id, [], data["pinned_images"],
+                                         data["is_private"], data["where_id"])
         return jsonify(post_data)
 
 
@@ -153,7 +155,8 @@ def upload_settings():
     if data:
         image = data.get("image")
         fo = FileOperations(current_user.id)
-        response = fo.save_image(image, 'avatar')
+        avatar = fo.save_image(image, 'avatar')
+        response = DBC.change_avatar(current_user.id, avatar)
         return jsonify(response)
     username = str(request.form["username"])
     description = str(request.form["desc"])

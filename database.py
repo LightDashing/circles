@@ -7,7 +7,9 @@ from sqlalchemy.orm import Session, sessionmaker, scoped_session
 from sqlalchemy.exc import IntegrityError
 import datetime
 import re
-from models import User, UserPost, Message, Friend, Chat, Group, GroupPost, UserGroupLink, UserChatLink, UserRole
+from models import User, UserPost, Message, Friend, Chat, Group, GroupPost, UserGroupLink, UserChatLink, UserRole, \
+    ImageAttachment
+from files import FileOperations
 from user_exceptions import UserAlreadyExist
 
 
@@ -505,7 +507,7 @@ class DataBase:
     def get_chat_by_id(self, chat_id: int) -> Chat:
         """
         This function returns Chat object by it's id\n
-        :param chat_id: int, Chat.id
+        :param chat_id: int, Chat.idf
         :return: Chat object
         """
         print(type(chat_id))
@@ -585,7 +587,8 @@ class DataBase:
 
     # TODO: добавить ограничение на количество ролей в посте
     #  также нужно переработать этот код
-    def publish_post(self, msg: str, user_id: int, roles: list[str], is_private: bool, where_id: int = None) -> bool:
+    def publish_post(self, msg: str, user_id: int, roles: list[str], pinned_images: list[str], is_private: bool,
+                     where_id: int = None) -> bool:
         with self.conn_handler:
             if not where_id:
                 if not is_private:
@@ -598,6 +601,19 @@ class DataBase:
                         statement = select(UserRole).filter(UserRole.role_name == role)
                         role = self.conn_handler.sp_sess.execute(statement).scalar()
                         post.roles.append(role)
+                if pinned_images:
+                    files = FileOperations(user_id)
+                    image = files.save_image(pinned_images[0])
+                    attach = ImageAttachment(a1_link=image, date_added=datetime.datetime.now())
+                    if len(pinned_images) > 1:
+                        attach_array = []
+                        for i in range(1, 5):
+                            try:
+                                attach_array.append(files.save_image(pinned_images[i]))
+                            except IndexError:
+                                break
+                        attach.image_links = attach_array
+                    post.attachment.append(attach)
             else:
                 # TODO: пока что другие люди не могут постить на стене вообще, нужно придумать как поступать с их
                 #  ролями в случае постинга
@@ -774,3 +790,42 @@ class DataBase:
                 friend.second_user_roles.remove(role)
             elif friend.second_user_id == user_id:
                 friend.first_user_roles.remove(role)
+
+    def add_attachment_u_post(self, post_id: int, user_id: int, images_list):
+        with self.conn_handler:
+            attach = ImageAttachment(date_added=datetime.datetime.now(), a1_link=images_list[0])
+            if len(images_list) > 1:
+                attach.image_links = images_list[1:]
+            statement = select(UserPost).filter(UserPost.id == post_id, UserPost.userid == user_id)
+            post = self.conn_handler.sp_sess.execute(statement).scalar()
+            post.attachment.append(attach)
+
+    def get_attachment_u_post(self, post_id: int, user_id: int):
+        with self.conn_handler:
+            statement = select(UserPost).filter(UserPost.id == post_id, UserPost.userid == user_id)
+            post = self.conn_handler.sp_sess.execute(statement).scalar()
+            return [att.serialize for att in post.attachment]
+
+    def add_attachment_msg(self, msg_id: int, user_id: int, images_list):
+        with self.conn_handler:
+            attach = ImageAttachment(date_added=datetime.datetime.now(), a1_link=images_list[0])
+            if len(images_list) > 1:
+                attach.image_links = images_list[1:]
+            statement = select(Message).filter(Message.id == msg_id, Message.from_user_id == user_id)
+            message = self.conn_handler.sp_sess.execute(statement).scalar()
+            message.attachment.append(attach)
+
+    def get_attachment_msg(self, msg_id: int, user_id: int):
+        with self.conn_handler:
+            statement = select(Message).filter(Message.id == msg_id, Message.from_user_id == user_id)
+            msg = self.conn_handler.sp_sess.execute(statement).scalar()
+            return [att.serialize for att in msg.attachment]
+
+    def add_attachment_g_post(self, post_id: int, group_id: int, images_list):
+        with self.conn_handler:
+            attach = ImageAttachment(date_added=datetime.datetime.now(), a1_link=images_list[0])
+            if len(images_list) > 1:
+                attach.image_links = images_list[1:]
+            statement = select(GroupPost).filter(GroupPost.id == post_id, GroupPost.group_id == group_id)
+            message = self.conn_handler.sp_sess.execute(statement).scalar()
+            message.attachment.append(attach)
