@@ -97,7 +97,7 @@ def send_message():
     data = request.get_json()
     cleaner = re.compile('<.*?>')
     message = re.sub(cleaner, '', data['message'])
-    DBC.send_message(current_user.id, data['chat_id'], message)
+    DBC.send_message(current_user.id, data['chat_id'], message, data["pinned_images"])
     return jsonify(True)
 
 

@@ -4,20 +4,32 @@
         <a class="post-nick"
            href="{{ url_for("users_page", name=get_username(post['user_id'])) }}"><b>{{ get_username(post['user_id']) }}</b></a>
         <span class="post-date">posted at {{ formate_datetime(post['date_added']) }}</span><br>
-        <div class="private-info">
-            {% if post.is_private %}
-                <span class="tag-button-small">private</span>
-            {% else %}
-                <span class="tag-button-small">public</span>
-            {% endif %}
-            <span class="private-role-info">only for: </span>
-            {% for role in post.roles %}
-                <span class="tag-button-small role-display-{{ role.id }}"
-                      style="background: {{ role.role_color }}; color: {{ role.font_color }}">{{ role.role_name }}</span>
-            {% endfor %}
-        </div>
+        {% if current_user.username == name %}
+            <div class="private-info">
+                {% if post.is_private %}
+                    <span class="tag-button-small">private</span>
+                {% else %}
+                    <span class="tag-button-small">public</span>
+                {% endif %}
+                <span class="private-role-info">only for: </span>
+                {% for role in post.roles %}
+                    <span class="tag-button-small role-display-{{ role.id }}"
+                          style="background: {{ role.role_color }}; color: {{ role.font_color }}">{{ role.role_name }}</span>
+                {% endfor %}
+            </div>
+        {% endif %}
         <span class="material-icons" id="post-more">more_horiz</span>
     </div>
-
     <a class="post-message">{{ post['message'] }}</a>
+    <div class="post-pinned-images">
+        {% if post.attachment %}
+            {% for attach in post.attachment %}
+                {% for image in attach.links_array %}
+                    {% if image %}
+                        <img src="{{ image }}" class="post-pinned-image" alt="attach_img">
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+        {% endif %}
+    </div>
 </div>

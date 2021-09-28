@@ -290,6 +290,20 @@
     height: 0;
 }
 
+.pinned-image:hover {
+    opacity: 0.9;
+    cursor: pointer;
+}
+
+.pinned-image-description {
+    display: none;
+    background: white;
+    width: 25px;
+    height: 25px;
+    cursor: pointer;
+    border-radius: 3px;
+}
+
 html, body {
     background: var(--page-bg-color);
     /*overflow: scroll;*/

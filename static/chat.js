@@ -1,20 +1,86 @@
 let message_updater;
 let chat_list = []
+let max_image_height = 0
 
 $(function onReady() {
     $("#all_messages_button").click(function () {
         changeLayout();
     })
     window.scrollTo(0, document.querySelector(".main-row").scrollHeight);
-    autosize($(".textarea"))
+    let textarea = $("textarea")
+    textarea.each(function () {
+        autosize(this)
+    }).on('autosize:resized', function () {
+        let input_height = parseInt(textarea.css("height"))
+        if ($(".message-input-pinned > img") !== 0) {
+            $(".message-input").css("height", `${input_height + max_image_height}px`)
+        } else {
+            $(".message-input").css("height", `${input_height}px`)
+        }
+    })
+    pinToObject({
+        obj: textarea,
+        image_container: '#pinned-container',
+        image_class: 'message-input-pinned',
+        image_desc_class: 'pinned-image-description',
+        add_element_callback: addImageContainer,
+        delete_element_callback: deleteImageContainer
+    })
 })
 
+function addImageContainer(element) {
+    element = $(element)
+    if (element.height() > max_image_height) {
+        let msg_input = $(".message-input")
+        let height = msg_input.height() - max_image_height
+        msg_input.css("height", `${height}px`)
+        max_image_height = element.height() + 5
+        msg_input.css("height", `${height + max_image_height}px`)
+    }
+}
+
+// TODO: Возможно можно написать получше
+function deleteImageContainer(element) {
+    let pinned_images = $(".message-input-pinned > img")
+    let msg_input = $(".message-input")
+    let initial_height = msg_input.height()
+    if (pinned_images.length === 1) {
+        msg_input.css("height", `${initial_height - max_image_height}px`)
+        max_image_height = 0
+    } else {
+        element = $(element)
+        if (max_image_height === element.height() + 5) {
+            let new_height = 0
+            Array.from(pinned_images).forEach(function (el) {
+                el = $(el)
+                if (el.height() > new_height && new_height !== max_image_height) {
+                    new_height = el.height()
+                }
+            })
+            console.log(new_height, max_image_height)
+            msg_input.css("height", `${initial_height - max_image_height}px`)
+            initial_height = msg_input.height()
+            msg_input.css("height", `${initial_height + new_height + 5}px`)
+            max_image_height = new_height
+        }
+    }
+}
+
 function send_message(message, user, chat_id) {
-    chat_id = parseInt(chat_id)
+    chat_id = parseInt(chat_id);
+    let pinned_images = Array.from($(".message-input-pinned > img"));
+    for (let i = 0; i < pinned_images.length; i++) {
+        pinned_images[i] = pinned_images[i].src;
+    }
     $.ajax({
         url: '/api/send_message',
         method: 'POST',
-        data: JSON.stringify({"message": message, "chat_id": chat_id, "attachment": null}),
+        data: JSON.stringify({
+            "message": message,
+            "chat_id": chat_id,
+            "attachment": null,
+            pinned_images: pinned_images
+        }),
         dataType: 'json',
         contentType: 'application/json',
         success: function () {
@@ -41,7 +107,7 @@ function update_messages(username, chat_id, last_msg_time, type) {
                     data.forEach(function (el) {
                         let element;
                         if (el["from_user_id"] === username) {
-                            element = `<div class="message-box" style="align-self: end; background: #CEC5C3">
+                            element = `<div class="message-box" style="align-self: end; background: #e3e4f8">
                                      <span class="from-user"> ${el["from_user_id"]}: </span> 
                                     <span class="message-text"> ${el["message"]}</span></div>`;
                         } else {
@@ -87,8 +153,15 @@ function changeChat(chat_id, chat_name) {
         chat_container.empty();
     }
     chat_container.load('/api/load_chat_template', `id=${chat_id}`,
-        function resetSendButton() {
+        function changeChatEvents() {
             window.scrollTo(0, document.querySelector(".main-row").scrollHeight);
+            let textarea = $('textarea')
+            textarea.each(function () {
+                autosize(this)
+            }).on('autosize:resized', function () {
+                let input_height = parseInt(textarea.css("height"))
+                $(".message-input").css("height", `${input_height}px`)
+            })
             $(`#send_message_${chat_id}`).click(function () {
                 send_message($(`#message_${chat_id}`).val(), current_username, chat_id);
                 $(`message_${chat_id}`).val("");

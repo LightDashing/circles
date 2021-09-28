@@ -11,7 +11,7 @@
             {% if chat.is_dialog %}
                 {% for message in messages %}
                     {% if message.from_user_id == current_user.id %}
-                        <div class='message-box' style="align-self: end; background: #CEC5C3">
+                        <div class='message-box' style="align-self: end; background: #e3e4f8">
                             <div class="message-box-text">
                                 <span class="message-text">{{ message.message }}</span>
                             </div>
@@ -25,7 +25,7 @@
             {% else %}
                 {% for message in messages %}
                     {% if message.from_user_id == current_user.id %}
-                        <div class='message-box' style="align-self: end; background: #CEC5C3">
+                        <div class='message-box' style="align-self: end; background: #e3e4f8">
                             <img src="{{ get_user_avatar(message.from_user_id) }}" class="message-box-avatar">
                             <div class="message-box-text">
                                 <span class="from-user">{{ get_username(message.from_user_id) }}</span>
@@ -45,10 +45,13 @@
             {% endif %}
         </div>
         <div class="message-input">
-            <label class="message-input"> Input some message...
-                <textarea class="textarea" id="message_{{ chat.id }}"></textarea>
+            <label class="message-input-label">
+                <textarea id="message_{{ chat.id }}"></textarea>
+                <button class="new-button" style="margin: 0" id="send_message_{{ chat.id }}">Send</button>
             </label>
-            <button class="new-button" id="send_message_{{ chat.id }}">Send</button>
+            <div class="message-input-pinned" id="pinned-container">
+
+            </div>
         </div>
     </div>
 </div>

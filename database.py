@@ -20,7 +20,7 @@ class DataBase:
             # Нужно поиграться с параметрами пула, потому что сейчас переодически сыпется с twophase error
             self.engine = create_engine('postgresql://postgres:YourPassword@localhost/postgres',
                                         **{"poolclass": QueuePool, "pool_size": 4, "max_overflow": 1,
-                                           "pool_timeout": 8})
+                                           "pool_timeout": 10})
             self.g_session = scoped_session(sessionmaker(self.engine))
 
         def __enter__(self):
@@ -575,12 +575,31 @@ class DataBase:
                 return []
         return all_messages
 
-    def send_message(self, user: int, chat_id: int, msg: str) -> bool:
+    @staticmethod
+    def create_attach(user_id: int, pinned_images: list[str]) -> ImageAttachment:
+        files = FileOperations(user_id)
+        image = files.save_image(pinned_images[0])
+        attach = ImageAttachment(a1_link=image, date_added=datetime.datetime.now())
+
+        if len(pinned_images) > 1:
+            attach_array = []
+            for i in range(1, 5):
+                try:
+                    attach_array.append(files.save_image(pinned_images[i]))
+                except IndexError:
+                    break
+            attach.image_links = attach_array
+        return attach
+
+    def send_message(self, user_id: int, chat_id: int, msg: str, pinned_images: list[str]) -> bool:
         with self.conn_handler:
             statement = select(Chat).filter(Chat.id == chat_id)
             chat = self.conn_handler.sp_sess.execute(statement).scalar()
-            self.conn_handler.sp_sess.add(
-                Message(from_user_id=user, message_date=datetime.datetime.now(), message=msg, chat_id=chat.id))
+            message = Message(from_user_id=user_id, message_date=datetime.datetime.now(), message=msg, chat_id=chat.id)
+            if pinned_images:
+                attach = self.create_attach(user_id, pinned_images)
+                message.attachment.append(attach)
+            self.conn_handler.sp_sess.add(message)
             statement = update(UserChatLink).filter(UserChatLink.chat_id == chat_id).values(is_notified=False)
             self.conn_handler.sp_sess.execute(statement)
         return True
@@ -602,17 +621,7 @@ class DataBase:
                         role = self.conn_handler.sp_sess.execute(statement).scalar()
                         post.roles.append(role)
                 if pinned_images:
-                    files = FileOperations(user_id)
-                    image = files.save_image(pinned_images[0])
-                    attach = ImageAttachment(a1_link=image, date_added=datetime.datetime.now())
-                    if len(pinned_images) > 1:
-                        attach_array = []
-                        for i in range(1, 5):
-                            try:
-                                attach_array.append(files.save_image(pinned_images[i]))
-                            except IndexError:
-                                break
-                        attach.image_links = attach_array
+                    attach = self.create_attach(user_id, pinned_images)
                     post.attachment.append(attach)
             else:
                 # TODO: пока что другие люди не могут постить на стене вообще, нужно придумать как поступать с их

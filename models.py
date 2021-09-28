@@ -266,6 +266,7 @@ class Message(Base):
             "from_user_id": self.from_user_id,
             "message_date": str(self.message_date),
             "message": self.message,
+            "attachment": [attach.serialize for attach in self.attachment]
         }
 
 
@@ -311,6 +312,5 @@ class ImageAttachment(Base):
         except IndexError:
             return
 
-
-engine = create_engine('postgresql://postgres:YourPassword@localhost/postgres')
-Base.metadata.create_all(engine)
+# engine = create_engine('postgresql://postgres:YourPassword@localhost/postgres')
+# Base.metadata.create_all(engine)

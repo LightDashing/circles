@@ -229,11 +229,16 @@
 .post-pinned-images {
     display: flex;
     flex-direction: row;
+    max-width: 100%;
     gap: 15px;
 }
 
 .post-pinned-images > img {
-    max-width: 250px;
+    width: auto;
+    height: auto;
+    max-height: 500px;
+    border-radius: 10px;
+    min-width: 0;
 }
 
 .new-post {
@@ -274,26 +279,13 @@
     border-radius: 5px;
 }
 
-.pinned-image:hover {
-    opacity: 0.9;
-    cursor: pointer;
-}
-
-.pinned-image-description {
-    display: none;
-    background: white;
-    width: 25px;
-    height: 25px;
-    cursor: pointer;
-    border-radius: 3px;
-}
-
 .pinned-image:hover + .pinned-image-description {
     display: block;
     margin-left: -40px;
     color: black;
     font-size: 1.2em;
     z-index: 2;
+    cursor: pointer;
 }
 
 .new-post-sub-tags {

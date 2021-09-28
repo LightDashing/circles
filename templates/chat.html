@@ -7,57 +7,68 @@
 {% endblock %}
 {% block main_row %}
     <div class="chat-container">
-        <div class="chat-content" id="chat_content_{{ chat.id }}">
-            <div class="chat-header">
-                <h1>{{ chat.chatname }}</h1>
-                {% if not chat.is_dialog %}
-                    <h3>{{ chat.rules }}</h3>
-                {% endif %}
-            </div>
-            <div class="all_messages">
-                <div id="incoming_msg_{{ chat.id }}" class="incoming_msg">
-                    <p style="align-self: center">Start of dialog</p>
-                    {% if chat.is_dialog %}
-                        {% for message in messages %}
-                            {% if message.from_user_id == current_user.id %}
-                                <div class='message-box' style="align-self: end; background: #CEC5C3">
-                                    <div class="message-box-text">
-                                        <span class="message-text">{{ message.message }}</span>
-                                    </div>
-                                </div>
-                            {% else %}
-                                <div class='message-box'>
-                                    <span class="message-text">{{ message.message }}</span>
-                                </div>
-                            {% endif %}
-                        {% endfor %}
-                    {% else %}
-                        {% for message in messages %}
-                            {% if message.from_user_id == current_user.id %}
-                                <div class='message-box' style="align-self: end; background: #CEC5C3">
-                                    <img src="{{ get_user_avatar(message.from_user_id) }}" class="message-box-avatar">
-                                    <div class="message-box-text">
-                                        <span class="from-user">{{ get_username(message.from_user_id) }}</span>
-                                        <span class="message-text">{{ message.message }}</span>
-                                    </div>
-                                </div>
-                            {% else %}
-                                <div class='message-box'>
-                                    <img src="{{ get_user_avatar(message.from_user_id) }}" class="message-box-avatar">
-                                    <div class="message-box-text">
-                                        <span class="from-user">{{ get_username(message.from_user_id) }}</span>
-                                        <span class="message-text">{{ message.message }}</span>
-                                    </div>
-                                </div>
-                            {% endif %}
-                        {% endfor %}
+    <div class="chat-content" id="chat_content_{{ chat.id }}">
+        <div class="chat-header">
+            <h1>{{ chat.chatname }}</h1>
+            {% if not chat.is_dialog %}
+                <h3>{{ chat.rules }}</h3>
+            {% endif %}
+        </div>
+        <div class="all_messages">
+            <div id="incoming_msg_{{ chat.id }}" class="incoming_msg">
+                <p style="align-self: center">Start of dialog</p>
+                {% if chat.is_dialog %}
+                    {#                    {% for message in messages %}#}
+                    {#                        {% if message.from_user_id == current_user.id %}#}
+                    {#                            <div class='message-box' style="align-self: end; background: #e3e4f8">#}
+                    {#                                <div class="message-box-text">#}
+                    {#                                    <span class="message-text">{{ message.message }}</span>#}
+                    {#                                </div>#}
+                    {#                            </div>#}
+                    {#                        {% else %}#}
+                    {#                            <div class='message-box'>#}
+                    {#                                <span class="message-text">{{ message.message }}</span>#}
+                    {#                            </div>#}
+                    {#                        {% endif %}#}
+                    {#                    {% endfor %}#}
+                {% else %}
+                    {% for message in messages %}
+                        {% if message.from_user_id == current_user.id %}
+                            <div class='message-box' style="align-self: end; background: #e3e4f8">
+                        {% else %}
+                            <div class='message-box'>
+                        {% endif %}
+                    <img src="{{ get_user_avatar(message.from_user_id) }}" class="message-box-avatar">
+                    <div class="message-box-text">
+                        <span class="from-user">{{ get_username(message.from_user_id) }}</span>
+                        <span class="message-text">{{ message.message }}</span>
+                    </div>
+                    {#                        TODO: картинки занимают лишнее место, исправить#}
+                    {% if message.attachment %}
+                        <span class="flex-break"></span>
+                        <div class="message-pinned-images">
+                            {% for attach in message.attachment %}
+                                {% for image in attach.links_array %}
+                                    {% if image %}
+                                        <img src="{{ image }}" class="post-pinned-image" alt="attach_img">
+                                    {% endif %}
+                                {% endfor %}
+                            {% endfor %}
+                        </div>
                     {% endif %}
+
+                    </div>
+                    {% endfor %}
+                {% endif %}
                 </div>
                 <div class="message-input">
                     <label class="message-input-label">
                         <textarea id="message_{{ chat.id }}"></textarea>
                         <button class="new-button" style="margin: 0" id="send_message_{{ chat.id }}">Send</button>
                     </label>
+                    <div class="message-input-pinned" id="pinned-container">
+
+                    </div>
                 </div>
             </div>
         </div>
