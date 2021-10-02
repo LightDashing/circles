@@ -9,7 +9,7 @@ $(function onReady() {
 function check_all_updates() {
     $.ajax({
         url: '/api/update_all',
-        method: 'POST',
+        method: 'GET',
         success: function updateAll(data) {
             if (data['messages'] !== 0 || data['friends'] !== 0) {
                 $("#settings").val()

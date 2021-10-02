@@ -5,7 +5,7 @@ import base64
 
 
 class FileOperations:
-    IMAGES_EXTENSIONS = ['png', 'jpg', 'jpeg', 'jfif', 'pjpeg', 'pjp']
+    IMAGES_EXTENSIONS = ['png', 'jpg', 'jpeg', 'jfif', 'pjpeg', 'pjp', 'gif']
     DOCUMENT_EXTENSIONS = ['.docx' '.doc', '.ppt', '.pptx']
     MAX_SIZE = 1024 * 1024 * 20
     SAVE_FOLDER = os.path.join('static', 'user_files')

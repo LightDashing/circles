@@ -1,10 +1,10 @@
 import time
 
-from sqlalchemy import or_, and_, func, delete, select, update
+from sqlalchemy import or_, and_, func, delete, select, update, inspect
 from sqlalchemy.engine import create_engine
 from sqlalchemy.pool import NullPool, AssertionPool, QueuePool
 from sqlalchemy.orm import Session, sessionmaker, scoped_session
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, InvalidRequestError
 import datetime
 import re
 from models import User, UserPost, Message, Friend, Chat, Group, GroupPost, UserGroupLink, UserChatLink, UserRole, \
@@ -19,8 +19,8 @@ class DataBase:
         def __init__(self):
             # Нужно поиграться с параметрами пула, потому что сейчас переодически сыпется с twophase error
             self.engine = create_engine('postgresql://postgres:YourPassword@localhost/postgres',
-                                        **{"poolclass": QueuePool, "pool_size": 4, "max_overflow": 1,
-                                           "pool_timeout": 10})
+                                        **{"poolclass": QueuePool, "pool_size": 20, "max_overflow": 3,
+                                           "pool_timeout": 6})
             self.g_session = scoped_session(sessionmaker(self.engine))
 
         def __enter__(self):
@@ -29,7 +29,9 @@ class DataBase:
         def __exit__(self, *args):
             try:
                 self.sp_sess.commit()
-            except IntegrityError:  # TODO: это просто затычка, нужно придумать что-то лучше
+            except AttributeError:  # TODO: это просто затычка, нужно придумать что-то лучше
+                self.sp_sess.rollback()
+            except IntegrityError:
                 self.sp_sess.rollback()
             finally:
                 self.g_session.remove()
@@ -81,7 +83,7 @@ class DataBase:
     def get_user(self, userid: int, scoped: bool = False) -> User:
         """
         This function returns user by their userid, if user exists. If user exists it's expunge him to be outside
-        scoped session, so be careful when using this function on big arrays of data without scoped = True!\n
+        scoped session\n
         :param userid: User.id
         :param scoped: If true, function will not create it's own scoped session, also it won't expunge it, default false
         :return: object User
@@ -94,7 +96,11 @@ class DataBase:
         with self.conn_handler:
             statement = select(User).filter(User.id == userid)
             user = self.conn_handler.sp_sess.execute(statement).scalar()
-            self.conn_handler.sp_sess.expunge(user)
+            try:
+                self.conn_handler.sp_sess.expunge(user)
+            except InvalidRequestError:
+                print(inspect(user).detached)
+                return user
         return user
 
     def get_userid(self, email):
@@ -281,10 +287,10 @@ class DataBase:
         :return: array of User.serialize
         """
         with self.conn_handler:
-            statement = select(Friend).filter(or_(Friend.first_user_id == userid, Friend.second_user_id == userid))
-            friends = self.conn_handler.sp_sess.execute(statement).scalars().fetchmany(amount)
+            statement = select(User).filter(User.id == userid)
+            user = self.conn_handler.sp_sess.execute(statement).scalar()
             user_friends = []
-            for friend in friends:
+            for friend in user.friends:
                 if friend.first_user.id == userid:
                     user_friends.append(friend.second_user.serialize)
                 else:
@@ -752,7 +758,7 @@ class DataBase:
             else:
                 return friend.serialize
 
-    def get_friend_roles(self, user_id, friend_id):
+    def get_friend_roles(self, user_id: int, friend_id: int, all_roles: bool = False):
         with self.conn_handler:
             statement = self.FRIEND_STATEMENT(user_id, friend_id)
             friend = self.conn_handler.sp_sess.execute(statement).scalar()
@@ -762,11 +768,21 @@ class DataBase:
             if friend.first_user_id == user_id:
                 roles = friend.second_user_roles
                 roles = [role.serialize for role in roles]
-                return roles
             elif friend.second_user_id == user_id:
                 roles = friend.first_user_roles
                 roles = [role.serialize for role in roles]
-                return roles
+            if all_roles:
+                roles = [role["role_name"] for role in roles]
+                statement = select(UserRole).filter(UserRole.creator == user_id)
+                user_roles = self.conn_handler.sp_sess.execute(statement).scalars()
+                user_roles = [role.serialize for role in user_roles]
+                for role in user_roles:
+                    if role["role_name"] in roles:
+                        role["is_active"] = True
+                    else:
+                        role["is_active"] = False
+                return user_roles
+            return roles
 
     def add_friend_role(self, user_id, friend_id, role_id):
         with self.conn_handler:

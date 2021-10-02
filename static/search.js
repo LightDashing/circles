@@ -27,7 +27,6 @@ $(function initSearch() {
 })
 
 function searchUsers(query) {
-    console.log(query)
     $.ajax({
         url: '/api/search',
         method: 'POST',
@@ -50,7 +49,6 @@ function searchUsers(query) {
 function searchInit() {
     $.ajax({
         url: '/api/get_user_friends',
-        method: 'POST',
         success: function (data) {
             data.forEach(function createDropdown(element) {
                 search_list[element['id']] = element;

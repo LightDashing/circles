@@ -83,8 +83,7 @@ def check_is_friend():
         return jsonify(fr_check)
 
 
-# Здесь должен быть GET
-@api_bp.route('/get_user_friends', methods=['POST'])
+@api_bp.route('/get_user_friends', methods=['GET'])
 @login_required
 def get_friends_list():
     friends = DBC.get_user_friends(current_user.id)
@@ -115,8 +114,7 @@ def load_messages():
     return jsonify(user_messages)
 
 
-# Здесь должен быть GET
-@api_bp.route('/update_all', methods=['POST'])
+@api_bp.route('/update_all', methods=['GET'])
 @login_required
 def update_all():
     updates = DBC.update_all(current_user.id)
@@ -217,6 +215,14 @@ def search():
 @login_required
 def get_user_roles():
     roles = DBC.get_roles(current_user.id)
+    return jsonify(roles)
+
+
+@api_bp.route('/get_friend_roles', methods=['GET'])
+@login_required
+def get_friend_roles():
+    friend_id = request.args.get("f")
+    roles = DBC.get_friend_roles(current_user.id, friend_id, True)
     return jsonify(roles)
 
 

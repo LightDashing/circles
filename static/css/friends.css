@@ -1,16 +1,82 @@
-.friend-block{
+.all-friends {
     display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    flex-direction: row;
-    background: var(--object-accent-color);
-    border: 1px solid var(--object-border-color);
-    border-radius: 10px;
-    padding: 10px;
-    width: 50%;
-    height: 30px;
+    flex-direction: column;
+    gap: 30px;
 }
 
-.friend-block > .new-button{
-    margin: 5px;
+.friend-block {
+    display: flex;
+    gap: 60px;
+    align-items: center;
 }
+
+.friend-block-description {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.friend-block-description-roles {
+    display: flex;
+    gap: 10px;
+}
+
+.friend-block-description-roles-select {
+    min-width: 100px;
+}
+
+.friend-block-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.friend-nick:link, .friend-nick:visited {
+    font-size: 1.1em;
+    color: black;
+    text-decoration: none;
+}
+
+.test-button {
+    background: navajowhite;
+    border-radius: 10px;
+    background: var(--page-bg-color);
+    border: 1px #e6e9f4 solid;
+    font-size: 0.85em;
+    padding: 7px 15px;
+    cursor: pointer;
+}
+
+.test-button:hover {
+    background: var(--object-hover-color);;
+}
+
+.test-button:active {
+    background: rgba(157, 185, 222, 0.7);
+}
+
+.friend-block-buttons > button {
+    border-radius: 10px;
+    background: var(--page-bg-color);
+    /*border: 1px #e6e9f4 solid;*/
+    border: none;
+    font-size: 0.85em;
+    padding: 7px 15px;
+    cursor: pointer;
+}
+
+.friend-block-buttons > button:hover {
+    background: var(--object-hover-color);;
+}
+
+.friend-block-buttons > button:active {
+    background: rgba(157, 185, 222, 0.7);
+}
+
+.friend-block > img {
+    width: 75px;
+    height: 75px;
+    border-radius: 30px;
+    cursor: pointer;
+}
+

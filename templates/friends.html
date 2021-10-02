@@ -3,20 +3,43 @@
 {% block head %}
     {{ super() }}
     <link type="text/css" rel="stylesheet" href="/static/css/friends.css">
+    <script type="text/javascript"
+            src="{{ url_for("static", filename="node_modules/selectize/dist/js/standalone/selectize.js") }}"></script>
+    <link rel="stylesheet" href="{{ url_for("static", filename="css/selectize_modified.css") }}">
+    <script type="text/javascript" src="{{ url_for("static", filename="js/friends_page.js") }}"></script>
 {% endblock %}
 {% block main_row %}
     {% if friends %}
-        {% for friend in friends %}
-            <div class="friend-block">
-                <button class="new-button"
-                        onclick="location.href='/users/{{ friend['username'] }}'">{{ friend['username'] }}</button>
-                {#                <a href="/users/{{ friend['name'] }}">{{ friend['name'] }}</a>#}
-                <button class="new-button"
-                        onclick="location.href='{{ url_for("dialog_page", username=friend['username']) }}'">Write
-                    message
-                </button>
-            </div>
-        {% endfor %}
+        <div class="all-friends">
+            {% for friend in friends %}
+                <div class="friend-block">
+                    <img src="{{ friend['avatar'] }}" alt="user avatar"
+                         onclick="location.href='{{ url_for("users_page", name=friend["username"]) }}'">
+                    <div class="friend-block-description">
+                        <a class="friend-nick"
+                           href="{{ url_for("users_page", name=friend["username"]) }}">{{ friend["username"] }}</a>
+                        {% if friend["is_online"] %}
+                            <span style="color: green; font-size: 0.95em">online</span>
+                        {% else %}
+                            <span style="color: red; font-size: 0.95em">offline</span>
+                        {% endif %}
+                        <label class="friend-block-description-roles">
+                            <select id="f{{ friend["id"] }}"
+                                    class="friend-selector friend-block-description-roles-select"
+                                    multiple="multiple"></select>
+                            <button class="test-button" style="border: none"><i class="material-icons">save</i></button>
+                        </label>
+                    </div>
+                    <div class="friend-block-buttons">
+                        <button onclick="location.href='{{ url_for("dialog_page", username=friend["username"]) }}'">
+                            Write message
+                        </button>
+                        {#                        <button>Edit roles</button>#}
+                        <button>Delete friend</button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
     {% else %}
         <a>You don't have friends</a>
     {% endif %}

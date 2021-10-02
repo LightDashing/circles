@@ -45,6 +45,8 @@ class User(UserMixin, Base):
     # chats = relationship("Chat")
     groups = relationship("Group", secondary="user_group_link", back_populates="users")
     chats = relationship("Chat", secondary="user_chat_link", back_populates="users")
+    friends = relationship("Friend", primaryjoin="(User.id == Friend.first_user_id) | (User.id == "
+                                                 "Friend.second_user_id)")
     # user_friends = relationship("Friend", backref="id",cascade="all, delete-orphan")
     user_posts = relationship("UserPost", cascade="all, delete-orphan")
 
@@ -65,8 +67,6 @@ class User(UserMixin, Base):
         }
 
 
-#  TODO: Новая система, теперь друзья должны хранить не уровень доверия, а теги и по тегам будут показываться посты,
-#   нужно переделать для этого
 class Friend(Base):
     __tablename__ = 'friends'
     first_user_id = Column(INTEGER, ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
