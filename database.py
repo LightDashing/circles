@@ -31,8 +31,6 @@ class DataBase:
                 self.sp_sess.commit()
             except AttributeError:  # TODO: это просто затычка, нужно придумать что-то лучше
                 self.sp_sess.rollback()
-            except IntegrityError:
-                self.sp_sess.rollback()
             finally:
                 self.g_session.remove()
 
@@ -61,7 +59,9 @@ class DataBase:
     def add_user(self, username, email, password):
         try:
             with self.conn_handler:
-                self.conn_handler.sp_sess.add(User(username=username, email=email, password=password))
+                self.conn_handler.sp_sess.add(
+                    User(username=username, email=email, password=password, last_time_online=datetime.datetime.now(),
+                         is_online=False))
             return True
         except UserAlreadyExist:
             return False
@@ -355,6 +355,7 @@ class DataBase:
                 posts = self.conn_handler.sp_sess.execute(statement).all()
                 if posts:
                     s_posts = [post[0].serialize for post in posts]
+                    return s_posts[::-1]
             else:
                 statement = select(UserPost).filter(UserPost.whereid == user_id)
                 posts = self.conn_handler.sp_sess.execute(statement).all()
@@ -363,7 +364,7 @@ class DataBase:
                     role_names = [role.role_name for role in post[0].roles]
                     if self.is_arr_part(role_names, user_roles):
                         s_posts.append(post[0].serialize)
-            return s_posts[::-1]
+                return s_posts[::-1]
 
     def get_avatar_by_name(self, username: str) -> str:
         with self.conn_handler:
@@ -400,11 +401,11 @@ class DataBase:
             return groups
 
     # TODO: переписать
-    def create_group(self, username: str, group_name: str, group_desc: str, group_rules: str, group_tags: list = None):
-        userid = self.get_userid_by_name(username)
-        self.session.add(Group(group_name=group_name, owner=userid, fandom_tags=group_tags, description=group_desc,
-                               rules=group_rules))
-        self.session.commit()
+    def create_group(self, user_id: int, group_name: str, group_desc: str, group_rules: str = None):
+        with self.conn_handler:
+            self.conn_handler.sp_sess.add(
+                Group(group_name=group_name, owner=user_id, description=group_desc,
+                      rules=group_rules))
         return True
 
     def join_group(self, group_name: str, current_user: User):
@@ -488,7 +489,9 @@ class DataBase:
         :param s_user: User object
         :return: created Chat object
         """
-        dialog = Chat(chatname=f"{user.username} {s_user.username}", is_dialog=True)
+        dialog = Chat(chatname=f"{user.username} {s_user.username}", is_dialog=True,
+                      avatar='..\\static\\img\\two-peoples.svg',
+                      chat_color='#FFFFFF')
         # chatname isn't really matters because in html it would be displayed as friends name
         self.conn_handler.sp_sess.add(dialog)
         dialog.users.append(user), dialog.users.append(s_user)
@@ -526,7 +529,7 @@ class DataBase:
     def create_chat(self, users: list, chat_name: str, admin: str, rules: str = "There is no rules!") -> int:
         admin_id = self.get_userid_by_name(admin)
         admin = self.get_user(admin_id)
-        chat = Chat(chatname=chat_name, admin=admin_id, rules=rules)
+        chat = Chat(chatname=chat_name, admin=admin_id, rules=rules, chat_color="#d5d6db80")
         chat.users.append(admin)
         with self.conn_handler:
             self.conn_handler.sp_sess.add(chat)
@@ -720,10 +723,6 @@ class DataBase:
             friend = self.conn_handler.sp_sess.execute(statement).scalar()  # Getting existing rows
             if not friend:  # If there is no friend entry like that
                 return False
-            if not friend.is_request:  # If friend already accepted
-                statement = update(User).filter((User.id == user) | (User.id == second_user)).values(
-                    friend_count=User.friend_count - 1)
-                self.conn_handler.sp_sess.execute(statement)  # Decreasing number of friends
             statement = delete(Friend).filter((Friend.first_user_id == friend.first_user_id) &
                                               (Friend.second_user_id == friend.second_user_id))
             self.conn_handler.sp_sess.execute(statement)
@@ -738,10 +737,7 @@ class DataBase:
         """
         with self.conn_handler:
             statement = update(Friend).filter(Friend.first_user_id == user, Friend.second_user_id == second_user) \
-                .values(is_request=False, first_ulevel=4, second_ulevel=4)
-            self.conn_handler.sp_sess.execute(statement)
-            statement = update(User).filter((User.id == user) | (User.id == second_user)).values(
-                friend_count=User.friend_count + 1)
+                .values(is_request=False, is_checked=True)
             self.conn_handler.sp_sess.execute(statement)
         return True
 
@@ -792,14 +788,16 @@ class DataBase:
             statement = select(UserRole).filter(UserRole.id == role_id)
             role = self.conn_handler.sp_sess.execute(statement).scalar()
 
-            if friend.first_user == user_id:
+            if friend.first_user_id == user_id:
                 if len(friend.second_user_roles) < 5:
                     friend.second_user_roles.append(role)
+                    return True
                 else:
                     return None
             elif friend.second_user_id == user_id:
                 if len(friend.first_user_roles) < 5:
                     friend.first_user_roles.append(role)
+                    return True
                 else:
                     return None
 

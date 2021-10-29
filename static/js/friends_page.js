@@ -1,4 +1,7 @@
 $(function () {
+    window.addEventListener('beforeunload', function (e) {
+        navigator.sendBeacon('/api/test', `text=kek`)
+    })
     let friends_selectors = Array.from($(".friend-selector"))
     friends_selectors.forEach(function (element) {
         element = $(element)

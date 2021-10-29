@@ -31,12 +31,9 @@ class User(UserMixin, Base):
     surname = Column(VARCHAR(60))
     # TODO: переделать чтобы на линуксе путь был с прямым слешем
     avatar = Column(TEXT, default='..\\static\\img\\user-avatar.svg')
-    friend_count = Column(INTEGER, nullable=False, default=0)
     # Могут ли другие люди оставлять у этого пользователя записи на стене
     other_publish = Column(Boolean, nullable=False, default=True)
     # Здесь можно указать уровень людей, способных постить на стене
-    # TODO: удалить это и все его упоминания
-    min_posting_lvl = Column(INTEGER, nullable=False, default=5)
     # TODO: в группах можно ограничить очки с которыми человек может начинать постить, пока очки не реализованы
     # user_points = Column(INTEGER, default=0)
     # TODO: ещё одна фишка! добавить возможность, чтобы пользователя можно было просматривать в списках состоящих
@@ -59,11 +56,10 @@ class User(UserMixin, Base):
             "username": self.username,
             "avatar": self.avatar,
             "status": self.status,
-            "friends_count": self.friend_count,
             "is_online": self.is_online,
+            "friends_count": len(self.friends),
             "last_time_online": self.last_time_online,
-            "description": self.description,
-            "v_lvl": self.min_posting_lvl,
+            "description": self.description
         }
 
 
@@ -74,8 +70,6 @@ class Friend(Base):
     is_request = Column(Boolean, nullable=False, default=True)
     is_checked = Column(Boolean, nullable=False, default=False)
     date_added = Column(DateTime, nullable=False, default=datetime.datetime.now())
-    first_ulevel = Column(INTEGER, nullable=False, default=5)
-    second_ulevel = Column(INTEGER, nullable=False, default=5)
 
     first_user = relationship("User", foreign_keys=[first_user_id])
     second_user = relationship("User", foreign_keys=[second_user_id])
@@ -95,8 +89,6 @@ class Friend(Base):
             "second_user_id": self.second_user_id,
             "is_request": self.is_request,
             "date_added": self.date_added,
-            "first_ulevel": self.first_ulevel,
-            "second_ulevel": self.second_ulevel
         }
 
 
@@ -139,7 +131,7 @@ class UserPost(Base):
 class UserRole(Base):
     __tablename__ = 'user_roles'
     id = Column(INTEGER, primary_key=True, autoincrement=True)
-    role_name = Column(VARCHAR(32), unique=True, index=True)
+    role_name = Column(VARCHAR(32), index=True, unique=False)
     role_color = Column(VARCHAR(7), nullable=False, default="#eca7a7")
     font_color = Column(VARCHAR(7), nullable=False, default="#000000")
     creator = Column(INTEGER, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
@@ -212,8 +204,7 @@ class GroupPost(Base):
     __tablename__ = 'group_posts'
     id = Column(INTEGER, primary_key=True, autoincrement=True)
     group_id = Column(INTEGER, ForeignKey('groups.id', ondelete='CASCADE'))
-    post_short = Column(VARCHAR(128), nullable=False, default=' ')
-    post_text = Column(VARCHAR())
+    post_text = Column(VARCHAR(), nullable=False)
 
     attachment = relationship('ImageAttachment', cascade="all, delete-orphan")
 
@@ -231,6 +222,9 @@ class Chat(Base):
     __tablename__ = "chats"
     id = Column(INTEGER, primary_key=True, autoincrement=True)
     chatname = Column(VARCHAR(128), nullable=False)
+    avatar = Column(TEXT, default='..\\static\\img\\peoples.svg')
+    chat_color = Column(VARCHAR(7))
+    # TODO: перенести этот атрибут в таблицу многие ко многим
     admin = Column(INTEGER, ForeignKey('users.id'))
     rules = Column(TEXT)
     is_dialog = Column(Boolean, nullable=False, default=False)
@@ -245,7 +239,10 @@ class Chat(Base):
             "chatname": self.chatname,
             "admin": self.admin,
             "rules": self.rules,
-            "is_dialog": self.is_dialog
+            "avatar": self.avatar,
+            "user_count": len(self.users),
+            "is_dialog": self.is_dialog,
+            "chat_color": self.chat_color
         }
 
 
@@ -313,4 +310,5 @@ class ImageAttachment(Base):
             return
 
 # engine = create_engine('postgresql://postgres:YourPassword@localhost/postgres')
+# engine = create_engine('mssql+pyodbc://DESKTOP-6ETOEB0\chugu@orm_adm')
 # Base.metadata.create_all(engine)

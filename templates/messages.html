@@ -5,13 +5,32 @@
     <link type="text/css" rel="stylesheet" href="/static/css/messages.css">
 {% endblock %}
 {% block main_row %}
+    <h1 style="text-align: left; margin-bottom: 30px">Your messages</h1>
     <div class="all-chats">
         {% for chat in chats %}
-            <div class="new-button" onclick="location.href='{{ url_for('chat', chat_id=chat["id"]) }}'">
-                <a>{{ chat.chatname }}</a><br>
+            <div class="chat-box" style="background: {{ chat.chat_color }}">
+                <img src="{{ chat.avatar }}" alt="chat-avatar">
+                <div class="chat-box-info">
+                    <span class="chat-box-info-d-name">{{ get_dialog_name(chat.chatname) }}</span>
+                    {% if not chat.is_dialog %}
+                        <span>users: {{ chat.user_count }}</span>
+                    {% else %}
+                        <span>dialog</span>
+                    {% endif %}
+                </div>
+                <div class="chat-box-buttons">
+                    <button class="new-button" onclick="location.href='{{ url_for('chat', chat_id=chat["id"]) }}'">
+                        Write
+                    </button>
+                    {% if not chat.is_dialog %}
+                        <button class="new-button">Leave</button>
+                    {% endif %}
+                </div>
             </div>
         {% endfor %}
-        <a href="/user/create_chat">Create new chat</a>
+        <div class="create-chat-display">
+            <button class="new-button" onclick="location.href='{{ url_for('create_chat') }}'">Create new chat</button>
+        </div>
     </div>
 {% endblock %}
 {% block right_row %}

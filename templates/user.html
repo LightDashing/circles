@@ -25,6 +25,7 @@
                 {% else %}
                     <span style="font-size: 0.8em">{{ user.last_time_online }}</span>
                 {% endif %}
+                <span style="font-size: 0.8em">{{ user.friends_count }} friends</span>
                 <div class="user-card-other-block">
                     {% if name != current_user.username %}
                         <button class="tag-button-small" id="add_friend" value="Add friend">Add friend</button>

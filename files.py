@@ -34,7 +34,7 @@ class FileOperations:
             os.mkdir(os.path.join(self.SAVE_FOLDER, "attach"))
             os.mkdir(os.path.join(self.SAVE_FOLDER, "avatar"))
 
-    def save_image(self, file, filetype: str = 'attach') -> str:
+    def save_image(self, file, filetype: str = 'attach', old_avatar: str = None) -> str:
         """This is function to save files, it gets a base64-encoded image file and saves it either in \n
         ../avatar/<userid>/xyz.png or in ../attach/<userid>/xyz.png \n
         Name is generating using uuid1 with userid as node, returns one of the following codes:\n
@@ -56,7 +56,6 @@ class FileOperations:
             with open(filepath, 'wb') as img:
                 img.write(base64.decodebytes(file.encode()))
         if filetype == 'avatar':
-            old_avatar = self.db.userdata_by(self.userid)['avatar']
             if old_avatar[old_avatar.rfind('\\') + 1:] != 'user-avatar.svg':
                 os.remove(old_avatar[old_avatar.find('.') + 1:])
             return os.path.join("..", filepath)

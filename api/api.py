@@ -153,7 +153,7 @@ def upload_settings():
     if data:
         image = data.get("image")
         fo = FileOperations(current_user.id)
-        avatar = fo.save_image(image, 'avatar')
+        avatar = fo.save_image(image, 'avatar', current_user.avatar)
         response = DBC.change_avatar(current_user.id, avatar)
         return jsonify(response)
     username = str(request.form["username"])
@@ -232,3 +232,11 @@ def search_role():
     search_input = request.args.get("query")
     results = DBC.search_role(search_input, current_user.id)
     return jsonify(results)
+
+
+@api_bp.route('/test', methods=['POST'])
+@login_required
+def get_memes():
+    data = request.get_data(as_text=True)
+    print(data)
+    return jsonify(data)

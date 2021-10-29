@@ -1,16 +1,54 @@
-.all-chats{
+.all-chats {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     width: 70%;
+    gap: 10px;
 }
 
-.main-row{
-    left: 25%;
+.create-chat-display {
+    padding-top: 25px;
+}
+
+.chat-box {
+    display: flex;
+    gap: 30px;
+    align-items: center;
+    padding: 20px;
+    border-radius: 20px;
     width: 45%;
+    justify-content: space-evenly;
 }
 
-.all-chats .new-button{
+.chat-box > img {
+    width: 50px;
+    height: 50px;
+}
+
+.chat-box-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.chat-box-info-d-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chat-box-buttons {
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-box-buttons > .new-button {
+
+}
+
+.all-chats .new-button {
     width: 100%;
     border: 1px solid var(--object-border-color);
     text-align: center;

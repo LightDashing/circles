@@ -25,7 +25,7 @@ app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 20
 # email_app = Email(app)
 
 login_manager = LoginManager()
-login_manager.login_view = '/login'
+login_manager.login_view = '/'
 login_manager.blueprint_login_views = {
     'api': '/404/'
 }
@@ -74,8 +74,11 @@ def utility_processor():
     def get_current_datetime():
         return datetime.datetime.now()
 
+    def get_dialog_name(full_name):
+        return full_name.replace(current_user.username, "")
+
     return dict(formate_datetime=format_datetime, get_username=get_username, get_current_datetime=get_current_datetime,
-                get_user_avatar=get_user_avatar)
+                get_user_avatar=get_user_avatar, get_dialog_name=get_dialog_name)
 
 
 @app.errorhandler(404)
@@ -101,6 +104,8 @@ def index():
             return render_template('index.html', error='already_exist')
         else:
             userid = DBC.get_userid_by_name(name)
+            login_user(DBC.get_user(userid))
+            DBC.set_online(userid, True)
         return redirect(url_for('users_page', name=name))
 
 
@@ -177,7 +182,7 @@ def messages():
 
 @app.route('/user/create_chat', methods=['GET'])
 @login_required
-def create_chat_page():
+def create_chat():
     friends = DBC.get_user_friends(current_user.id, 10)
     return render_template("create_chat.html", friends=friends, name=current_user.username)
 
@@ -197,11 +202,10 @@ def chat(chat_id):
 @login_required
 def user_settings():
     return render_template('settings.html', name=current_user.username, email=current_user.email,
-                           descrip=current_user.description, can_post=current_user.other_publish,
-                           m_p_lvl=current_user.min_posting_lvl)
+                           descrip=current_user.description, can_post=current_user.other_publish)
 
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=['POST'])
 def login():
     if request.method == 'POST':
         email = request.form['email']
@@ -213,11 +217,6 @@ def login():
         login_user(user, remember=True)
         DBC.set_online(user_id, True)
         return redirect(url_for('users_page', name=current_user.username))
-    else:
-        if not current_user.is_anonymous:
-            return redirect(url_for('users_page', name=current_user.username))
-        else:
-            return render_template('login.html', error=None)
 
 
 @app.route('/logout')

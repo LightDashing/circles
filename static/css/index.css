@@ -1,0 +1,131 @@
+.left-text {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    left: 7%;
+    top: 7%;
+    max-width: 50%;
+    gap: 10px;
+}
+
+.site-logo {
+    width: 130px;
+    height: auto;
+}
+
+.images-grid {
+    display: grid;
+    max-width: 100%;
+    gap: 10px;
+}
+
+.images-grid-main {
+    grid-row: 1 / 4;
+    grid-column: 1;
+    position: relative;
+    z-index: 1;
+}
+
+.images-grid-main:hover {
+    z-index: 2;
+}
+
+.images-grid-messages {
+    grid-row: 1;
+    grid-column: 2;
+    position: relative;
+    z-index: 1;
+}
+
+.images-grid-messages:hover {
+    z-index: 2;
+}
+
+.images-grid-friends {
+    grid-row: 2;
+    grid-column: 2;
+    position: relative;
+    z-index: 1;
+}
+
+.images-grid-friends:hover {
+    z-index: 2;
+}
+
+.images-grid-friends > img {
+    max-height: 150px;
+    margin-top: 10px;
+    padding: 8px;
+    background: white;
+    border-radius: 15px;
+    width: auto;
+    height: auto;
+}
+
+.images-grid-messages > img {
+    max-height: 150px;
+    margin-top: 10px;
+    padding: 8px;
+    background: white;
+    border-radius: 15px;
+    width: auto;
+    height: auto;
+}
+
+.images-grid-main > img {
+    margin-top: 10px;
+    padding: 8px;
+    background: white;
+    border-radius: 15px;
+    width: auto;
+    height: auto;
+    max-height: 500px;
+}
+
+.images-grid-main > img:hover {
+    z-index: 2;
+}
+
+/*.images-preview > img:hover {*/
+/*    transition: 300ms linear;*/
+/*    transform: scale(1.05);*/
+/*    cursor: pointer;*/
+/*}*/
+
+.right-part {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    left: 75%
+}
+
+.sign-up {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: fixed;
+    top: 20%;
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    gap: 8px;
+}
+
+.sign-up > label > input[type=text], input[type=password], input[type=email] {
+    padding: 5px;
+    border-radius: 10px;
+    background: var(--page-bg-color);
+    border: 1px solid gray;
+}
+
+.login {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    position: fixed;
+    top: 20%;
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    gap: 8px;
+}
