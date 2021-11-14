@@ -7,6 +7,13 @@ $(function onReady() {
         changeLayout();
     })
     window.scrollTo(0, document.querySelector(".main-row").scrollHeight);
+    let scroller = true;
+    $(window).scroll(function getScrolling() {
+        if ($(window).scrollTop() < 400 && scroller && $("#all_messages").is(":hidden")) {
+            addMoreContent(scroller);
+            scroller = false;
+        }
+    })
     let textarea = $("textarea")
     textarea.each(function () {
         autosize(this)
@@ -27,6 +34,24 @@ $(function onReady() {
         delete_element_callback: deleteImageContainer
     })
 })
+
+function addMoreContent(scroller) {
+    $.ajax({
+        url: '/api/load_old',
+        method: 'GET',
+        data: {'c': chat_id, 'f_msg': first_msg_time},
+        success: function (data) {
+            scroller = true
+            console.log(scroller)
+            if (data.length !== 0) {
+                first_msg_time = data[0]["message_date"]
+                data.reverse().forEach(function (el) {
+                    $(".incoming_msg").prepend(renderChatMessage(current_username, el))
+                })
+            }
+        }
+    })
+}
 
 function addImageContainer(element) {
     element = $(element)
@@ -105,15 +130,7 @@ function update_messages(username, chat_id, last_msg_time, type) {
             success: function (data) {
                 if (data) {
                     data.forEach(function (el) {
-                        let element;
-                        if (el["from_user_id"] === username) {
-                            element = `<div class="message-box" style="align-self: end; background: #e3e4f8">
-                                     <span class="from-user"> ${el["from_user_id"]}: </span> 
-                                    <span class="message-text"> ${el["message"]}</span></div>`;
-                        } else {
-                            element = `<div class="message-box"><span class="from-user"> ${el["from_user_id"]}: </span> 
-                                    <span class="message-text"> ${el["message"]}</span></div>`;
-                        }
+                        let element = renderChatMessage(current_username, el)
                         $(`#incoming_msg_${chat_id}`).append(element);
                         msg_time = el['message_date']
                     })
@@ -144,7 +161,7 @@ function getUserChats() {
     })
 }
 
-function changeChat(chat_id, chat_name) {
+function changeChat(l_chat_id, chat_name) {
     let all_messages = $("#all_messages");
     let chat_container = $(".chat-container");
     if (!all_messages.is(":hidden")) {
@@ -152,9 +169,10 @@ function changeChat(chat_id, chat_name) {
     } else {
         chat_container.empty();
     }
-    chat_container.load('/api/load_chat_template', `id=${chat_id}`,
+    chat_container.load('/api/load_chat_template', `id=${l_chat_id}`,
         function changeChatEvents() {
             window.scrollTo(0, document.querySelector(".main-row").scrollHeight);
+            chat_id = l_chat_id
             let textarea = $('textarea')
             textarea.each(function () {
                 autosize(this)
@@ -162,14 +180,14 @@ function changeChat(chat_id, chat_name) {
                 let input_height = parseInt(textarea.css("height"))
                 $(".message-input").css("height", `${input_height}px`)
             })
-            $(`#send_message_${chat_id}`).click(function () {
-                send_message($(`#message_${chat_id}`).val(), current_username, chat_id);
-                $(`message_${chat_id}`).val("");
-                update_messages(current_username, chat_id, last_msg_time, "update");
+            $(`#send_message_${l_chat_id}`).click(function () {
+                send_message($(`#message_${l_chat_id}`).val(), current_username, l_chat_id);
+                $(`message_${l_chat_id}`).val("");
+                update_messages(current_username, l_chat_id, last_msg_time, "update");
             })
             if (!chat_list.includes(chat_name)) {
-                let new_chat_button = `<button class="new-button" id="chat_${chat_id}" 
-                                    onclick="changeChat(${chat_id}, '${chat_name}')">${chat_name}</button>`
+                let new_chat_button = `<button class="new-button" id="chat_${l_chat_id}" 
+                                    onclick="changeChat(${l_chat_id}, '${chat_name}')">${chat_name}</button>`
                 chat_list.push(chat_name)
                 $(".chat-messages-buttons").append(new_chat_button)
             }

@@ -1,13 +1,11 @@
-import time
-
-from sqlalchemy import or_, and_, func, delete, select, update, inspect
+from sqlalchemy import or_, and_, delete, select, update, inspect, desc
 from sqlalchemy.engine import create_engine
 from sqlalchemy.pool import NullPool, AssertionPool, QueuePool
-from sqlalchemy.orm import Session, sessionmaker, scoped_session
+from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 import datetime
 import re
-from models import User, UserPost, Message, Friend, Chat, Group, GroupPost, UserGroupLink, UserChatLink, UserRole, \
+from models import User, UserPost, Message, Friend, Chat, Group, GroupPost, UserChatLink, UserRole, \
     ImageAttachment
 from files import FileOperations
 from user_exceptions import UserAlreadyExist
@@ -19,7 +17,7 @@ class DataBase:
         def __init__(self):
             # Нужно поиграться с параметрами пула, потому что сейчас переодически сыпется с twophase error
             self.engine = create_engine('postgresql://postgres:YourPassword@localhost/postgres',
-                                        **{"poolclass": QueuePool, "pool_size": 20, "max_overflow": 3,
+                                        **{"poolclass": QueuePool, "pool_size": 5, "max_overflow": 3,
                                            "pool_timeout": 6})
             self.g_session = scoped_session(sessionmaker(self.engine))
 
@@ -78,6 +76,12 @@ class DataBase:
     def set_online(self, user_id: int, online: bool):
         with self.conn_handler:
             statement = update(User).filter(User.id == user_id).values(is_online=online)
+            self.conn_handler.sp_sess.execute(statement)
+
+    def update_last_time(self, user_id):
+        self.set_online(user_id, True)
+        with self.conn_handler:
+            statement = update(User).filter(User.id == user_id).values(last_time_online=datetime.datetime.now())
             self.conn_handler.sp_sess.execute(statement)
 
     def get_user(self, userid: int, scoped: bool = False) -> User:
@@ -178,24 +182,6 @@ class DataBase:
             self.conn_handler.sp_sess.execute(statement)
             return 0
 
-    # TODO: Когда будет добавлена система ролей эта штука будет переработана
-    def ch_min_posting_lvl(self, name: str, lvl: int) -> int:
-        """
-        his function changes minimum level other users need, to post on your wall, it returns one of the codes
-        0: level was changed successfully
-        1: level was incorrect
-        -1: some unknown error occurred on database side
-        """
-        if lvl > 5 or lvl < 0:
-            return 1
-        try:
-            self.session.query(User).filter(User.username == name).update({User.min_posting_lvl: lvl})
-            self.session.commit()
-            return 0
-        except IntegrityError:
-            return -1
-
-    # TODO: переделать!
     def change_publish_settings(self, name: str, publish: bool) -> bool:
         """
         This function can change if other users may post on your wall or not, it returns one of the codes\n
@@ -497,21 +483,21 @@ class DataBase:
         dialog.users.append(user), dialog.users.append(s_user)
         return dialog.serialize
 
-    # TODO: redo, not all messages needs to be loaded, only like 30?
-    def get_messages_chat_id(self, chat_id: int) -> list:
-        """
-        This function returns list with all messages in chat\n
-        :param chat_id: int, Chat.id
-        :return: list with all chat messages
-        """
-        with self.conn_handler:
-            statement = select(Chat).filter(Chat.id == chat_id)
-            chat = self.conn_handler.sp_sess.execute(statement).scalar()
-            if chat:
-                messages = [message.serialize for message in chat.messages]
-            else:
-                messages = []
-            return messages
+    # # TODO: redo, not all messages needs to be loaded, only like 30?
+    # def get_messages_chat_id(self, chat_id: int) -> list:
+    #     """
+    #     This function returns list with all messages in chat\n
+    #     :param chat_id: int, Chat.id
+    #     :return: list with all chat messages
+    #     """
+    #     with self.conn_handler:
+    #         statement = select(Message).join(Chat).filter(Chat.id == chat_id)
+    #         all_messages = self.conn_handler.sp_sess.execute(statement).fetchmany(20)
+    #         messages = []
+    #         for message in all_messages:
+    #             message = message[0].serialize
+    #             messages.append(message)
+    #         return messages
 
     def get_chat_by_id(self, chat_id: int) -> Chat:
         """
@@ -539,17 +525,39 @@ class DataBase:
                     chat.users.append(user)
             return chat.id
 
-    def load_messages(self, user: str, chat_id: int):
-        userid = self.get_userid_by_name(user)
+    def preload_messages(self, user_id: int, chat_id: int):
         with self.conn_handler:
-            statement = update(UserChatLink).filter(UserChatLink.user_id == userid).values(is_notified=True)
-            statement = select(Message).join(Chat).filter(Chat.id == chat_id)
-            all_messages = self.conn_handler.sp_sess.execute(statement).all()
+            statement = update(UserChatLink).filter(UserChatLink.user_id == user_id).values(is_notified=True)
+            statement = select(Message).join(Chat).filter(Chat.id == chat_id).order_by(desc(Message.message_date))
+            all_messages = self.conn_handler.sp_sess.execute(statement).fetchmany(20)
             messages = []
             for message in all_messages:
                 message = message[0].serialize
                 messages.append(message)
-        return messages
+        return messages[::-1]
+
+    def load_messages(self, user_id: int, chat_id: int, f_msg_date: str):
+        if not f_msg_date:
+            return []
+        f_msg_date = datetime.datetime.strptime(f_msg_date, "%Y-%m-%d %H:%M:%S.%f")
+        with self.conn_handler:
+            statement = select(UserChatLink).filter(UserChatLink.user_id == user_id, UserChatLink.chat_id == chat_id)
+            users = self.conn_handler.sp_sess.execute(statement).scalar()
+            if not users:
+                return []
+
+            statement = select(Message).join(Chat).filter((Chat.id == chat_id) & (Message.message_date < f_msg_date))
+            messages = self.conn_handler.sp_sess.execute(statement).fetchmany(40)
+
+            all_messages = []
+            if messages:
+                for message in messages:
+                    message = message[0].serialize
+                    message['from_user_id'] = self.get_name_by_userid(message['from_user_id'], scoped=True)
+                    all_messages.append(message)
+            else:
+                return []
+        return all_messages
 
     # TODO: переделать как-нибудь чтобы было не так затратно по ресурсам
     def update_messages(self, chat_id: int, msg_time: str, user_id: int):
@@ -562,7 +570,8 @@ class DataBase:
             if not users:
                 return []
 
-            statement = select(Message).join(Chat).filter(and_(Chat.id == chat_id, Message.message_date > msg_time))
+            statement = select(Message).join(Chat).filter(
+                and_(Chat.id == chat_id, Message.message_date > msg_time))
             messages = self.conn_handler.sp_sess.execute(statement).all()
 
             statement = update(UserChatLink).filter(
@@ -572,13 +581,9 @@ class DataBase:
 
             all_messages = []
             if messages:
-                # ВАЖНО! Какая-то странная ошибка, почему-то если я вызываю сначала get_name_by_userid, а лишь потом
-                # message.serialize, то message открепляется от сессии и та сессия с которой текущей with просрачивается
-                # Скорее всего это какой-то баг внутри sqlaclhemy, и при закрытии локальной сессии закрывается та,
-                # которая находится внизу стека, а не вверху, другого объяснения почему так происходить я найти не могу
                 for message in messages:
                     message = message[0].serialize
-                    message['from_user_id'] = self.get_name_by_userid(message['from_user_id'])
+                    message['from_user_id'] = self.get_name_by_userid(message['from_user_id'], scoped=True)
                     all_messages.append(message)
             else:
                 return []

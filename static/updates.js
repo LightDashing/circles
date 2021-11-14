@@ -3,10 +3,12 @@
 let notification_sound
 $(function onReady() {
     notification_sound = new Audio('/static/audio/notification.mp3')
-    setInterval(() => check_all_updates(), 5000)
+    setInterval(() => checkAllUpdates(), 5000)
+    stillAlive()
+    setInterval(() => stillAlive(), 600000)
 })
 
-function check_all_updates() {
+function checkAllUpdates() {
     $.ajax({
         url: '/api/update_all',
         method: 'GET',
@@ -22,4 +24,8 @@ function check_all_updates() {
             }
         }
     })
+}
+
+function stillAlive() {
+    $.get('/api/online')
 }

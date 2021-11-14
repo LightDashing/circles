@@ -108,7 +108,7 @@ def send_message():
 def load_messages():
     data = request.get_json()
     if data['type'] == 'load':
-        user_messages = DBC.load_messages(current_user.username, data['chat_id'])
+        user_messages = DBC.preload_messages(current_user.username, data['chat_id'])
     else:
         user_messages = DBC.update_messages(data['chat_id'], data['msg_time'], current_user.id)
     return jsonify(user_messages)
@@ -121,12 +121,21 @@ def update_all():
     return jsonify(updates)
 
 
+@api_bp.route('/load_old', methods=['GET'])
+@login_required
+def load_old_messages():
+    chat_id = int(request.args.get('c'))
+    f_msg_date = request.args.get('f_msg')
+    messages = DBC.load_messages(current_user.id, chat_id, f_msg_date)
+    return jsonify(messages)
+
+
 @api_bp.route('/load_chat_template', methods=['GET'])
 @login_required
 def load_chat_template():
     chat_id = request.args.get('id')
     chat = DBC.get_chat_by_id(chat_id)
-    messages = DBC.load_messages(current_user.username, chat_id)
+    messages = DBC.preload_messages(current_user.username, chat_id)
     return render_template("chat_template.html", chat=chat, messages=messages)
 
 
@@ -234,9 +243,8 @@ def search_role():
     return jsonify(results)
 
 
-@api_bp.route('/test', methods=['POST'])
+@api_bp.route('/online', methods=['GET'])
 @login_required
-def get_memes():
-    data = request.get_data(as_text=True)
-    print(data)
-    return jsonify(data)
+def still_online():
+    DBC.update_last_time(current_user.id)
+    return jsonify(True)

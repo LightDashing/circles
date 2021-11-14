@@ -4,6 +4,7 @@
     {{ super() }}
     <link href="/static/css/chat.css" rel="stylesheet">
     <script type="text/javascript" src="{{ url_for("static", filename="chat.js") }}"></script>
+    <script type="text/javascript" src="{{ url_for("static", filename="js/message_render.js") }}"></script>
 {% endblock %}
 {% block main_row %}
     <div class="chat-container">
@@ -15,8 +16,7 @@
         {% endif %}
     </div>
     <div class="all_messages">
-        <div id="incoming_msg_{{ chat.id }}" class="incoming_msg">
-            <p style="align-self: center">Start of dialog</p>
+        <div id="incoming_msg_{{ chat.id }}" class="incoming_msg" data-id="{{ chat.id }}">
             {% if chat.is_dialog %}
                 {% for message in messages %}
                     {% if message.from_user_id == current_user.id %}
@@ -49,7 +49,7 @@
                     {% else %}
                         <div class='message-box'>
                     {% endif %}
-                <img src="{{ get_user_avatar(message.from_user_id) }}" class="message-box-avatar">
+                <img src="{{ message.user_avatar }}" class="message-box-avatar">
                 <div class="message-box-text">
                     <span class="from-user">{{ get_username(message.from_user_id) }}</span>
                     <span class="message-text">{{ message.message }}</span>
@@ -106,11 +106,17 @@
 {% block scripts %}
     <script>
         let last_msg_time
+        let first_msg_time
+        let chat_id;
         {% if messages %}
-            {% set item = messages|last %}
-            last_msg_time = "{{item.message_date}}"
-        {% else %}
-            last_msg_time = "{{ get_current_datetime() }}"
+            {% set l_item = messages|last %}
+            {% set f_item = messages|first%}
+            last_msg_time = "{{l_item.message_date}}"
+            first_msg_time = "{{f_item.message_date}}"
+            chat_id = {{ chat.id }}
+                {% else %}
+                last_msg_time = "{{ get_current_datetime() }}"
+            chat_id = {{ chat.id }}
         {% endif %}
 
         $("#send_message_{{ chat.id }}").click(function () {

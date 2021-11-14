@@ -249,18 +249,20 @@ class Chat(Base):
 class Message(Base):
     __tablename__ = 'messages'
     id = Column(INTEGER, primary_key=True, autoincrement=True)
-    from_user_id = Column(INTEGER, nullable=False)
+    from_user_id = Column(INTEGER, ForeignKey("users.id"), nullable=False)
     message_date = Column(DateTime, nullable=False, default=datetime.datetime.now())
     message = Column(TEXT, nullable=False)
     chat_id = Column(INTEGER, ForeignKey('chats.id', ondelete='CASCADE'), nullable=False)
 
     attachment = relationship('ImageAttachment', cascade="all, delete-orphan")
+    sender = relationship('User', backref='message')
 
     @property
     def serialize(self):
         return {
             "id": self.id,
             "from_user_id": self.from_user_id,
+            "user_avatar": self.sender.avatar,
             "message_date": str(self.message_date),
             "message": self.message,
             "attachment": [attach.serialize for attach in self.attachment]
