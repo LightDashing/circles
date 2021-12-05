@@ -100,24 +100,7 @@ function init(name) {
             edit_role_name.prop('disabled', false)
             $("#edit_role_button").prop("disabled", false)
             $("#delete_role_button").prop("disabled", false)
-
-            let options = $("#edit_roles_selector")[0].selectize.options
-            try {
-                edit_role_name.val(options[value]["role_name"])
-            } catch (TypeError) {
-                $("#edit_roles_selector")[0].selectize.refreshOptions()
-                return
-            }
-            edit_role_color_picker.jscolor.fromString(options[value]["role_color"])
-
-            edit_role_color_picker.jscolor.onInput = function () {
-                let edit = $(`#edit_${options[value]["id"]}`)
-                edit.css("background", `${edit_role_color_picker.jscolor.toHEXString()}`)
-                edit.css("color", fColorByBackground(edit_role_color_picker.jscolor.toRGBString()))
-            }
-            edit_role_name.keyup(function () {
-                $(`#edit_${options[value]["id"]}`).html(edit_role_name.val())
-            })
+            changeRoleHandler(edit_role_color_picker, edit_role_name, $("#roles_selector"), value)
         }
 
     })
@@ -127,22 +110,7 @@ function init(name) {
 
     delete_role_button.click(function deleteRole() {
         let selector = $("#edit_roles_selector")
-        let options = selector[0].selectize.options
-        let value = selector[0].selectize.getValue()
-        let role_id = options[value]["id"]
-        selector[0].selectize.removeOption(value)
-        $("#roles_selector")[0].selectize.removeOption(value)
-        $.ajax({
-            url: '/api/delete_role',
-            method: 'POST',
-            data: JSON.stringify({role_id: role_id}),
-            dataType: 'json',
-            contentType: 'application/json',
-            success: function () {
-                hideModalEditRoles()
-
-            }
-        })
+        deleteRoleHandler(selector, hideModalEditRoles)
     })
 
     $("#make_post").click(function () {
@@ -159,50 +127,20 @@ function init(name) {
     let edit_role_button = $("#edit_role_button")
     edit_role_button.prop("disabled", true)
 
-    edit_role_button.click(function changeRole() {
+    edit_role_button.click(function () {
         let selector = $("#edit_roles_selector")
-
-        let role_id = selector[0].selectize.options[selector[0].selectize.getValue()]["id"]
         let old_role_name = selector[0].selectize.getValue()
         let role_name = $("#edit_role_name")
         let color_picker = $("#edit_role_color")[0].jscolor
-        let role_color = color_picker.toHEXString()
-        let font_color = fColorByBackground(color_picker.toRGBString())
-        if (role_name.val() !== '' || role_color !== '#FFFFFF') {
-            $.ajax({
-                url: '/api/change_user_role',
-                method: 'POST',
-                data: JSON.stringify({
-                    role_name: role_name.val(),
-                    role_color: role_color,
-                    font_color: font_color,
-                    role_id: role_id
-                }),
-                dataType: 'json',
-                contentType: 'application/json',
-                success: function (data) {
-                    selector[0].selectize.updateOption(old_role_name, {
-                        role_name: data["role_name"],
-                        role_color: data["role_color"],
-                        font_color: data["font_color"],
-                        id: data["id"],
-                        creator: data["creator"]
-                    })
-                    $("#roles_selector")[0].selectize.updateOption(old_role_name, {
-                        role_name: data["role_name"],
-                        role_color: data["role_color"],
-                        font_color: data["font_color"],
-                        id: data["id"],
-                        creator: data["creator"]
-                    })
-                    for (const [key, value] of Object.entries(selector[0].selectize.options)) {
-                        let element = $(`.role-display-${value["id"]}`)
-                        element.css("background", `${value["role_color"]}`)
-                        element.css("color", `${value["font_color"]}`)
-                    }
-                }
+        saveRoleHandler(selector, role_name, color_picker, function updateSelector(data) {
+            $("#roles_selector")[0].selectize.updateOption(old_role_name, {
+                role_name: data["role_name"],
+                role_color: data["role_color"],
+                font_color: data["font_color"],
+                id: data["id"],
+                creator: data["creator"]
             })
-        }
+        })
     })
 
     private_selector.click(function () {
@@ -380,12 +318,4 @@ function publish_post(post_msg, where_id, is_private, roles, pinned_images) {
         error: function () {
         }
     })
-}
-
-function fColorByBackground(color) {
-    let c_splitted = Array.from(color.split("(")[1].split(")")[0].split(","), x => parseInt(x))
-    const brightness = Math.round(((c_splitted[0] * 299) +
-        (c_splitted[1] * 587) +
-        (c_splitted[2] * 114)) / 1000);
-    return (brightness > 125) ? '#000000' : '#FFFFFF';
 }
