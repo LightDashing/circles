@@ -37,7 +37,7 @@
     text-decoration: none;
 }
 
-.test-button {
+.floppy-button {
     background: navajowhite;
     border-radius: 10px;
     background: var(--page-bg-color);
@@ -47,11 +47,11 @@
     cursor: pointer;
 }
 
-.test-button:hover {
+.floppy-button:hover {
     background: var(--object-hover-color);;
 }
 
-.test-button:active {
+.floppy-button:active {
     background: rgba(157, 185, 222, 0.7);
 }
 

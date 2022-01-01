@@ -1,17 +1,17 @@
 let message_updater;
 let chat_list = []
 let max_image_height = 0
+let messages_loaded = true
 
 $(function onReady() {
     $("#all_messages_button").click(function () {
         changeLayout();
     })
     window.scrollTo(0, document.querySelector(".main-row").scrollHeight);
-    let scroller = true;
     $(window).scroll(function getScrolling() {
-        if ($(window).scrollTop() < 400 && scroller && $("#all_messages").is(":hidden")) {
-            addMoreContent(scroller);
-            scroller = false;
+        if ($(window).scrollTop() < 400 && messages_loaded && $("#all_messages").is(":hidden")) {
+            messages_loaded = false
+            addMoreContent(messages_loaded);
         }
     })
     let textarea = $("textarea")
@@ -35,19 +35,21 @@ $(function onReady() {
     })
 })
 
-function addMoreContent(scroller) {
+function addMoreContent(old_msg_loader) {
     $.ajax({
         url: '/api/load_old',
         method: 'GET',
         data: {'c': chat_id, 'f_msg': first_msg_time},
         success: function (data) {
-            scroller = true
-            console.log(scroller)
             if (data.length !== 0) {
-                first_msg_time = data[0]["message_date"]
-                data.reverse().forEach(function (el) {
+                first_msg_time = data["messages"][0]["message_date"]
+                data["messages"].reverse().forEach(function (el) {
                     $(".incoming_msg").prepend(renderChatMessage(current_username, el))
                 })
+                if (data["older"] === true) {
+                    old_msg_loader = true
+                }
+                console.log(old_msg_loader)
             }
         }
     })
@@ -134,6 +136,7 @@ function update_messages(username, chat_id, last_msg_time, type) {
                         $(`#incoming_msg_${chat_id}`).append(element);
                         msg_time = el['message_date']
                     })
+                    messages_loaded = true
                 }
             }
         });
@@ -171,7 +174,7 @@ function changeChat(l_chat_id, chat_name) {
     }
     chat_container.load('/api/load_chat_template', `id=${l_chat_id}`,
         function changeChatEvents() {
-            window.scrollTo(0, document.querySelector(".main-row").scrollHeight);
+            // window.scrollTo(0, document.querySelector(".main-row").scrollHeight);
             chat_id = l_chat_id
             let textarea = $('textarea')
             textarea.each(function () {
@@ -191,6 +194,7 @@ function changeChat(l_chat_id, chat_name) {
                 chat_list.push(chat_name)
                 $(".chat-messages-buttons").append(new_chat_button)
             }
+            messages_loaded = true
         }
     )
 

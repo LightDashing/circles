@@ -67,7 +67,7 @@ function init(name) {
 
     function renderItem(item, escape) {
         return `<div class="item-selected" 
-                        style="background: ${item["role_color"]}80; border: none; border-radius: 15px;
+                        style="background: ${item["role_color"]}95; border: none; border-radius: 15px;
                         text-shadow: 0 1px 0 rgba(0, 51, 83, 0.3); color: ${item["font_color"]}"
                             id="edit_${item["id"]}">${item["role_name"]}</div>`
     }
@@ -181,7 +181,7 @@ function init(name) {
             },
             item: function renderItem(item, escape) {
                 return `<div class="item-selected" 
-                        style="background: ${item["role_color"]}80; border: none; border-radius: 15px;
+                        style="background: ${item["role_color"]}; border: none; border-radius: 15px;
                         text-shadow: 0 1px 0 rgba(0, 51, 83, 0.3); color: ${item["font_color"]}">
                         ${item["role_name"]}</div>`
             }

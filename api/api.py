@@ -235,6 +235,14 @@ def get_friend_roles():
     return jsonify(roles)
 
 
+@api_bp.route('/change_friend_roles', methods=['POST'])
+@login_required
+def change_friend_roles():
+    data = request.get_json()
+    response = DBC.change_friend_roles(current_user.id, data["friend_id"], data["roles"])
+    return jsonify(response)
+
+
 @api_bp.route('/search_role', methods=['GET'])
 @login_required
 def search_role():

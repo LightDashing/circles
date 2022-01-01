@@ -547,14 +547,18 @@ class DataBase:
                 return []
 
             statement = select(Message).join(Chat).filter((Chat.id == chat_id) & (Message.message_date < f_msg_date))
-            messages = self.conn_handler.sp_sess.execute(statement).fetchmany(40)
+            messages = self.conn_handler.sp_sess.execute(statement).all()
+            all_messages = {"messages": []}
+            if len(messages) > 40:
+                all_messages["older"] = True
+            else:
+                all_messages["older"] = False
 
-            all_messages = []
             if messages:
-                for message in messages:
+                for message in messages[:41]:
                     message = message[0].serialize
                     message['from_user_id'] = self.get_name_by_userid(message['from_user_id'], scoped=True)
-                    all_messages.append(message)
+                    all_messages["messages"].append(message)
             else:
                 return []
         return all_messages
@@ -759,6 +763,41 @@ class DataBase:
             else:
                 return friend.serialize
 
+    def change_friend_roles(self, user_id: int, friend_id: int, roles: list[dict]):
+        """
+        This function changes roles that your friend have
+        :param user_id: your id
+        :param friend_id: friends id
+        :param roles: array with dict of roles
+        :return: true if replacing was success, false if not
+        """
+        all_roles = self.get_friend_roles(user_id, friend_id)
+        id_array = [elem["id"] for elem in all_roles]
+        with self.conn_handler:
+            friend = self.conn_handler.sp_sess.execute(self.FRIEND_STATEMENT(user_id, friend_id)).scalar()
+            for role in roles:
+                if role["id"] in id_array:
+                    id_array.remove(role["id"])
+                else:
+                    id_array.append(role["id"])
+            if len(id_array) > 5:
+                return False
+            if friend.first_user_id == user_id:
+                role_arr = []
+                for role_e in roles:
+                    st = select(UserRole).filter(UserRole.id == role_e["id"])
+                    role = self.conn_handler.sp_sess.execute(st).scalar()
+                    role_arr.append(role)
+                friend.second_user_roles = role_arr
+            else:
+                role_arr = []
+                for role_e in roles:
+                    st = select(UserRole).filter(UserRole.id == role_e["id"])
+                    role = self.conn_handler.sp_sess.execute(st).scalar()
+                    role_arr.append(role)
+                friend.first_user_roles = role_arr
+            return
+
     def get_friend_roles(self, user_id: int, friend_id: int, all_roles: bool = False):
         with self.conn_handler:
             statement = self.FRIEND_STATEMENT(user_id, friend_id)
@@ -769,7 +808,7 @@ class DataBase:
             if friend.first_user_id == user_id:
                 roles = friend.second_user_roles
                 roles = [role.serialize for role in roles]
-            elif friend.second_user_id == user_id:
+            else:
                 roles = friend.first_user_roles
                 roles = [role.serialize for role in roles]
             if all_roles:
