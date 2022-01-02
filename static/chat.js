@@ -2,6 +2,7 @@ let message_updater;
 let chat_list = []
 let max_image_height = 0
 let messages_loaded = true
+let html = jQuery("html")
 
 $(function onReady() {
     $("#all_messages_button").click(function () {
@@ -14,6 +15,14 @@ $(function onReady() {
             addMoreContent(messages_loaded);
         }
     })
+    let image_modal_content = $("#image_modal_content")
+    let image_modal = $("#image_modal")
+    window.onclick = function (event) {
+        if (event.target === image_modal[0]) {
+            hideModalImage(image_modal, image_modal_content)
+        }
+    }
+
     let textarea = $("textarea")
     textarea.each(function () {
         autosize(this)
@@ -33,6 +42,8 @@ $(function onReady() {
         add_element_callback: addImageContainer,
         delete_element_callback: deleteImageContainer
     })
+
+
 })
 
 function addMoreContent(old_msg_loader) {

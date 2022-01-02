@@ -3,10 +3,17 @@
 {% block head %}
     {{ super() }}
     <link href="/static/css/chat.css" rel="stylesheet">
+    <link href="/static/css/image_modal.css" rel="stylesheet">
     <script type="text/javascript" src="{{ url_for("static", filename="chat.js") }}"></script>
     <script type="text/javascript" src="{{ url_for("static", filename="js/message_render.js") }}"></script>
+    <script type="text/javascript" src="{{ url_for("static", filename="js/image_modal.js") }}"></script>
 {% endblock %}
 {% block main_row %}
+    <div id="image_modal" class="image-modal-window">
+        <div id="image_modal_content" class="image-modal-window-content">
+
+        </div>
+    </div>
     <div class="chat-container">
     <div class="chat-content" id="chat_content_{{ chat.id }}">
     <div class="chat-header">
@@ -33,7 +40,11 @@
                         {% for attach in message.attachment %}
                             {% for image in attach.links_array %}
                                 {% if image %}
-                                    <img src="{{ image }}" class="post-pinned-image" alt="attach_img">
+                                    <img src="{{ image }}" class="post-pinned-image" alt="attach_img"
+                                         onclick="showModalImage('image_modal', 'image_modal_content',
+                                                 '{{ format_backslash(image) }}', 'image_modal_content',
+                                                 '{{ attach.date_added }}', '{{ get_username(message.from_user_id) }}',
+                                                 '{{ format_backslash(message.user_avatar) }}')">
                                 {% endif %}
                             {% endfor %}
                         {% endfor %}
@@ -61,7 +72,11 @@
                         {% for attach in message.attachment %}
                             {% for image in attach.links_array %}
                                 {% if image %}
-                                    <img src="{{ image }}" class="post-pinned-image" alt="attach_img">
+                                    <img src="{{ image }}" class="post-pinned-image" alt="attach_img"
+                                         onclick="showModalImage('image_modal', 'image_modal_content',
+                                                 '{{ format_backslash(image) }}', 'image_modal_content',
+                                                 '{{ attach.date_added }}', '{{ get_username(message.from_user_id) }}',
+                                                 '{{ format_backslash(message.user_avatar) }}')">
                                 {% endif %}
                             {% endfor %}
                         {% endfor %}

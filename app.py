@@ -77,8 +77,11 @@ def utility_processor():
     def get_dialog_name(full_name):
         return full_name.replace(current_user.username, "")
 
+    def format_backslash(backslash_str):
+        return backslash_str.replace('\\', '\\\\')
+
     return dict(formate_datetime=format_datetime, get_username=get_username, get_current_datetime=get_current_datetime,
-                get_user_avatar=get_user_avatar, get_dialog_name=get_dialog_name)
+                get_user_avatar=get_user_avatar, get_dialog_name=get_dialog_name, format_backslash=format_backslash)
 
 
 @app.errorhandler(404)

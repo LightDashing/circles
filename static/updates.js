@@ -3,10 +3,14 @@
 let notification_sound
 $(function onReady() {
     notification_sound = new Audio('/static/audio/notification.mp3')
+    setTimeout(() => StartTimers(), 1000)
+})
+
+function StartTimers() {
     setInterval(() => checkAllUpdates(), 5000)
     stillAlive()
     setInterval(() => stillAlive(), 600000)
-})
+}
 
 function checkAllUpdates() {
     $.ajax({
