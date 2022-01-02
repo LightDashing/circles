@@ -44,7 +44,9 @@ function appendAttachments(element, message) {
             <div class="message-pinned-images">`
     message["attachment"].forEach(function (attach) {
         attach["links_array"].forEach(function (image) {
-            element += `<img class="post-pinned-images" alt="attached image" src="${image}">`
+            if (image) {
+                element += `<img class="post-pinned-images" alt="attached image" src="${image}">`
+            }
         })
     })
     element += '</div></div>'

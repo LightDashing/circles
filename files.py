@@ -2,6 +2,12 @@ import os
 import sys
 import uuid
 import base64
+import io
+from PIL import Image
+
+
+class InvalidImageError(Exception):  # В будущем нужно будет перенести все ошибки в отдельный файл, пока так
+    """Image was invalid and can't be loaded with PIL"""
 
 
 class FileOperations:
@@ -14,6 +20,25 @@ class FileOperations:
     def get_file_extension(encoded_img):
         extension = encoded_img[encoded_img.find('/') + 1:encoded_img.find(';')]
         return extension
+
+    @staticmethod
+    def compress_image(decoded_img):
+        try:
+            image = Image.open(io.BytesIO(decoded_img))
+        except IOError:
+            raise InvalidImageError
+        if image.size[0] < 10 or image.size[1] < 10:
+            raise InvalidImageError
+        elif image.size[0] < 100 or image.size[1] < 100:  # Ресайз изображения с целью повышения его разрешения
+            coefficient = min(image.size[0], image.size[1])  # Если оно слишком маленькое
+            coefficient = 100 // coefficient
+            image = image.resize((int(image.size[0] * coefficient), int(image.size[1] * coefficient)),
+                                 Image.ANTIALIAS)
+        elif image.size[0] <= 1000 or image.size[1] <= 1000:
+            return image
+        else:
+            image = image.resize((int(image.size[0] // 1.5), int(image.size[1] // 1.5)), Image.ANTIALIAS)
+        return image
 
     def get_file_size(self, encoded_img):
         if sys.getsizeof(encoded_img) > self.MAX_SIZE:
@@ -43,18 +68,22 @@ class FileOperations:
         2: File is too large \n"""
         if not self.is_allowed(self.get_file_extension(file)):
             return ""
-        if not self.get_file_size(file):
-            return ""
         image_name = f"{uuid.uuid1(self.userid)}.{self.get_file_extension(file)}"
         filepath = os.path.join(self.SAVE_FOLDER, filetype, str(self.userid), image_name)
         file = file[file.find(',') + 1:]
+        image = base64.decodebytes(file.encode())
+        try:
+            image = self.compress_image(image)
+        except InvalidImageError:
+            return ""
         if os.path.exists(os.path.join(self.SAVE_FOLDER, filetype, str(self.userid))):
-            with open(filepath, 'wb') as img:
-                img.write(base64.decodebytes(file.encode()))
+            image.save(filepath, optimize=True, quality=50)
         else:
             os.mkdir(os.path.join(self.SAVE_FOLDER, filetype, str(self.userid)))
-            with open(filepath, 'wb') as img:
-                img.write(base64.decodebytes(file.encode()))
+            image.save(filepath, optimize=True, quality=50)
+        if os.stat(filepath).st_size > self.MAX_SIZE:
+            os.remove(filepath)
+            return ""
         if filetype == 'avatar':
             if old_avatar[old_avatar.rfind('\\') + 1:] != 'user-avatar.svg':
                 os.remove(old_avatar[old_avatar.find('.') + 1:])
