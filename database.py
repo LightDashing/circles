@@ -9,6 +9,7 @@ from models import User, UserPost, Message, Friend, Chat, Group, GroupPost, User
     ImageAttachment
 from files import FileOperations
 from user_exceptions import UserAlreadyExist
+import os
 
 
 class DataBase:
@@ -476,7 +477,7 @@ class DataBase:
         :return: created Chat object
         """
         dialog = Chat(chatname=f"{user.username} {s_user.username}", is_dialog=True,
-                      avatar='..\\static\\img\\two-peoples.svg',
+                      avatar=os.path.join("static", "img", "two-peoples.svg"),
                       chat_color='#FFFFFF')
         # chatname isn't really matters because in html it would be displayed as friends name
         self.conn_handler.sp_sess.add(dialog)

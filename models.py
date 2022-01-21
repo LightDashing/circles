@@ -6,6 +6,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from flask_login import UserMixin
 import datetime
+import os
 
 Base = declarative_base()
 
@@ -29,8 +30,7 @@ class User(UserMixin, Base):
     age = Column(INTEGER)
     name = Column(VARCHAR(60))
     surname = Column(VARCHAR(60))
-    # TODO: переделать чтобы на линуксе путь был с прямым слешем
-    avatar = Column(TEXT, default='..\\static\\img\\user-avatar.svg')
+    avatar = Column(TEXT, default=os.path.join("static", "img", "user-avatar.svg"))
     # Могут ли другие люди оставлять у этого пользователя записи на стене
     other_publish = Column(Boolean, nullable=False, default=True)
     # Здесь можно указать уровень людей, способных постить на стене
@@ -222,7 +222,7 @@ class Chat(Base):
     __tablename__ = "chats"
     id = Column(INTEGER, primary_key=True, autoincrement=True)
     chatname = Column(VARCHAR(128), nullable=False)
-    avatar = Column(TEXT, default='..\\static\\img\\peoples.svg')
+    avatar = Column(TEXT, default=os.path.join("..", "static", "img", "peoples.svg"))
     chat_color = Column(VARCHAR(7))
     # TODO: перенести этот атрибут в таблицу многие ко многим
     admin = Column(INTEGER, ForeignKey('users.id'))
@@ -262,7 +262,7 @@ class Message(Base):
         return {
             "id": self.id,
             "from_user_id": self.from_user_id,
-            "user_avatar": self.sender.avatar,
+            "user_avatar": self.sender.avatar.replace("\\", "\\\\"),
             "message_date": str(self.message_date),
             "message": self.message,
             "attachment": [attach.serialize for attach in self.attachment]
@@ -279,13 +279,24 @@ class ImageAttachment(Base):
     g_post_id = Column(INTEGER, ForeignKey("group_posts.id", ondelete='CASCADE'), unique=True)
 
     a1_link = Column(TEXT, nullable=False)
+    a1_likes = Column(INTEGER, default=0)
+
     a2_link = Column(TEXT)
+    a2_likes = Column(INTEGER, default=0)
+
     a3_link = Column(TEXT)
+    a3_likes = Column(INTEGER, default=0)
+
     a4_link = Column(TEXT)
+    a4_likes = Column(INTEGER, default=0)
+
     a5_link = Column(TEXT)
+    a5_likes = Column(INTEGER, default=0)
 
     @property
     def serialize(self):
+        links_arr = [self.a1_link, self.a2_link, self.a3_link, self.a4_link, self.a5_link]
+        links_arr = [i.replace("\\", "\\\\") for i in links_arr if i is not None]
         return {
             "id": self.id,
             "date_added": self.date_added,
@@ -294,7 +305,7 @@ class ImageAttachment(Base):
             "a3_link": self.a3_link,
             "a4_link": self.a4_link,
             "a5_link": self.a5_link,
-            "links_array": [self.a1_link, self.a2_link, self.a3_link, self.a4_link, self.a5_link]
+            "links_array": links_arr
         }
 
     @property

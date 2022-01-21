@@ -1,6 +1,7 @@
 import datetime
 
 from flask import Flask, render_template, request, redirect, url_for, jsonify, g
+from flask_hcaptcha import hCaptcha
 from flask_login import LoginManager, login_user, login_required, current_user, logout_user
 from database import DataBase
 from files import FileOperations
@@ -16,6 +17,9 @@ app.register_blueprint(api_bp, url_prefix='/api')
 app.config['SECRET_KEY'] = 'SomeSuperDuperSecretKey'
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 20
+app.config['HCAPTCHA_SITE_KEY'] = 'your site key'
+app.config['HCAPTCHA_SECRET_KEY'] = 'your secret key'
+hcaptcha = hCaptcha(app)
 # app.config['MAIL_SERVER'] = 'smtp.googlemail.com'
 # app.config['MAIL_PORT'] = 587
 # app.config['MAIL_USE_TLS'] = True
@@ -96,6 +100,8 @@ def index():
             return redirect(url_for('users_page', name=current_user.username))
         return render_template('index.html', error=None)
     else:
+        if not hcaptcha.verify():
+            return render_template('index.html', error='signup_captcha_error')
         email = request.form['email']
         name = request.form['username']
         password = request.form['pw1']
@@ -211,6 +217,8 @@ def user_settings():
 @app.route('/login', methods=['POST'])
 def login():
     if request.method == 'POST':
+        if not hcaptcha.verify():
+            return render_template('index.html', error='login_captcha_error')
         email = request.form['email']
         password = request.form['pw1']
         if not DBC.login_user(email, password):

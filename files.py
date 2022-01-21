@@ -85,7 +85,8 @@ class FileOperations:
             os.remove(filepath)
             return ""
         if filetype == 'avatar':
-            if old_avatar[old_avatar.rfind('\\') + 1:] != 'user-avatar.svg':
+            if old_avatar[old_avatar.rfind('\\') + 1:] != 'user-avatar.svg' or old_avatar[old_avatar.rfind(
+                    '/') + 1:] != 'user-avatar.svg':
                 os.remove(old_avatar[old_avatar.find('.') + 1:])
             return os.path.join("..", filepath)
         else:

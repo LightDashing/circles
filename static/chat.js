@@ -206,6 +206,7 @@ function changeChat(l_chat_id, chat_name) {
                 $(".chat-messages-buttons").append(new_chat_button)
             }
             messages_loaded = true
+            window.scrollTo(0, document.querySelector(".main-row").scrollHeight);
         }
     )
 

@@ -45,7 +45,10 @@ function appendAttachments(element, message) {
     message["attachment"].forEach(function (attach) {
         attach["links_array"].forEach(function (image) {
             if (image) {
-                element += `<img class="post-pinned-images" alt="attached image" src="${image}">`
+                element += `<img class="post-pinned-images" alt="attached image" src="${image}" onclick="showModalImage('image_modal', 'image_modal_content',
+                                                 '${image}', 'image_modal_content',
+                                                 '${message["attachment"][0]["date_added"]}', '${message["from_user_id"]}',
+                                                 '${message["user_avatar"]}')">`
             }
         })
     })

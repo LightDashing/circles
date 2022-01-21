@@ -41,6 +41,12 @@
         <label>Password
             <input type="password" minlength="6" maxlength="20" placeholder="6+ symbols" name="pw2" required>
         </label>
+        {{ hcaptcha }}
+        <div class="captcha-error">
+            {% if error == 'signup_captcha_error' %}
+                <span>Complete captcha!</span>
+            {% endif %}
+        </div>
         <input class="new-button" type="submit" value="Register" id="send_sign_in">
         <span>Or</span>
         <button type="button" class="new-button" onclick="swapLogin()">Login</button>
@@ -53,6 +59,12 @@
         <label>Password
             <input class="text-input" type="password" minlength="6" placeholder="6+ symbols" name="pw1" required>
         </label>
+        {{ hcaptcha }}
+        <div class="captcha-error">
+            {% if error == 'login_captcha_error' %}
+                <span>Complete captcha!</span>
+            {% endif %}
+        </div>
         <input class="new-button" type="submit" value="Login">
         <span>Or</span>
         <button class="new-button" type="button" onclick="swapLogin()">Sign Up</button>

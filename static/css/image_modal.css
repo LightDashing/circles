@@ -16,6 +16,7 @@
     background-color: #fefefe;
     /*max-width: 80%;*/
     /*width: 30%;*/
+    min-width: 20%;
     width: max-content;
     margin: auto;
     border-radius: 15px;
@@ -61,4 +62,36 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
+}
+
+.like-button {
+    display: inline-block;
+    position: relative;
+    font-size: 2rem;
+    cursor: pointer;
+}
+
+.like-button::before {
+    font-size: 2rem;
+    color: #000;
+    content: '♥';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.like-button::after {
+    font-size: 2rem;
+    color: #ff3252;
+    content: '♥';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    transition: transform 0.2s;
+}
+
+.like-button.liked::after {
+    transform: translate(-50%, -50%) scale(1.1);
 }

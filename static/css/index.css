@@ -129,3 +129,13 @@
     border-radius: 15px;
     gap: 8px;
 }
+
+.captcha-error {
+    display: flex;
+    align-items: center;
+}
+
+.captcha-error > span {
+    color: darkred;
+    font-size: 1em;
+}
