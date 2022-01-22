@@ -10,6 +10,7 @@ from models import User, UserPost, Message, Friend, Chat, Group, GroupPost, User
 from files import FileOperations
 from user_exceptions import UserAlreadyExist
 import json
+import os
 
 
 class DataBase:
@@ -23,18 +24,25 @@ class DataBase:
                 raise Exception("Configure your settings file!")
             self.engine = create_engine(
                 f'postgresql://{data["username"]}:{data["password"]}@localhost/{data["schema"]}',
-                **{"poolclass": QueuePool, "pool_size": 8, "max_overflow": 0,
+                **{"poolclass": QueuePool, "pool_size": 6, "max_overflow": 0,
                    "pool_timeout": 6})
             self.g_session = scoped_session(sessionmaker(self.engine))
 
         def __enter__(self):
             self.sp_sess = self.g_session()
+            self.commit_needed = False
+            return self.sp_sess
 
         def __exit__(self, *args):
-            try:
-                self.sp_sess.commit()
-            except AttributeError:  # TODO: это просто затычка, нужно придумать что-то лучше
-                self.sp_sess.rollback()
+            if self.commit_needed:
+                try:
+                    self.sp_sess.commit()
+                except AttributeError:
+                    self.sp_sess.rollback()
+                finally:
+                    self.g_session.remove()
+            else:
+                self.g_session.remove()
 
     def __init__(self):
         self.conn_handler = self.ConnectionHandler()
@@ -42,6 +50,9 @@ class DataBase:
         self.FRIEND_STATEMENT = lambda x, y: select(Friend).filter(
             ((Friend.first_user_id == x) & (Friend.second_user_id == y)) |
             ((Friend.first_user_id == y) & (Friend.second_user_id == x)))
+
+    # def close_connection(self):
+    #     self.conn_handler.g_session.remove()
 
     @staticmethod
     def is_arr_part(main_arr, sub_arr):
@@ -60,8 +71,8 @@ class DataBase:
     # TODO: пароль должен быть защищён, необходимо хранить пароль в солёном md5 хеше
     def add_user(self, username, email, password):
         try:
-            with self.conn_handler:
-                self.conn_handler.sp_sess.add(
+            with self.conn_handler as session:
+                session.add(
                     User(username=username, email=email, password=password, last_time_online=datetime.datetime.now(),
                          is_online=False))
             return True
@@ -69,24 +80,25 @@ class DataBase:
             return False
 
     def login_user(self, email: str, password: str):
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = select(User).filter(User.email == email, User.password == password)
-            user = self.conn_handler.sp_sess.execute(statement).first()
+            user = session.execute(statement).first()
         if user:
             return True
         else:
             return False
 
     def set_online(self, user_id: int, online: bool):
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = update(User).filter(User.id == user_id).values(is_online=online)
-            self.conn_handler.sp_sess.execute(statement)
+            session.execute(statement)
 
     def update_last_time(self, user_id):
         self.set_online(user_id, True)
-        with self.conn_handler:
+        with self.conn_handler as session:
+            self.conn_handler.commit_needed = True
             statement = update(User).filter(User.id == user_id).values(last_time_online=datetime.datetime.now())
-            self.conn_handler.sp_sess.execute(statement)
+            session.execute(statement)
 
     def get_user(self, userid: int, scoped: bool = False) -> User:
         """
@@ -101,26 +113,25 @@ class DataBase:
             user = self.conn_handler.sp_sess.execute(statement).scalar()
             return user
 
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = select(User).filter(User.id == userid)
-            user = self.conn_handler.sp_sess.execute(statement).scalar()
+            user = session.execute(statement).scalar()
             try:
-                self.conn_handler.sp_sess.expunge(user)
+                session.expunge(user)
             except InvalidRequestError:
-                print(inspect(user).detached)
                 return user
         return user
 
     def get_userid(self, email):
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = select(User).filter(User.email == email)
-            user = self.conn_handler.sp_sess.execute(statement).scalar()
+            user = session.execute(statement).scalar()
             return user.id
 
     def userdata_by(self, userid: int):
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = select(User).filter(User.id == userid)
-            user = self.conn_handler.sp_sess.execute(statement).scalar()
+            user = session.execute(statement).scalar()
             if user:
                 return user.serialize
             else:
@@ -136,14 +147,15 @@ class DataBase:
         """
         if not new_name or len(new_name) < 3 or len(new_name) > 30:
             return 2
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = select(User).filter(User.username == new_name)
             if old_name == new_name:
                 return 3
-            elif self.conn_handler.sp_sess.execute(statement).first():
+            elif session.execute(statement).first():
                 return 1
+            self.conn_handler.commit_needed = True
             statement = update(User).filter(User.username == old_name).values(username=new_name)
-            self.conn_handler.sp_sess.execute(statement)
+            session.execute(statement)
 
     def change_description(self, user_id: int, desc: str) -> int:
         """
@@ -153,9 +165,10 @@ class DataBase:
         """
         if not desc:
             desc = 'None was provided'
-        with self.conn_handler:
+        with self.conn_handler as session:
+            self.conn_handler.commit_needed = True
             statement = update(User).filter(User.id == user_id).values(description=desc)
-            self.conn_handler.sp_sess.execute(statement)
+            session.execute(statement)
         return 0
 
     # TODO: ПеределатЬ!
@@ -171,19 +184,20 @@ class DataBase:
         pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
         if not re.fullmatch(pattern, email):
             return 1
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = select(User).filter(User.username == name)
-            user = self.conn_handler.sp_sess.execute(statement).scalar()
+            user = session.execute(statement).scalar()
             if user.email == email:
                 return 3
 
             statement = select(User).filter(User.email == email)
-            user = self.conn_handler.sp_sess.execute(statement).scalar()
+            user = session.execute(statement).scalar()
             if user.email == email:
                 return 2
 
             statement = update(User).filter(User.username == name).values(email=email)
-            self.conn_handler.sp_sess.execute(statement)
+            session.execute(statement)
+            self.conn_handler.commit_needed = True
             return 0
 
     def change_publish_settings(self, name: str, publish: bool) -> bool:
@@ -193,8 +207,10 @@ class DataBase:
         :param publish: boolean, true or false, can other post or not
         :return: true if operation was successful
         """
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = update(User).filter(User.username == name).values(other_publish=publish)
+            session.execute(statement)
+            self.conn_handler.commit_needed = True
             return True
 
     def change_avatar(self, userid: int, filepath: str):
@@ -204,18 +220,19 @@ class DataBase:
         :param filepath: path of new file in server filesystem relative to server directory
         :return: true if operation was successful
         """
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = update(User).filter(User.id == userid).values(avatar=filepath)
-            self.conn_handler.sp_sess.execute(statement)
+            session.execute(statement)
+            self.conn_handler.commit_needed = True
 
     # TODO: доделать функцию
     def update_all(self, userid):
         updates = {}
-        with self.conn_handler:
+        with self.conn_handler as session:
             # user = self.get_user(userid, True)
 
             statement = select(Friend).filter((Friend.is_checked == False) & (Friend.second_user_id == userid))
-            friends = self.conn_handler.sp_sess.execute(statement).all()
+            friends = session.execute(statement).all()
             friends_arr = []
             for friend in friends:
                 friend = friend[0].serialize
@@ -231,11 +248,12 @@ class DataBase:
                                                                               UserChatLink.last_visited) &
                                                                              (UserChatLink.is_notified == False))
 
-            messages = self.conn_handler.sp_sess.execute(statement).all()
+            messages = session.execute(statement).all()
             updates['messages'] = len(messages)
 
             statement = update(UserChatLink).filter(UserChatLink.user_id == userid).values(is_notified=True)
-            self.conn_handler.sp_sess.execute(statement)
+            session.execute(statement)
+            self.conn_handler.commit_needed = True
             return updates
 
     def search_for(self, search_query: str, search_type: str = 'user') -> list[dict]:
@@ -246,9 +264,9 @@ class DataBase:
         :return: array of dicts, User.serialize
         """
         if search_type == 'user':
-            with self.conn_handler:
+            with self.conn_handler as session:
                 query = select(User).filter(User.username.like(f"%{search_query}%"))
-                result = self.conn_handler.sp_sess.execute(query).scalars().fetchmany(5)
+                result = session.execute(query).scalars().fetchmany(5)
                 users = [user.serialize for user in result]
         # TODO: сделать поиск по группам
         else:
@@ -262,9 +280,9 @@ class DataBase:
         :param user_id:
         :return:
         """
-        with self.conn_handler:
+        with self.conn_handler as session:
             query = select(UserRole).filter(UserRole.role_name.like(f"%{search_query}%"), UserRole.creator == user_id)
-            results = self.conn_handler.sp_sess.execute(query).scalars()
+            results = session.execute(query).scalars()
             roles = [role.serialize for role in results]
         return roles
 
@@ -276,9 +294,9 @@ class DataBase:
         :param amount: int, amount of friends to return
         :return: array of User.serialize
         """
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = select(User).filter(User.id == userid)
-            user = self.conn_handler.sp_sess.execute(statement).scalar()
+            user = session.execute(statement).scalar()
             user_friends = []
             for friend in user.friends:
                 if friend.first_user.id == userid:
@@ -300,9 +318,9 @@ class DataBase:
             if user:
                 return user.id
 
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = select(User).filter(User.username == name)
-            user = self.conn_handler.sp_sess.execute(statement).scalar()
+            user = session.execute(statement).scalar()
             if user:
                 return user.id
 
@@ -318,15 +336,15 @@ class DataBase:
             user = self.conn_handler.sp_sess.execute(statement).scalar()
             if user:
                 return user.username
-        with self.conn_handler:
-            user = self.conn_handler.sp_sess.execute(statement).scalar()
+        with self.conn_handler as session:
+            user = session.execute(statement).scalar()
             if user:
                 return user.username
 
     def get_your_posts(self, user_id):
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = select(UserPost).filter(UserPost.whereid == user_id)
-            posts = self.conn_handler.sp_sess.execute(statement)
+            posts = session.execute(statement)
             if posts:
                 posts = [post[0].serialize for post in posts]
                 return posts[::-1]
@@ -339,16 +357,16 @@ class DataBase:
         :return: list of UserPost objects or None if there was no UserPosts
         """
         user_id = self.get_userid_by_name(username)
-        with self.conn_handler:
+        with self.conn_handler as session:
             if not user_roles:
                 statement = select(UserPost).filter(UserPost.whereid == user_id, UserPost.is_private == False)
-                posts = self.conn_handler.sp_sess.execute(statement).all()
+                posts = session.execute(statement).all()
                 if posts:
                     s_posts = [post[0].serialize for post in posts]
                     return s_posts[::-1]
             else:
                 statement = select(UserPost).filter(UserPost.whereid == user_id)
-                posts = self.conn_handler.sp_sess.execute(statement).all()
+                posts = session.execute(statement).all()
                 s_posts = []
                 for post in posts:
                     role_names = [role.role_name for role in post[0].roles]
@@ -357,9 +375,9 @@ class DataBase:
                 return s_posts[::-1]
 
     def get_avatar_by_name(self, username: str) -> str:
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = select(User).filter(User.username == username)
-            user = self.conn_handler.sp_sess.execute(statement).scalar()
+            user = session.execute(statement).scalar()
             return user.avatar
 
     def get_user_chats(self, user_id: int) -> list:
@@ -368,9 +386,9 @@ class DataBase:
         :param user_id: int
         :return: list[dict], "id", "chatname", "admin", "rules"
         """
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = select(User).filter(User.id == user_id)
-            user = self.conn_handler.sp_sess.execute(statement).scalar()
+            user = session.execute(statement).scalar()
             chats = []
             for chat in user.chats:
                 chats.append(chat.serialize)
@@ -382,9 +400,9 @@ class DataBase:
         :param user_id: int:
         :return: list[Group]:
         """
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = select(User).filter(User.id == user_id)
-            user = self.conn_handler.sp_sess.execute(statement).scalar()
+            user = session.execute(statement).scalar()
             groups = []
             for group in user.groups:
                 groups.append(group.serialize)
@@ -392,10 +410,11 @@ class DataBase:
 
     # TODO: переписать
     def create_group(self, user_id: int, group_name: str, group_desc: str, group_rules: str = None):
-        with self.conn_handler:
-            self.conn_handler.sp_sess.add(
+        with self.conn_handler as session:
+            session.add(
                 Group(group_name=group_name, owner=user_id, description=group_desc,
                       rules=group_rules))
+            self.conn_handler.commit_needed = True
         return True
 
     def join_group(self, group_name: str, current_user: User):
@@ -405,10 +424,11 @@ class DataBase:
         :param current_user: User class
         :return: None
         """
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = select(Group).filter(Group.group_name == group_name)
-            group = self.conn_handler.sp_sess.execute(statement).scalar()
+            group = session.execute(statement).scalar()
             group.users.append(current_user)
+            self.conn_handler.commit_needed = True
 
     def leave_group(self, group_name: str, current_user: User):
         """
@@ -417,10 +437,11 @@ class DataBase:
         :param current_user: User class
         :return: None
         """
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = select(Group).filter(Group.group_name == group_name)
-            group = self.conn_handler.sp_sess.execute(statement).scalar()
+            group = session.execute(statement).scalar()
             group.users.remove(current_user)
+            self.conn_handler.commit_needed = True
 
     def is_joined(self, group_name: str, current_user: User) -> bool:
         """
@@ -430,10 +451,10 @@ class DataBase:
         :return: True if user in group, False if isn't
         """
         test_user = current_user
-        with self.conn_handler:
+        with self.conn_handler as session:
             assert test_user == current_user
             statement = select(Group).filter(Group.group_name == group_name)
-            group = self.conn_handler.sp_sess.execute(statement).scalar()
+            group = session.execute(statement).scalar()
             if current_user in group.users:
                 return True
             else:
@@ -445,9 +466,9 @@ class DataBase:
         :param group_name: str
         :return: dict, "id", "avatar", "group_name", "status", "owner", "description", "rules"
         """
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = select(Group).filter(Group.group_name == group_name)
-            group = self.conn_handler.sp_sess.execute(statement).scalar()
+            group = session.execute(statement).scalar()
             return group.serialize
 
     def get_user_dialog(self, user_id: int, s_user_id: int) -> Chat:
@@ -457,18 +478,19 @@ class DataBase:
         :param s_user_id: int, User.id
         :return: Chat object
         """
-        with self.conn_handler:
+        with self.conn_handler as session:
             # This statement is to get both users entries
             statement = select(User).filter(or_(User.id == user_id, User.id == s_user_id))
-            users = self.conn_handler.sp_sess.execute(statement).scalars().fetchmany(2)
+            users = session.execute(statement).scalars().fetchmany(2)
             # This statement is to get all shared chats between users
             statement = select(Chat).filter(Chat.users.contains(users[0]) & (Chat.users.contains(users[1])))
-            chats = self.conn_handler.sp_sess.execute(statement).all()
+            chats = session.execute(statement).all()
             for chat in chats:
                 if chat[0].is_dialog:
                     return chat[0].serialize
             # If there are chat where is_dialog is True, then it's right chat, else we create new
             chat = self.create_dialog_chat(users[0], users[1])
+            self.conn_handler.commit_needed = True
         return chat
 
     def create_dialog_chat(self, user: User, s_user: User) -> Chat:
@@ -487,32 +509,15 @@ class DataBase:
         dialog.users.append(user), dialog.users.append(s_user)
         return dialog.serialize
 
-    # # TODO: redo, not all messages needs to be loaded, only like 30?
-    # def get_messages_chat_id(self, chat_id: int) -> list:
-    #     """
-    #     This function returns list with all messages in chat\n
-    #     :param chat_id: int, Chat.id
-    #     :return: list with all chat messages
-    #     """
-    #     with self.conn_handler:
-    #         statement = select(Message).join(Chat).filter(Chat.id == chat_id)
-    #         all_messages = self.conn_handler.sp_sess.execute(statement).fetchmany(20)
-    #         messages = []
-    #         for message in all_messages:
-    #             message = message[0].serialize
-    #             messages.append(message)
-    #         return messages
-
     def get_chat_by_id(self, chat_id: int) -> Chat:
         """
         This function returns Chat object by it's id\n
         :param chat_id: int, Chat.idf
         :return: Chat object
         """
-        print(type(chat_id))
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = select(Chat).filter(Chat.id == chat_id)
-            chat = self.conn_handler.sp_sess.execute(statement).scalar()
+            chat = session.execute(statement).scalar()
             return chat.serialize
 
     # TODO: переделать
@@ -521,8 +526,9 @@ class DataBase:
         admin = self.get_user(admin_id)
         chat = Chat(chatname=chat_name, admin=admin_id, rules=rules, chat_color="#d5d6db80")
         chat.users.append(admin)
-        with self.conn_handler:
-            self.conn_handler.sp_sess.add(chat)
+        with self.conn_handler as session:
+            self.conn_handler.commit_needed = True
+            session.add(chat)
             for user in users:
                 user = self.get_user(self.get_userid_by_name(user, scoped=True), scoped=True)
                 if user:
@@ -530,10 +536,10 @@ class DataBase:
             return chat.id
 
     def preload_messages(self, user_id: int, chat_id: int):
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = update(UserChatLink).filter(UserChatLink.user_id == user_id).values(is_notified=True)
             statement = select(Message).join(Chat).filter(Chat.id == chat_id).order_by(desc(Message.message_date))
-            all_messages = self.conn_handler.sp_sess.execute(statement).fetchmany(20)
+            all_messages = session.execute(statement).fetchmany(20)
             messages = []
             for message in all_messages:
                 message = message[0].serialize
@@ -544,14 +550,14 @@ class DataBase:
         if not f_msg_date:
             return []
         f_msg_date = datetime.datetime.strptime(f_msg_date, "%Y-%m-%d %H:%M:%S.%f")
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = select(UserChatLink).filter(UserChatLink.user_id == user_id, UserChatLink.chat_id == chat_id)
-            users = self.conn_handler.sp_sess.execute(statement).scalar()
+            users = session.execute(statement).scalar()
             if not users:
                 return []
 
             statement = select(Message).join(Chat).filter((Chat.id == chat_id) & (Message.message_date < f_msg_date))
-            messages = self.conn_handler.sp_sess.execute(statement).all()
+            messages = session.execute(statement).all()
             all_messages = {"messages": []}
             if len(messages) > 40:
                 all_messages["older"] = True
@@ -572,20 +578,20 @@ class DataBase:
         if not msg_time:
             msg_time = str(datetime.datetime.now())
         msg_time = datetime.datetime.strptime(msg_time, "%Y-%m-%d %H:%M:%S.%f")
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = select(UserChatLink).filter(UserChatLink.user_id == user_id, UserChatLink.chat_id == chat_id)
-            users = self.conn_handler.sp_sess.execute(statement).scalar()
+            users = session.execute(statement).scalar()
             if not users:
                 return []
 
             statement = select(Message).join(Chat).filter(
                 and_(Chat.id == chat_id, Message.message_date > msg_time))
-            messages = self.conn_handler.sp_sess.execute(statement).all()
+            messages = session.execute(statement).all()
 
             statement = update(UserChatLink).filter(
                 (UserChatLink.user_id == user_id) & (UserChatLink.chat_id == chat_id)).values(
                 last_visited=datetime.datetime.now())
-            self.conn_handler.sp_sess.execute(statement)
+            session.execute(statement)
 
             all_messages = []
             if messages:
@@ -595,6 +601,7 @@ class DataBase:
                     all_messages.append(message)
             else:
                 return []
+            self.conn_handler.commit_needed = True
         return all_messages
 
     @staticmethod
@@ -614,23 +621,24 @@ class DataBase:
         return attach
 
     def send_message(self, user_id: int, chat_id: int, msg: str, pinned_images: list[str]) -> bool:
-        with self.conn_handler:
+        with self.conn_handler as session:
+            self.conn_handler.commit_needed = True
             statement = select(Chat).filter(Chat.id == chat_id)
-            chat = self.conn_handler.sp_sess.execute(statement).scalar()
+            chat = session.execute(statement).scalar()
             message = Message(from_user_id=user_id, message_date=datetime.datetime.now(), message=msg, chat_id=chat.id)
             if pinned_images:
                 attach = self.create_attach(user_id, pinned_images)
                 message.attachment.append(attach)
-            self.conn_handler.sp_sess.add(message)
+            session.add(message)
             statement = update(UserChatLink).filter(UserChatLink.chat_id == chat_id).values(is_notified=False)
-            self.conn_handler.sp_sess.execute(statement)
+            session.execute(statement)
         return True
 
     # TODO: добавить ограничение на количество ролей в посте
     #  также нужно переработать этот код
     def publish_post(self, msg: str, user_id: int, roles: list[str], pinned_images: list[str], is_private: bool,
                      where_id: int = None) -> bool:
-        with self.conn_handler:
+        with self.conn_handler as session:
             if not where_id:
                 if not is_private:
                     post = UserPost(userid=user_id, message=msg, whereid=user_id, is_private=is_private,
@@ -640,7 +648,7 @@ class DataBase:
                                     date_added=datetime.datetime.now())
                     for role in roles:
                         statement = select(UserRole).filter(UserRole.role_name == role)
-                        role = self.conn_handler.sp_sess.execute(statement).scalar()
+                        role = session.execute(statement).scalar()
                         post.roles.append(role)
                 if pinned_images:
                     attach = self.create_attach(user_id, pinned_images)
@@ -649,54 +657,59 @@ class DataBase:
                 # TODO: пока что другие люди не могут постить на стене вообще, нужно придумать как поступать с их
                 #  ролями в случае постинга
                 pass
-            self.conn_handler.sp_sess.add(post)
-            self.conn_handler.sp_sess.flush()
-            self.conn_handler.sp_sess.refresh(post)
+            session.add(post)
+            session.flush()
+            session.refresh(post)
+            self.conn_handler.commit_needed = True
             return post.serialize
 
     def remove_post(self, post_id):
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = delete(UserPost).filter(UserPost.id == post_id)
-            self.conn_handler.sp_sess.execute(statement)
+            session.execute(statement)
+            self.conn_handler.commit_needed = True
 
     def get_your_post(self, post_id, user_id):
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = select(UserPost).filter(UserPost.id == post_id, UserPost.userid == user_id)
-            post = self.conn_handler.sp_sess.execute(statement).scalar()
+            post = session.execute(statement).scalar()
+            self.conn_handler.commit_needed = True
             return post.serialize
 
     def create_role(self, role_name: str, role_color: str, user_id: int):
         # TODO: добавить донаты для монетизации, максимальное кол-во ролей для обычного пользователя - 5
         #  для людей которые задонатили можно сделать до 10
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = select(UserRole).filter(UserRole.creator == user_id)
-            roles = self.conn_handler.sp_sess.execute(statement).all()
+            roles = session.execute(statement).all()
             if len(roles) < 6:
                 user_role = UserRole(role_name=role_name, role_color=role_color, creator=user_id)
-                self.conn_handler.sp_sess.add(user_role)
-                self.conn_handler.sp_sess.flush()
-                self.conn_handler.sp_sess.refresh(user_role)
+                session.add(user_role)
+                session.flush()
+                session.refresh(user_role)
+                self.conn_handler.commit_needed = True
                 return user_role.serialize
             else:
                 return False
 
     def delete_role(self, role_id: int, user_id: int):
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = delete(UserRole).filter(UserRole.id == role_id, UserRole.creator == user_id)
-            self.conn_handler.sp_sess.execute(statement)
+            session.execute(statement)
+            self.conn_handler.commit_needed = True
 
     def get_roles(self, user_id: int) -> list[dict]:
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = select(UserRole).filter(UserRole.creator == user_id)
-            user_roles = self.conn_handler.sp_sess.execute(statement).all()
+            user_roles = session.execute(statement).all()
             user_roles = [role[0].serialize for role in user_roles]
         return user_roles
 
     def change_role(self, role_id: int, user_id: int, new_role_name: str = None, new_role_color: str = None,
                     new_font_color: str = None) -> dict:
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = select(UserRole).filter(UserRole.creator == user_id, UserRole.id == role_id)
-            user_role = self.conn_handler.sp_sess.execute(statement).scalar()
+            user_role = session.execute(statement).scalar()
             if user_role:
                 if new_role_name:
                     user_role.role_name = new_role_name
@@ -704,6 +717,7 @@ class DataBase:
                     user_role.role_color = new_role_color
                 if new_font_color:
                     user_role.font_color = new_font_color
+                self.conn_handler.commit_needed = True
                 return user_role.serialize
             else:
                 return {}
@@ -713,15 +727,16 @@ class DataBase:
         This function is checking if friend already exists and if it isn't, adds a new entry to database\n
         returns boolean value, true if new entry was created and false if entry already existed
         """
-        with self.conn_handler:  # Checking if there already existing entry
+        with self.conn_handler as session:  # Checking if there already existing entry
             statement = self.FRIEND_STATEMENT(user, second_user)
-            users = self.conn_handler.sp_sess.execute(statement).all()
+            users = session.execute(statement).all()
             if users:
                 return False
             else:
-                self.conn_handler.sp_sess.add(
+                session.add(
                     Friend(first_user_id=user, second_user_id=second_user,
                            date_added=datetime.datetime.now()))  # Adding new entry
+                self.conn_handler.commit_needed = True
                 return True
 
     def remove_friend(self, user: int, second_user: int) -> bool:
@@ -731,14 +746,15 @@ class DataBase:
         :param second_user: id of second user, someone else
         :return: True if deletion was successful, false if there was no friend entry
         """
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = self.FRIEND_STATEMENT(user, second_user)
-            friend = self.conn_handler.sp_sess.execute(statement).scalar()  # Getting existing rows
+            friend = session.execute(statement).scalar()  # Getting existing rows
             if not friend:  # If there is no friend entry like that
                 return False
             statement = delete(Friend).filter((Friend.first_user_id == friend.first_user_id) &
                                               (Friend.second_user_id == friend.second_user_id))
-            self.conn_handler.sp_sess.execute(statement)
+            session.execute(statement)
+            self.conn_handler.commit_needed = True
             return True
 
     def accept_request(self, second_user: int, user: int) -> bool:
@@ -748,10 +764,11 @@ class DataBase:
         :param user: int, User.id
         :return: True if updating was successful
         """
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = update(Friend).filter(Friend.first_user_id == user, Friend.second_user_id == second_user) \
                 .values(is_request=False, is_checked=True)
-            self.conn_handler.sp_sess.execute(statement)
+            session.execute(statement)
+            self.conn_handler.commit_needed = True
         return True
 
     def is_friend(self, user: int, second_user: int):
@@ -759,9 +776,9 @@ class DataBase:
         This function checks if user is a friend of current user\n
         returns either a dict with all friend connection data or just bool false
         """
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = self.FRIEND_STATEMENT(user, second_user)
-            friend = self.conn_handler.sp_sess.execute(statement).scalar()
+            friend = session.execute(statement).scalar()
             if not friend:
                 return False
             else:
@@ -777,8 +794,8 @@ class DataBase:
         """
         all_roles = self.get_friend_roles(user_id, friend_id)
         id_array = [elem["id"] for elem in all_roles]
-        with self.conn_handler:
-            friend = self.conn_handler.sp_sess.execute(self.FRIEND_STATEMENT(user_id, friend_id)).scalar()
+        with self.conn_handler as session:
+            friend = session.execute(self.FRIEND_STATEMENT(user_id, friend_id)).scalar()
             for role in roles:
                 if role["id"] in id_array:
                     id_array.remove(role["id"])
@@ -790,22 +807,23 @@ class DataBase:
                 role_arr = []
                 for role_e in roles:
                     st = select(UserRole).filter(UserRole.id == role_e["id"])
-                    role = self.conn_handler.sp_sess.execute(st).scalar()
+                    role = session.execute(st).scalar()
                     role_arr.append(role)
                 friend.second_user_roles = role_arr
             else:
                 role_arr = []
                 for role_e in roles:
                     st = select(UserRole).filter(UserRole.id == role_e["id"])
-                    role = self.conn_handler.sp_sess.execute(st).scalar()
+                    role = session.execute(st).scalar()
                     role_arr.append(role)
                 friend.first_user_roles = role_arr
+            self.conn_handler.commit_needed = True
             return
 
     def get_friend_roles(self, user_id: int, friend_id: int, all_roles: bool = False):
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = self.FRIEND_STATEMENT(user_id, friend_id)
-            friend = self.conn_handler.sp_sess.execute(statement).scalar()
+            friend = session.execute(statement).scalar()
             if not friend:
                 return
 
@@ -818,7 +836,7 @@ class DataBase:
             if all_roles:
                 roles = [role["role_name"] for role in roles]
                 statement = select(UserRole).filter(UserRole.creator == user_id)
-                user_roles = self.conn_handler.sp_sess.execute(statement).scalars()
+                user_roles = session.execute(statement).scalars()
                 user_roles = [role.serialize for role in user_roles]
                 for role in user_roles:
                     if role["role_name"] in roles:
@@ -829,74 +847,83 @@ class DataBase:
             return roles
 
     def add_friend_role(self, user_id, friend_id, role_id):
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = self.FRIEND_STATEMENT(user_id, friend_id)
-            friend = self.conn_handler.sp_sess.execute(statement).scalar()
+            friend = session.execute(statement).scalar()
 
             statement = select(UserRole).filter(UserRole.id == role_id)
-            role = self.conn_handler.sp_sess.execute(statement).scalar()
+            role = session.execute(statement).scalar()
 
             if friend.first_user_id == user_id:
                 if len(friend.second_user_roles) < 5:
                     friend.second_user_roles.append(role)
+                    self.conn_handler.commit_needed = True
                     return True
                 else:
                     return None
             elif friend.second_user_id == user_id:
                 if len(friend.first_user_roles) < 5:
                     friend.first_user_roles.append(role)
+                    self.conn_handler.commit_needed = True
                     return True
                 else:
                     return None
 
     def remove_friend_role(self, user_id, friend_id, role_id):
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = self.FRIEND_STATEMENT(user_id, friend_id)
-            friend = self.conn_handler.sp_sess.execute(statement).scalar()
+            friend = session.execute(statement).scalar()
 
             statement = select(UserRole).filter(UserRole.id == role_id)
-            role = self.conn_handler.sp_sess.execute(statement).scalar()
+            role = session.execute(statement).scalar()
 
             if friend.first_user == user_id:
                 friend.second_user_roles.remove(role)
             elif friend.second_user_id == user_id:
                 friend.first_user_roles.remove(role)
+            self.conn_handler.commit_needed = True
 
     def add_attachment_u_post(self, post_id: int, user_id: int, images_list):
-        with self.conn_handler:
+        with self.conn_handler as session:
             attach = ImageAttachment(date_added=datetime.datetime.now(), a1_link=images_list[0])
             if len(images_list) > 1:
                 attach.image_links = images_list[1:]
             statement = select(UserPost).filter(UserPost.id == post_id, UserPost.userid == user_id)
-            post = self.conn_handler.sp_sess.execute(statement).scalar()
+            post = session.execute(statement).scalar()
             post.attachment.append(attach)
+            self.conn_handler.commit_needed = True
 
     def get_attachment_u_post(self, post_id: int, user_id: int):
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = select(UserPost).filter(UserPost.id == post_id, UserPost.userid == user_id)
-            post = self.conn_handler.sp_sess.execute(statement).scalar()
+            post = session.execute(statement).scalar()
             return [att.serialize for att in post.attachment]
 
     def add_attachment_msg(self, msg_id: int, user_id: int, images_list):
-        with self.conn_handler:
+        with self.conn_handler as session:
             attach = ImageAttachment(date_added=datetime.datetime.now(), a1_link=images_list[0])
             if len(images_list) > 1:
                 attach.image_links = images_list[1:]
             statement = select(Message).filter(Message.id == msg_id, Message.from_user_id == user_id)
-            message = self.conn_handler.sp_sess.execute(statement).scalar()
+            message = session.execute(statement).scalar()
             message.attachment.append(attach)
+            self.conn_handler.commit_needed = True
 
     def get_attachment_msg(self, msg_id: int, user_id: int):
-        with self.conn_handler:
+        with self.conn_handler as session:
             statement = select(Message).filter(Message.id == msg_id, Message.from_user_id == user_id)
-            msg = self.conn_handler.sp_sess.execute(statement).scalar()
+            msg = session.execute(statement).scalar()
             return [att.serialize for att in msg.attachment]
 
     def add_attachment_g_post(self, post_id: int, group_id: int, images_list):
-        with self.conn_handler:
+        with self.conn_handler as session:
             attach = ImageAttachment(date_added=datetime.datetime.now(), a1_link=images_list[0])
             if len(images_list) > 1:
                 attach.image_links = images_list[1:]
             statement = select(GroupPost).filter(GroupPost.id == post_id, GroupPost.group_id == group_id)
-            message = self.conn_handler.sp_sess.execute(statement).scalar()
+            message = session.execute(statement).scalar()
             message.attachment.append(attach)
+            self.conn_handler.commit_needed = True
+
+
+DBC = DataBase()

@@ -3,7 +3,7 @@ import datetime
 from flask import Flask, render_template, request, redirect, url_for, jsonify, g
 from flask_hcaptcha import hCaptcha
 from flask_login import LoginManager, login_user, login_required, current_user, logout_user
-from database import DataBase
+from database import DataBase, DBC
 from models import create_all
 from api.api import api_bp
 import re
@@ -12,7 +12,6 @@ import json
 # from smtp_mail import Email
 # from flask_mail import Message, Mail
 # import jwt
-DBC = DataBase()
 app = Flask(__name__)
 app.register_blueprint(api_bp, url_prefix='/api')
 with open("settings.json") as settings_file:
@@ -21,7 +20,7 @@ with open("settings.json") as settings_file:
         create_all(data["db_settings"]["username"], data["db_settings"]["password"], data["db_settings"]["schema"])
     data = data['app_settings']
 if data:
-    app.config['SECRET_KEY'] = data['SECRET_KEY']
+    app.config['SECRET_KEY'] = bytes(data['SECRET_KEY'], encoding='utf-8')
     app.config['SESSION_COOKIE_SECURE'] = data['SESSION_COOKIE_SECURE']
     app.config['MAX_CONTENT_LENGTH'] = data['MAX_CONTENT_LENGTH']
     app.config['HCAPTCHA_SITE_KEY'] = data['HCAPTCHA_SITE_KEY']

@@ -1,15 +1,18 @@
 from flask import Blueprint, request, jsonify, render_template
-from database import DataBase
+from database import DataBase, DBC
 from flask_login import login_required, current_user
 from files import FileOperations
 import re
 
 # TODO: ВАЖНО! Поменять все запросы на GET'ы, которые ничего не меняют
 api_bp = Blueprint('api_bp', __name__, template_folder='templates')
-DBC = DataBase()
+
+
+# DBC = DataBase()
 
 
 @api_bp.route('/join_group', methods=['POST'])
+@login_required
 def join_group():
     data = request.get_json()
     DBC.join_group(data['group_name'], current_user)
@@ -168,14 +171,12 @@ def upload_settings():
     username = str(request.form["username"])
     description = str(request.form["desc"])
     can_post = bool(request.form["can_post"])
-    post_lvl = int(request.form["view_level"])
     email = str(request.form["email"])
     password = str(request.form['pw1'])
     response = {}
     response['u_name_r'] = DBC.change_username(current_user.username, username)
     response['u_desc_r'] = DBC.change_description(current_user.id, description)
     response['u_pub_r'] = DBC.change_publish_settings(current_user.id, can_post)
-    response['u_lvl_r'] = DBC.ch_min_posting_lvl(current_user.id, post_lvl)
     response['u_email_r'] = DBC.change_mail(current_user.id, email)
     if password:
         # Do something
