@@ -4,9 +4,10 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify, g
 from flask_hcaptcha import hCaptcha
 from flask_login import LoginManager, login_user, login_required, current_user, logout_user
 from database import DataBase
-from files import FileOperations
+from models import create_all
 from api.api import api_bp
 import re
+import json
 
 # from smtp_mail import Email
 # from flask_mail import Message, Mail
@@ -14,11 +15,19 @@ import re
 DBC = DataBase()
 app = Flask(__name__)
 app.register_blueprint(api_bp, url_prefix='/api')
-app.config['SECRET_KEY'] = 'SomeSuperDuperSecretKey'
-app.config['SESSION_COOKIE_SECURE'] = True
-app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 20
-app.config['HCAPTCHA_SITE_KEY'] = 'your site key'
-app.config['HCAPTCHA_SECRET_KEY'] = 'your secret key'
+with open("settings.json") as settings_file:
+    data = json.load(settings_file)
+    if data['first_time_loading']:
+        create_all(data["db_settings"]["username"], data["db_settings"]["password"], data["db_settings"]["schema"])
+    data = data['app_settings']
+if data:
+    app.config['SECRET_KEY'] = data['SECRET_KEY']
+    app.config['SESSION_COOKIE_SECURE'] = data['SESSION_COOKIE_SECURE']
+    app.config['MAX_CONTENT_LENGTH'] = data['MAX_CONTENT_LENGTH']
+    app.config['HCAPTCHA_SITE_KEY'] = data['HCAPTCHA_SITE_KEY']
+    app.config['HCAPTCHA_SECRET_KEY'] = data['HCAPTCHA_SECRET_KEY']
+else:
+    raise Exception("Configure your settings.json file!")
 hcaptcha = hCaptcha(app)
 # app.config['MAIL_SERVER'] = 'smtp.googlemail.com'
 # app.config['MAIL_PORT'] = 587

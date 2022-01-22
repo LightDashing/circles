@@ -27,7 +27,7 @@
     </div>
 </div>
 <div class="right-part">
-    <form class="sign-up">
+    <form class="sign-up" method="post">
         <span style="font-size: 1.1em">You can register right now</span>
         <label>Username
             <input type='text' minlength="5" maxlength="30" placeholder="5+ symbols" name="username" required>
@@ -47,9 +47,9 @@
                 <span>Complete captcha!</span>
             {% endif %}
         </div>
-        <input class="new-button" type="submit" value="Register" id="send_sign_in">
+        <input class="new-button" type="submit" value="Register" id="send_sign_in" name="submit_button">
         <span>Or</span>
-        <button type="button" class="new-button" onclick="swapLogin()">Login</button>
+        <button type="button" class="new-button" onclick="swapLogin()" name="swap_button">Login</button>
     </form>
     <form class="login" action="{{ url_for("login") }}" method="post">
         <span style="font-size: 1.1em">Sign in</span>

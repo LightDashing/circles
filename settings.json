@@ -1,0 +1,15 @@
+{
+  "app_settings": {
+    "SECRET_KEY": "SomeSuperDuperSecretKey",
+    "SESSION_COOKIE_SECURE": true,
+    "MAX_CONTENT_LENGTH": 20971520,
+    "HCAPTCHA_SITE_KEY": "your site key",
+    "HCAPTCHA_SECRET_KEY": "your secret key"
+  },
+  "db_settings": {
+    "username": "postgres",
+    "password": "your password",
+    "schema": "postgres"
+  },
+  "first_time_loading": true
+}

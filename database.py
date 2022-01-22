@@ -9,7 +9,7 @@ from models import User, UserPost, Message, Friend, Chat, Group, GroupPost, User
     ImageAttachment
 from files import FileOperations
 from user_exceptions import UserAlreadyExist
-import os
+import json
 
 
 class DataBase:
@@ -17,9 +17,14 @@ class DataBase:
 
         def __init__(self):
             # Нужно поиграться с параметрами пула, потому что сейчас переодически сыпется с twophase error
-            self.engine = create_engine('postgresql://postgres:YourPassword@localhost/postgres',
-                                        **{"poolclass": QueuePool, "pool_size": 5, "max_overflow": 3,
-                                           "pool_timeout": 6})
+            with open("settings.json") as settings_file:
+                data = json.load(settings_file)["db_settings"]
+            if not data:
+                raise Exception("Configure your settings file!")
+            self.engine = create_engine(
+                f'postgresql://{data["username"]}:{data["password"]}@localhost/{data["schema"]}',
+                **{"poolclass": QueuePool, "pool_size": 8, "max_overflow": 0,
+                   "pool_timeout": 6})
             self.g_session = scoped_session(sessionmaker(self.engine))
 
         def __enter__(self):
@@ -30,8 +35,6 @@ class DataBase:
                 self.sp_sess.commit()
             except AttributeError:  # TODO: это просто затычка, нужно придумать что-то лучше
                 self.sp_sess.rollback()
-            finally:
-                self.g_session.remove()
 
     def __init__(self):
         self.conn_handler = self.ConnectionHandler()

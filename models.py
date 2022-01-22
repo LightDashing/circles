@@ -11,8 +11,14 @@ import os
 Base = declarative_base()
 
 
+def create_all(login, password, schema):
+    engine = create_engine(f'postgresql://{login}:{password}@localhost/{schema}')
+    Base.metadata.create_all(engine)
+
+
 # TODO: ВАЖНО! вернуть ограничения по полям, сделать его большим, но существующим, чтобы нельзя было сохранять
 #  десятки мегабайт текста
+
 
 class User(UserMixin, Base):
     __tablename__ = 'users'
@@ -30,7 +36,7 @@ class User(UserMixin, Base):
     age = Column(INTEGER)
     name = Column(VARCHAR(60))
     surname = Column(VARCHAR(60))
-    avatar = Column(TEXT, default=os.path.join("static", "img", "user-avatar.svg"))
+    avatar = Column(TEXT, default=os.path.join("..", "static", "img", "user-avatar.svg"))
     # Могут ли другие люди оставлять у этого пользователя записи на стене
     other_publish = Column(Boolean, nullable=False, default=True)
     # Здесь можно указать уровень людей, способных постить на стене
@@ -323,5 +329,4 @@ class ImageAttachment(Base):
             return
 
 # engine = create_engine('postgresql://postgres:YourPassword@localhost/postgres')
-# engine = create_engine('mssql+pyodbc://DESKTOP-6ETOEB0\chugu@orm_adm')
 # Base.metadata.create_all(engine)
