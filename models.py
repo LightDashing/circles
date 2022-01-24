@@ -25,7 +25,7 @@ class User(UserMixin, Base):
     id = Column(INTEGER, primary_key=True, autoincrement=True)
     username = Column(VARCHAR(30), unique=True, nullable=False)
     email = Column(VARCHAR(30), unique=True, nullable=False)
-    password = Column(VARCHAR(512), nullable=False)
+    password = Column(VARCHAR(1024), nullable=False)
     registration_date = Column(DateTime, nullable=False, default=datetime.datetime.now())
     last_time_online = Column(DateTime, nullable=False)
     is_online = Column(Boolean)

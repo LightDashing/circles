@@ -1,8 +1,10 @@
+import argon2.exceptions
 from sqlalchemy import or_, and_, delete, select, update, inspect, desc
 from sqlalchemy.engine import create_engine
 from sqlalchemy.pool import NullPool, AssertionPool, QueuePool
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
+from argon2 import PasswordHasher
 import datetime
 import re
 from models import User, UserPost, Message, Friend, Chat, Group, GroupPost, UserChatLink, UserRole, \
@@ -50,9 +52,7 @@ class DataBase:
         self.FRIEND_STATEMENT = lambda x, y: select(Friend).filter(
             ((Friend.first_user_id == x) & (Friend.second_user_id == y)) |
             ((Friend.first_user_id == y) & (Friend.second_user_id == x)))
-
-    # def close_connection(self):
-    #     self.conn_handler.g_session.remove()
+        self.ph = PasswordHasher()
 
     @staticmethod
     def is_arr_part(main_arr, sub_arr):
@@ -68,12 +68,12 @@ class DataBase:
             else:
                 return False
 
-    # TODO: пароль должен быть защищён, необходимо хранить пароль в солёном md5 хеше
     def add_user(self, username, email, password):
         try:
             with self.conn_handler as session:
                 session.add(
-                    User(username=username, email=email, password=password, last_time_online=datetime.datetime.now(),
+                    User(username=username, email=email, password=self.ph.hash(password),
+                         last_time_online=datetime.datetime.now(),
                          is_online=False))
             return True
         except UserAlreadyExist:
@@ -81,12 +81,22 @@ class DataBase:
 
     def login_user(self, email: str, password: str):
         with self.conn_handler as session:
-            statement = select(User).filter(User.email == email, User.password == password)
-            user = session.execute(statement).first()
-        if user:
-            return True
-        else:
-            return False
+            statement = select(User).filter(User.email == email)
+            user = session.execute(statement).scalar()
+            if user:
+                try:
+                    self.ph.verify(user.password, password)
+                except (argon2.exceptions.VerificationError, argon2.exceptions.VerifyMismatchError,
+                        argon2.exceptions.InvalidHash):
+                    return False
+                if self.ph.check_needs_rehash(user.password):
+                    user.password = self.ph.hash(password)
+                    self.conn_handler.commit_needed = True
+                    return True
+                else:
+                    return True
+            else:
+                return False
 
     def set_online(self, user_id: int, online: bool):
         with self.conn_handler as session:
@@ -537,7 +547,10 @@ class DataBase:
 
     def preload_messages(self, user_id: int, chat_id: int):
         with self.conn_handler as session:
-            statement = update(UserChatLink).filter(UserChatLink.user_id == user_id).values(is_notified=True)
+            # statement = update(UserChatLink).filter(UserChatLink.user_id == user_id).values(is_notified=True)
+            st = select(UserChatLink).filter((UserChatLink.user_id == user_id) & (UserChatLink.chat_id == chat_id))
+            if not session.execute(st).scalar():
+                return []
             statement = select(Message).join(Chat).filter(Chat.id == chat_id).order_by(desc(Message.message_date))
             all_messages = session.execute(statement).fetchmany(20)
             messages = []
@@ -622,6 +635,9 @@ class DataBase:
 
     def send_message(self, user_id: int, chat_id: int, msg: str, pinned_images: list[str]) -> bool:
         with self.conn_handler as session:
+            st = select(UserChatLink).filter((UserChatLink.user_id == user_id) & (UserChatLink.chat_id == chat_id))
+            if not session.execute(st).scalar():
+                return False
             self.conn_handler.commit_needed = True
             statement = select(Chat).filter(Chat.id == chat_id)
             chat = session.execute(statement).scalar()
