@@ -8,9 +8,9 @@
   },
   "db_settings": {
     "username": "postgres",
-    "password": "your password",
+    "password": "password",
     "schema": "postgres",
-    "hostname": "localhost"
+    "hostname": "postgres"
   },
   "first_time_loading": true
 }
