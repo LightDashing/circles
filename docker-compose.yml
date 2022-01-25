@@ -2,7 +2,7 @@ version: "3.3"
 services:
   web:
     restart: always
-    command: gunicorn -b 0.0.0.0:5000 app:gunicorn_app
+    command: gunicorn -b 0.0.0.0:5000 app:app
     build: .
     depends_on:
       - postgres
