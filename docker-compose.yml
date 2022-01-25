@@ -1,0 +1,25 @@
+version: "3.3"
+services:
+  web:
+    restart: always
+    command: gunicorn -b 0.0.0.0:5000  app:gunicorn_app
+    build: .
+    ports:
+      - "5000:5000"
+  postgres:
+    image: postgres:13-alpine
+    volumes:
+      - ./docker/pg_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=postgres
+  caddy:
+    image: caddy:2.4.6-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/caddy:/data
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile
+   

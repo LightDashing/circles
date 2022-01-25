@@ -11,8 +11,8 @@ import os
 Base = declarative_base()
 
 
-def create_all(login, password, schema):
-    engine = create_engine(f'postgresql://{login}:{password}@localhost/{schema}')
+def create_all(login, password, hostname, schema):
+    engine = create_engine(f'postgresql://{login}:{password}@{hostname}/{schema}')
     Base.metadata.create_all(engine)
 
 
@@ -155,11 +155,9 @@ class UserRole(Base):
 
 class FriendRoleLink(Base):
     __tablename__ = 'friend_role_link'
-    first_u_id = Column(INTEGER, primary_key=True)
-    second_u_id = Column(INTEGER, primary_key=True)
+    first_u_id = Column(INTEGER, ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
+    second_u_id = Column(INTEGER, ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
     role_id = Column(INTEGER, ForeignKey("user_roles.id"), primary_key=True)
-    ForeignKeyConstraint(("first_u_id", "second_u_id"), ("friends.first_user_id", "friends.second_user_id"),
-                         ondelete="CASCADE")
 
 
 class UserPostRoleLink(Base):
@@ -170,8 +168,8 @@ class UserPostRoleLink(Base):
 
 class UserGroupLink(Base):
     __tablename__ = 'user_group_link'
-    user_id = Column(INTEGER, ForeignKey("users.id"), primary_key=True)
-    group_id = Column(INTEGER, ForeignKey("groups.id"), primary_key=True)
+    user_id = Column(INTEGER, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    group_id = Column(INTEGER, ForeignKey("groups.id", ondelete="CASCADE"), primary_key=True)
     # user_view_level = Column(INTEGER, nullable=False, default=4)
 
 
@@ -217,8 +215,9 @@ class GroupPost(Base):
 
 class UserChatLink(Base):
     __tablename__ = 'user_chat_link'
-    user_id = Column(INTEGER, ForeignKey("users.id"), primary_key=True)
-    chat_id = Column(INTEGER, ForeignKey("chats.id"), primary_key=True)
+    user_id = Column(INTEGER, ForeignKey("users.id", ondelete='CASCADE'), primary_key=True)
+    chat_id = Column(INTEGER, ForeignKey("chats.id", ondelete='CASCADE'), primary_key=True)
+    is_admin = Column(Boolean, nullable=False, default=False)
     is_muted = Column(Boolean, nullable=False, default=False)
     is_notified = Column(Boolean, nullable=False, default=False)
     last_visited = Column(DateTime, nullable=False, default=datetime.datetime.now())
@@ -230,8 +229,6 @@ class Chat(Base):
     chatname = Column(VARCHAR(128), nullable=False)
     avatar = Column(TEXT, default=os.path.join("..", "static", "img", "peoples.svg"))
     chat_color = Column(VARCHAR(7))
-    # TODO: перенести этот атрибут в таблицу многие ко многим
-    admin = Column(INTEGER, ForeignKey('users.id'))
     rules = Column(TEXT)
     is_dialog = Column(Boolean, nullable=False, default=False)
 
@@ -243,7 +240,6 @@ class Chat(Base):
         return {
             "id": self.id,
             "chatname": self.chatname,
-            "admin": self.admin,
             "rules": self.rules,
             "avatar": self.avatar,
             "user_count": len(self.users),

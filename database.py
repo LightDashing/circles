@@ -25,7 +25,7 @@ class DataBase:
             if not data:
                 raise Exception("Configure your settings file!")
             self.engine = create_engine(
-                f'postgresql://{data["username"]}:{data["password"]}@localhost/{data["schema"]}',
+                f'postgresql://{data["username"]}:{data["password"]}@{data["hostname"]}/{data["schema"]}',
                 **{"poolclass": QueuePool, "pool_size": 6, "max_overflow": 0,
                    "pool_timeout": 6})
             self.g_session = scoped_session(sessionmaker(self.engine))
@@ -68,18 +68,34 @@ class DataBase:
             else:
                 return False
 
-    def add_user(self, username, email, password):
+    def add_user(self, username, email, password) -> bool:
+        # TODO: Переписать UserAlreadyExist
         try:
             with self.conn_handler as session:
                 session.add(
                     User(username=username, email=email, password=self.ph.hash(password),
                          last_time_online=datetime.datetime.now(),
                          is_online=False))
+                self.conn_handler.commit_needed = True
             return True
         except UserAlreadyExist:
             return False
 
-    def login_user(self, email: str, password: str):
+    def delete_user(self, username: str) -> bool:
+        """
+        This function deletes user from database\n
+        :param username: string
+        :return: true if was successful, else false
+        """
+        with self.conn_handler as session:
+            st = delete(User).filter(User.username == username).returning(User.username)
+            if session.execute(st).scalar():
+                self.conn_handler.commit_needed = True
+                return True
+            else:
+                return False
+
+    def login_user(self, email: str, password: str) -> bool:
         with self.conn_handler as session:
             statement = select(User).filter(User.email == email)
             user = session.execute(statement).scalar()
@@ -236,7 +252,7 @@ class DataBase:
             self.conn_handler.commit_needed = True
 
     # TODO: доделать функцию
-    def update_all(self, userid):
+    def update_all(self, userid) -> dict[str, [str, int]]:
         updates = {}
         with self.conn_handler as session:
             # user = self.get_user(userid, True)
@@ -320,19 +336,23 @@ class DataBase:
         Returns user User.id by their name\n
         :param name: str, User.username
         :param scoped: bool, if true function will not create it's own scoped session and will use existing one
-        :return: int, User.id or None if there was no user
+        :return: int, User.id or -1 if there was no user
         """
         if scoped:
             statement = select(User).filter(User.username == name)
             user = self.conn_handler.sp_sess.execute(statement).scalar()
             if user:
                 return user.id
+            else:
+                return -1
 
         with self.conn_handler as session:
             statement = select(User).filter(User.username == name)
             user = session.execute(statement).scalar()
             if user:
                 return user.id
+            else:
+                return -1
 
     def get_name_by_userid(self, user_id: int, scoped: bool = False) -> str:
         """
@@ -427,31 +447,50 @@ class DataBase:
             self.conn_handler.commit_needed = True
         return True
 
-    def join_group(self, group_name: str, current_user: User):
+    def delete_group(self, owner_id: int, group_name: str) -> bool:
+        """
+        This function deletes group if there is a group with owner_id and group_name\n
+        :param owner_id: int, user.id of group owner
+        :param group_name: str, group.group_name
+        :return: True if deletion was successful, else False
+        """
+        with self.conn_handler as session:
+            st = delete(Group).filter((Group.group_name == group_name) & (Group.owner == owner_id)).returning(
+                Group.group_name)
+            deleted = session.execute(st).scalar()
+            if deleted:
+                self.conn_handler.commit_needed = True
+                return True
+            else:
+                return False
+
+    def join_group(self, group_name: str, current_user: User) -> bool:
         """
         This function get current user and add him to group\n
         :param group_name: str
         :param current_user: User class
-        :return: None
+        :return: True if success, else False
         """
         with self.conn_handler as session:
             statement = select(Group).filter(Group.group_name == group_name)
             group = session.execute(statement).scalar()
             group.users.append(current_user)
             self.conn_handler.commit_needed = True
+            return True
 
-    def leave_group(self, group_name: str, current_user: User):
+    def leave_group(self, group_name: str, current_user: User) -> bool:
         """
         This function get current user and deletes him from group users list\n
         :param group_name: str
         :param current_user: User class
-        :return: None
+        :return: True if success else False
         """
         with self.conn_handler as session:
             statement = select(Group).filter(Group.group_name == group_name)
             group = session.execute(statement).scalar()
             group.users.remove(current_user)
             self.conn_handler.commit_needed = True
+            return True
 
     def is_joined(self, group_name: str, current_user: User) -> bool:
         """
@@ -534,16 +573,37 @@ class DataBase:
     def create_chat(self, users: list, chat_name: str, admin: str, rules: str = "There is no rules!") -> int:
         admin_id = self.get_userid_by_name(admin)
         admin = self.get_user(admin_id)
-        chat = Chat(chatname=chat_name, admin=admin_id, rules=rules, chat_color="#d5d6db80")
-        chat.users.append(admin)
         with self.conn_handler as session:
             self.conn_handler.commit_needed = True
+            if len(users) < 3:
+                chat = self.create_dialog_chat(admin, users[0])
+                return chat.id
+            chat = Chat(chatname=chat_name, rules=rules, chat_color="#d5d6db")
             session.add(chat)
             for user in users:
                 user = self.get_user(self.get_userid_by_name(user, scoped=True), scoped=True)
-                if user:
+                if user.id == admin_id:
+                    session.add(UserChatLink(user_id=user.id, chat_id=chat.id, is_admin=True))
+                elif user:
                     chat.users.append(user)
             return chat.id
+
+    def delete_chat(self, admin_id: int, chat_id: int) -> bool:
+        """
+        This function deletes chat if there is chat with admin as admin_id and chat_id\n
+        :param admin_id: integer, user.id of admin user
+        :param chat_id: integer, chat.id
+        :return: True if deletion was successful, else False
+        """
+        with self.conn_handler as session:
+            st = select(UserChatLink).filter((UserChatLink.is_admin == True) & (UserChatLink.user_id == admin_id))
+            chat = session.execute(st).scalar()
+            if not chat:
+                return False
+            else:
+                self.conn_handler.commit_needed = True
+                delete(Chat).filter((Chat.id == chat_id))
+                return True
 
     def preload_messages(self, user_id: int, chat_id: int):
         with self.conn_handler as session:
@@ -633,7 +693,7 @@ class DataBase:
             attach.image_links = attach_array
         return attach
 
-    def send_message(self, user_id: int, chat_id: int, msg: str, pinned_images: list[str]) -> bool:
+    def send_message(self, user_id: int, chat_id: int, msg: str, pinned_images: list[str] = None) -> bool:
         with self.conn_handler as session:
             st = select(UserChatLink).filter((UserChatLink.user_id == user_id) & (UserChatLink.chat_id == chat_id))
             if not session.execute(st).scalar():
@@ -649,6 +709,24 @@ class DataBase:
             statement = update(UserChatLink).filter(UserChatLink.chat_id == chat_id).values(is_notified=False)
             session.execute(statement)
         return True
+
+    def delete_message(self, user_id: int, chat_id: int, message_id: int) -> bool:
+        """
+        This function deletes message that was sent by user\n
+        :param user_id: int, id of user who sent message
+        :param chat_id: int, id of chat where message is located
+        :param message_id: int, message id
+        :return: True if deletion was successful else False
+        """
+        with self.conn_handler as session:
+            st = delete(Message).filter((Message.from_user_id == user_id) & (Message.chat_id == chat_id) & (
+                    Message.id == message_id)).returning(Message.id)
+            msg = session.execute(st).scalar()
+            if msg:
+                self.conn_handler.commit_needed = True
+                return True
+            else:
+                return False
 
     # TODO: добавить ограничение на количество ролей в посте
     #  также нужно переработать этот код
@@ -800,7 +878,7 @@ class DataBase:
             else:
                 return friend.serialize
 
-    def change_friend_roles(self, user_id: int, friend_id: int, roles: list[dict]):
+    def change_friend_roles(self, user_id: int, friend_id: int, roles: list[dict]) -> bool:
         """
         This function changes roles that your friend have
         :param user_id: your id
@@ -834,14 +912,14 @@ class DataBase:
                     role_arr.append(role)
                 friend.first_user_roles = role_arr
             self.conn_handler.commit_needed = True
-            return
+            return True
 
-    def get_friend_roles(self, user_id: int, friend_id: int, all_roles: bool = False):
+    def get_friend_roles(self, user_id: int, friend_id: int, all_roles: bool = False) -> list:
         with self.conn_handler as session:
             statement = self.FRIEND_STATEMENT(user_id, friend_id)
             friend = session.execute(statement).scalar()
             if not friend:
-                return
+                return []
 
             if friend.first_user_id == user_id:
                 roles = friend.second_user_roles

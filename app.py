@@ -17,7 +17,8 @@ app.register_blueprint(api_bp, url_prefix='/api')
 with open("settings.json") as settings_file:
     data = json.load(settings_file)
     if data['first_time_loading']:
-        create_all(data["db_settings"]["username"], data["db_settings"]["password"], data["db_settings"]["schema"])
+        create_all(data["db_settings"]["username"], data["db_settings"]["password"], data["db_settings"]["hostname"],
+                   data["db_settings"]["schema"])
     data = data['app_settings']
 if data:
     app.config['SECRET_KEY'] = bytes(data['SECRET_KEY'], encoding='utf-8')
@@ -275,4 +276,4 @@ def logout():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, threaded=True)
+    app.run(host="0.0.0.0", debug=True, threaded=True)
