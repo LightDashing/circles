@@ -1,2 +1,6 @@
 docker/
 settings.json
+/Scripts/
+/venv/
+/__pycache__/
+/static/user_files/
