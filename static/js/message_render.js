@@ -5,12 +5,25 @@ function renderChatMessage(username, message) {
     } else {
         message_style = ""
     }
-    let element = `<div class="message-box" style="${message_style}">
+    let element = `<div class="message-box" id="message_${message["id"]}" style="${message_style}">
+        <div class="message-box-all">
             <img class="message-box-avatar" src="${message["user_avatar"]}" alt="user avatar">
             <div class="message-box-text">
-            <span class="from-user">${message["from_user_id"]}</span>
-            <span class="message-text">${message["message"]}</span>
-            </div>`
+                <span class="from-user">${message["from_user_id"]}</span>
+                <span class="message-text">${message["message"]}</span>
+            </div>
+            <span id="settings_${message["id"]}" class="message-settings material-icons"
+                          onclick="toggleMenu(${message["id"]})">more_horiz</span>
+            <div id="settings_context_${message["id"]}" class="message-settings-context">
+                <span class="message-settings-context-text"
+                              onclick="deleteMessage(${message["id"]}, ${message["chat_id"]})"><i
+                                class="material-icons">delete</i>Delete message</span>
+                <span class="message-settings-context-text" 
+                onclick="enableEditing(${message["id"]}, ${message["chat_id"]})"><i
+                                class="material-icons">edit</i>Edit message</span>
+            </div>
+        </div>`
+
     if (message["attachment"]) {
         element = appendAttachments(element, message)
     } else {

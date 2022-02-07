@@ -7,6 +7,7 @@
     <script type="text/javascript" src="{{ url_for("static", filename="chat.js") }}"></script>
     <script type="text/javascript" src="{{ url_for("static", filename="js/message_render.js") }}"></script>
     <script type="text/javascript" src="{{ url_for("static", filename="js/image_modal.js") }}"></script>
+    <script type="text/javascript" src="{{ url_for("static", filename="js/message_context.js") }}"></script>
 {% endblock %}
 {% block main_row %}
     <div id="image_modal" class="image-modal-window">
@@ -27,13 +28,15 @@
             {% if chat.is_dialog %}
                 {% for message in messages %}
                     {% if message.from_user_id == current_user.id %}
-                        <div class='message-box' style="align-self: end; background: #e3e4f8">
+                        <div class='message-box' id="message_{{ message.id }}"
+                             style="align-self: end; background: #e3e4f8">
                     {% else %}
-                        <div class='message-box'>
+                        <div class='message-box' id="message_{{ message.id }}">
                     {% endif %}
                 <div class="message-box-text">
                     <span class="message-text">{{ message.message }}</span>
                 </div>
+                <span class="message-settings material-icons">more_horiz</span>
                 {% if message.attachment %}
                     <span class="flex-break"></span>
                     <div class="message-pinned-images">
@@ -56,14 +59,28 @@
             {% else %}
                 {% for message in messages %}
                     {% if message.from_user_id == current_user.id %}
-                        <div class='message-box' style="align-self: end; background: #e3e4f8">
+                        <div class='message-box' id="message_{{ message.id }}"
+                             style="align-self: end; background: #e3e4f8">
                     {% else %}
-                        <div class='message-box'>
+                        <div class='message-box' id="message_{{ message.id }}">
                     {% endif %}
-                <img src="{{ message.user_avatar }}" class="message-box-avatar">
-                <div class="message-box-text">
-                    <span class="from-user">{{ get_username(message.from_user_id) }}</span>
-                    <span class="message-text">{{ message.message }}</span>
+                <div class="message-box-all">
+                    <img src="{{ message.user_avatar }}" class="message-box-avatar">
+                    <div class="message-box-text">
+                        <span class="from-user">{{ get_username(message.from_user_id) }}</span>
+                        <span class="message-text">{{ message.message }}</span>
+
+                    </div>
+                    <span id="settings_{{ message.id }}" class="message-settings material-icons"
+                          onclick="toggleMenu(parseInt({{ message.id }}))">more_horiz</span>
+                    <div id="settings_context_{{ message.id }}" class="message-settings-context">
+                        <span class="message-settings-context-text"
+                              onclick="deleteMessage(parseInt({{ message.id }}), parseInt({{ chat.id }}))"><i
+                                class="material-icons">delete</i>Delete message</span>
+                        <span class="message-settings-context-text"
+                              onclick="enableEditing(parseInt({{ message.id }}), parseInt({{ chat.id }}))"><i
+                                class="material-icons">edit</i>Edit message</span>
+                    </div>
                 </div>
                 {#                        TODO: картинки занимают лишнее место, исправить#}
                 {% if message.attachment %}
@@ -91,6 +108,7 @@
                 <label class="message-input-label">
                     <textarea id="message_{{ chat.id }}"></textarea>
                     <button class="new-button" style="margin: 0" id="send_message_{{ chat.id }}">Send</button>
+                    <button class="new-button" style="margin: 0; display: none" id="edit_message">Edit</button>
                 </label>
                 <div class="message-input-pinned" id="pinned-container">
 
@@ -134,7 +152,7 @@
             chat_id = {{ chat.id }}
         {% endif %}
 
-        $("#send_message_{{ chat.id }}").click(function () {
+        $("#send_message_{{ chat.id }}").click(function sendButton() {
             send_message($("#message_{{ chat.id }}").val(), "{{ current_user.username }}", "{{ chat.id }}")
         })
         update_messages("{{ current_user.username }}", "{{ chat.id }}", last_msg_time, "update")

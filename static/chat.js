@@ -15,6 +15,14 @@ $(function onReady() {
             addMoreContent(messages_loaded);
         }
     })
+    document.addEventListener("mousedown", function (e) {
+        if (!e.target.classList.contains("message-settings-context") && !$(e.target).parent()[0].classList.contains("message-settings-context")) {
+            let context_menu = document.getElementsByClassName("message-settings-context-displayed")
+            if (context_menu.length !== 0) {
+                toggleMenu(context_menu[0].id.split("_")[2])
+            }
+        }
+    })
     let image_modal_content = $("#image_modal_content")
     let image_modal = $("#image_modal")
     window.onclick = function (event) {
@@ -45,6 +53,23 @@ $(function onReady() {
 
 
 })
+
+function enableEditing(message_id, chat_id) {
+    let text_editor = $(`#message_${chat_id}`)
+    let edit_button = $(`#edit_message`)
+    let send_button = $(`#send_message_${chat_id}`)
+    if (send_button.css("display") === "none") {
+        return
+    }
+    send_button.css("display", "none")
+    edit_button.css("display", "inline")
+    edit_button.click(function () {
+        editMessage(message_id, chat_id, text_editor.val())
+        text_editor.val("")
+        edit_button.css("display", "none")
+        send_button.css("display", "inline")
+    })
+}
 
 function addMoreContent(old_msg_loader) {
     $.ajax({

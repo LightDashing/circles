@@ -1,12 +1,11 @@
 import datetime
 
-from flask import Flask, render_template, request, redirect, url_for, jsonify, g
+from flask import Flask, render_template, request, redirect, url_for
 from flask_hcaptcha import hCaptcha
 from flask_login import LoginManager, login_user, login_required, current_user, logout_user
-from database import DataBase, DBC
+from database import DBC
 from models import create_all
 from api.api import api_bp
-import re
 import json
 
 # from smtp_mail import Email
@@ -26,6 +25,7 @@ if data:
     app.config['MAX_CONTENT_LENGTH'] = data['MAX_CONTENT_LENGTH']
     app.config['HCAPTCHA_SITE_KEY'] = data['HCAPTCHA_SITE_KEY']
     app.config['HCAPTCHA_SECRET_KEY'] = data['HCAPTCHA_SECRET_KEY']
+    app.config['HCAPTCHA_ENABLED'] = False
 else:
     raise Exception("Configure your settings.json file!")
 hcaptcha = hCaptcha(app)
@@ -231,7 +231,7 @@ def login():
         email = request.form['email']
         password = request.form['pw1']
         if not DBC.login_user(email, password):
-            return render_template('login.html', error='dont_match')
+            return redirect(url_for('index', error='dont_match'))
         user_id = DBC.get_userid(email)
         user = DBC.get_user(user_id)
         login_user(user, remember=True)

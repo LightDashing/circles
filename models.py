@@ -63,7 +63,6 @@ class User(UserMixin, Base):
             "avatar": self.avatar,
             "status": self.status,
             "is_online": self.is_online,
-            "friends_count": len(self.friends),
             "last_time_online": self.last_time_online,
             "description": self.description
         }
@@ -267,7 +266,8 @@ class Message(Base):
             "user_avatar": self.sender.avatar.replace("\\", "\\\\"),
             "message_date": str(self.message_date),
             "message": self.message,
-            "attachment": [attach.serialize for attach in self.attachment]
+            "attachment": [attach.serialize for attach in self.attachment],
+            "chat_id": self.chat_id
         }
 
 

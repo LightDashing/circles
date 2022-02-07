@@ -6,29 +6,36 @@
     <script type="text/javascript" src="{{ url_for("static", filename="create_chat.js") }}"></script>
 {% endblock %}
 {% block main_row %}
-    {% if friends %}
-        <div class="create-chat">
+    <div class="create-chat">
+        {% if friends %}
             <label>Chat name
                 <input type="text" id="chat_name">
             </label>
             {% for friend in friends %}
                 <div class="create-chat-friend">
                     <!-- Сверху сначала должен быть аватар -->
-                    <a href="/users/{{ friend.username }}" id="friend_{{ loop.index - 1 }}">{{ friend.username }}</a>
-                    <button id="add_friend_{{ loop.index - 1 }}">Add friend</button>
-                    <button id="remove_friend_{{ loop.index - 1 }}">Remove friend</button>
+                    <div class="create-chat-friend user-info">
+                        <img src="{{ friend.avatar }}" class="create-chat-friend user-avatar" alt="user profile"
+                             onclick="location.href='{{ url_for("users_page", name=friend.username) }}'">
+                        <span onclick="location.href='{{ url_for("users_page", name=friend.username) }}'"
+                              class="create-chat-friend user-name"
+                              id="friend_{{ loop.index - 1 }}">{{ friend.username }}</span>
+                    </div>
+                    <button id="add_friend_{{ loop.index - 1 }}" class="new-button">Add friend</button>
+                    <button id="remove_friend_{{ loop.index - 1 }}" class="new-button">Remove friend</button>
                     <label>Is moderator</label>
                     <input type="checkbox" id='is_moderator_{{ loop.index - 1 }}'><br>
                 </div>
             {% endfor %}
-        </div>
-    {% else %}
-        <a>You don't have friends</a>
-    {% endif %}
-    <button id="create_chat" class="new-button">Create chat</button>
+
+        {% else %}
+            <a>You don't have friends</a>
+        {% endif %}
+        <button id="create_chat" class="new-button">Create chat</button>
+    </div>
 {% endblock %}
 {% block scripts %}
     <script>
-        init({{ current_user.friend_count }})
+        init({{ current_user.friends_count }})
     </script>
 {% endblock %}

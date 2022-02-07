@@ -11,3 +11,37 @@
     width: 50%;
 
 }
+
+.create-chat-friend {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.create-chat .new-button {
+    border: 1px solid;
+}
+
+.user-info {
+    display: flex;
+    gap: 5px;
+}
+
+.user-avatar {
+    height: 50px;
+    width: auto;
+    cursor: pointer;
+    border-radius: 15px;
+}
+
+.user-name {
+    cursor: pointer;
+}
+
+.create-chat input[type=text] {
+    border: 1px solid black;
+    border-radius: 15px;
+    padding: 7px;
+    font-size: 1rem;
+}
+

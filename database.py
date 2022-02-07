@@ -250,6 +250,7 @@ class DataBase:
             statement = update(User).filter(User.id == userid).values(avatar=filepath)
             session.execute(statement)
             self.conn_handler.commit_needed = True
+            return True
 
     # TODO: доделать функцию
     def update_all(self, userid) -> dict[str, [str, int]]:
@@ -575,7 +576,7 @@ class DataBase:
         admin = self.get_user(admin_id)
         with self.conn_handler as session:
             self.conn_handler.commit_needed = True
-            if len(users) < 3:
+            if len(users) < 2:
                 chat = self.create_dialog_chat(admin, users[0])
                 return chat.id
             chat = Chat(chatname=chat_name, rules=rules, chat_color="#d5d6db")
@@ -723,6 +724,18 @@ class DataBase:
                     Message.id == message_id)).returning(Message.id)
             msg = session.execute(st).scalar()
             if msg:
+                self.conn_handler.commit_needed = True
+                return True
+            else:
+                return False
+
+    def edit_message(self, user_id: int, chat_id: int, message_id: int, message_text: str):
+        with self.conn_handler as session:
+            st = update(Message).filter(
+                (Message.from_user_id == user_id) & (Message.chat_id == chat_id) & (Message.id == message_id)).values(
+                message=message_text)
+            rows_affected = session.execute(st).rowcount
+            if rows_affected > 0:
                 self.conn_handler.commit_needed = True
                 return True
             else:

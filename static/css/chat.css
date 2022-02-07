@@ -141,6 +141,40 @@ textarea {
     margin: auto;
 }
 
+.message-box-all {
+    display: flex;
+    width: 100%;
+    position: relative;
+}
+
+.message-settings {
+    margin-left: auto;
+    cursor: pointer;
+    user-select: none;
+}
+
+.message-settings-context-displayed {
+    display: flex !important;
+}
+
+.message-settings-context {
+    display: none;
+    left: 100%;
+    width: 8vw;
+    flex-direction: column;
+    position: absolute;
+    z-index: 2;
+    background: white;
+    border-radius: 15px;
+    padding: 5px;
+    gap: 7px;
+    align-items: flex-start;
+}
+
+.message-settings-context-text {
+    cursor: pointer;
+}
+
 html {
     overflow: -moz-scrollbars-vertical;
     overflow-y: scroll;

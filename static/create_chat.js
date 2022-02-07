@@ -1,10 +1,11 @@
-let usernames = []
+let usernames = [current_username]
 let admin = null
 let moderators = []
 let chat_name = null
 
 function init(friends_count) {
     admin = current_username
+    friends_count = $(".create-chat-friend").length
     for (let i = 0; i < friends_count; i++) {
         bind_button(i)
         bind_checkbox(i)
@@ -78,7 +79,7 @@ function create_chat(){
         alert("Enter chat name!")
     } else if (usernames.length < 2){
         // TODO: здесь нужно поменять на кнопку "перейти в диалог"
-        alert("Add friends to chat!")
+        alert("Add more friends to chat!")
     } else {
         console.log(chat_name)
         $.ajax({
@@ -92,8 +93,8 @@ function create_chat(){
             }),
             dataType: 'json',
             contentType: 'application/json',
-            success: function () {
-
+            success: function (data) {
+                location.href = `${window.location.origin}/chat/${data}`
             }
         })
     }

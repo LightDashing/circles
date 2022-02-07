@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, render_template
 from database import DataBase, DBC
-from flask_login import login_required, current_user
+from flask_login import login_required, current_user, logout_user
 from files import FileOperations
 import re
 
@@ -56,8 +56,10 @@ def add_friend():
     if request.method == 'POST':
         username = request.get_json()['name']
         result = DBC.add_friend(current_user.id, DBC.get_userid_by_name(username))
-        return jsonify(result)
+        return jsonify({"success": result})
 
+
+# TODO: сделать так, чтобы везде был одинаковый респонс
 
 @api_bp.route('/accept_friend', methods=['POST'])
 @login_required
@@ -73,8 +75,8 @@ def accept_friend():
 def cancel_request():
     if request.method == 'POST':
         username = request.get_json()['name']
-        DBC.remove_friend(current_user.id, DBC.get_userid_by_name(username))
-        return jsonify(True)
+        response = DBC.remove_friend(current_user.id, DBC.get_userid_by_name(username))
+        return jsonify({"success": response})
 
 
 @api_bp.route('/check_friend', methods=['POST'])
@@ -99,8 +101,8 @@ def send_message():
     data = request.get_json()
     cleaner = re.compile('<.*?>')
     message = re.sub(cleaner, '', data['message'])
-    DBC.send_message(current_user.id, data['chat_id'], message, data["pinned_images"])
-    return jsonify(True)
+    result = DBC.send_message(current_user.id, data['chat_id'], message, data["pinned_images"])
+    return jsonify(result)
 
 
 # Здесь должен быть GET
@@ -109,7 +111,7 @@ def send_message():
 def load_messages():
     data = request.get_json()
     if data['type'] == 'load':
-        user_messages = DBC.preload_messages(current_user.username, data['chat_id'])
+        user_messages = DBC.preload_messages(current_user.id, data['chat_id'])
     else:
         user_messages = DBC.update_messages(data['chat_id'], data['msg_time'], current_user.id)
     return jsonify(user_messages)
@@ -164,6 +166,8 @@ def upload_settings():
         image = data.get("image")
         fo = FileOperations(current_user.id)
         avatar = fo.save_image(image, 'avatar', current_user.avatar)
+        if not avatar:
+            return jsonify(False)
         response = DBC.change_avatar(current_user.id, avatar)
         return jsonify(response)
     username = str(request.form["username"])
@@ -184,6 +188,7 @@ def upload_settings():
     return jsonify(response)
 
 
+# TODO: при создании роли не учитывается цвет шрифта, пофиксить
 @api_bp.route('/create_role', methods=['POST'])
 @login_required
 def create_role():
@@ -255,3 +260,36 @@ def search_role():
 def still_online():
     DBC.update_last_time(current_user.id)
     return jsonify(True)
+
+
+@api_bp.route('/delete_message', methods=['DELETE'])
+@login_required
+def delete_message():
+    data = request.get_json()
+    result = DBC.delete_message(current_user.id, data["chat_id"], data["message_id"])
+    return jsonify(result)
+
+
+@api_bp.route('/edit_message', methods=['PATCH'])
+@login_required
+def edit_message():
+    data = request.get_json()
+    result = DBC.edit_message(current_user.id, data['chat_id'], data['message_id'], data['new_text'])
+    return jsonify(result)
+
+
+# Пока так, в будущем возможно удалить?
+@api_bp.route('/delete_profile', methods=['POST'])
+@login_required
+def delete_user():
+    value = DBC.delete_user(current_user.username)
+    logout_user()
+    return jsonify({"success": value})
+
+
+@api_bp.route('/delete_chat', methods=['DELETE'])
+@login_required
+def delete_chat():
+    data = request.get_json()
+    response = DBC.delete_chat(current_user.id, data["chat_id"])
+    return jsonify(response)

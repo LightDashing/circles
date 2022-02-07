@@ -25,6 +25,7 @@ class FileOperations:
     def compress_image(decoded_img):
         try:
             image = Image.open(io.BytesIO(decoded_img))
+            image = image.convert("RGB")
         except IOError:
             raise InvalidImageError
         if image.size[0] < 10 or image.size[1] < 10:
@@ -86,7 +87,10 @@ class FileOperations:
             return ""
         if filetype == 'avatar':
             if os.path.basename(old_avatar) != 'user-avatar.svg':
-                os.remove(old_avatar)
+                if old_avatar.find("\\") != -1:
+                    os.remove(old_avatar[old_avatar.find("\\") + 1:])
+                else:
+                    os.remove(old_avatar)
             return os.path.join("..", filepath)
         else:
             return os.path.join("..", filepath)
