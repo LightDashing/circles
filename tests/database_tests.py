@@ -104,7 +104,18 @@ class TestDataBase(unittest.TestCase):
         if not messages:
             raise AssertionError("Error loading chats")
 
-    def test_15_message_deletion(self):
+    def test_16_notification_getting(self):
+        user_id = self.DBC.get_userid_by_name("TestUser2")
+        chats = self.DBC.get_user_chats(user_id)
+        if not chats:
+            raise AssertionError("Error loading chats")
+        notifications = self.DBC.update_all_v2(user_id)
+        print(notifications)
+        # notification = self.DBC.get_chat_notification(user_id, chats[0]["id"])
+        # if not notification:
+        #     raise AssertionError("Can't load notification")
+
+    def test_17_message_deletion(self):
         user_id = self.DBC.get_userid_by_name("TestUser")
         chats = self.DBC.get_user_chats(user_id)
         if not chats:
@@ -112,30 +123,30 @@ class TestDataBase(unittest.TestCase):
         messages = self.DBC.preload_messages(user_id, chats[0]["id"])
         self.assertEqual(self.DBC.delete_message(user_id, chats[0]["id"], messages[0]["id"]), True)
 
-    def test_16_chat_deletion(self):
+    def test_18_chat_deletion(self):
         user_id = self.DBC.get_userid_by_name("TestUser3")
         chats = self.DBC.get_user_chats(user_id)
         if not chats:
             raise AssertionError("Error loading chats")
         self.assertEqual(self.DBC.delete_chat(user_id, chats[0]["id"]), True)
 
-    def test_17_group_creation(self):
+    def test_19_group_creation(self):
         user_id = self.DBC.get_userid_by_name("TestUser")
         self.assertEqual(self.DBC.create_group(user_id, "TestGroup", "No desc"), True)
 
-    def test_18_group_joining(self):
+    def test_20_group_joining(self):
         users = [self.DBC.get_user(self.DBC.get_userid_by_name(i)) for i in ["TestUser2", "TestUser3"]]
         self.assertEqual([self.DBC.join_group("TestGroup", i) for i in users], [True, True])
 
-    def test_19_is_joined(self):
+    def test_21_is_joined(self):
         user = self.DBC.get_user(self.DBC.get_userid_by_name("TestUser3"))
         self.assertEqual(self.DBC.is_joined("TestGroup", user), True)
 
-    def test_20_group_leave(self):
+    def test_22_group_leave(self):
         user = self.DBC.get_user(self.DBC.get_userid_by_name("TestUser2"))
         self.assertEqual(self.DBC.leave_group("TestGroup", user), True)
 
-    def test_21_group_deletion(self):
+    def test_23_group_deletion(self):
         user = self.DBC.get_userid_by_name("TestUser2")
         self.assertEqual(self.DBC.delete_group(user, "TestGroup"), False)
         owner_id = self.DBC.get_userid_by_name("TestUser")

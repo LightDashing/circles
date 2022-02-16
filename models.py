@@ -53,7 +53,7 @@ class User(UserMixin, Base):
     # user_friends = relationship("Friend", backref="id",cascade="all, delete-orphan")
     user_posts = relationship("UserPost", cascade="all, delete-orphan")
 
-    # notifications = relationship("Notification", cascade='all, delete')
+    notifications = relationship("Notification", cascade='all, delete-orphan')
 
     @property
     def serialize(self):
@@ -70,10 +70,12 @@ class User(UserMixin, Base):
 
 class Friend(Base):
     __tablename__ = 'friends'
+    id = Column(INTEGER, autoincrement=True, nullable=False, primary_key=True)
     first_user_id = Column(INTEGER, ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
     second_user_id = Column(INTEGER, ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
     is_request = Column(Boolean, nullable=False, default=True)
     is_checked = Column(Boolean, nullable=False, default=False)
+    is_notified = Column(Boolean, nullable=False, default=False)
     date_added = Column(DateTime, nullable=False, default=datetime.datetime.now())
 
     first_user = relationship("User", foreign_keys=[first_user_id])
@@ -125,12 +127,44 @@ class UserPost(Base):
         }
 
 
-# TODO: переделать систему уведомлений
-# class Notification(Base):
-#     __tablename__ = 'notifications'
-#     id = Column(INTEGER, primary_key=True, autoincrement=True)
-#     type = Column(TEXT, nullable=False)
-#     user = Column(INTEGER, ForeignKey("users.id", ondelete='CASCADE'), nullable=False)
+# TODO: Необходимы правки и тесты для новой системы уведомлений.
+class Notification(Base):
+    __tablename__ = 'notifications'
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
+    user_id = Column(INTEGER, ForeignKey("users.id", ondelete='CASCADE'), nullable=False)
+    is_read = Column(Boolean, nullable=False, default=False)
+    is_notified = Column(Boolean, nullable=False, default=False)
+
+    chat = relationship("Chat", secondary='notification_chat', cascade="all, delete", backref="notifications")
+
+    @property
+    def serialize(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "is_read": self.is_read,
+            "is_notified": self.is_notified,
+            "chat_id": self.chat[0].id if self.chat else 0,
+        }
+
+
+class NotificationChatLink(Base):
+    __tablename__ = 'notification_chat'
+    notification_id = Column(INTEGER, ForeignKey("notifications.id", ondelete='CASCADE'), primary_key=True)
+    chat_id = Column(INTEGER, ForeignKey("chats.id", ondelete='CASCADE'), primary_key=True)
+    message_count = Column(INTEGER, nullable=False, default=0)
+    last_visited = Column(DateTime, nullable=False, default=datetime.datetime.now())
+    is_muted = Column(Boolean, nullable=False, default=False)
+
+    @property
+    def serialize(self):
+        return {
+            "notification_id": self.notification_id,
+            "chat_id": self.chat_id,
+            "message_count": self.message_count,
+            "last_visited": self.last_visited,
+            "is_muted": self.is_muted
+        }
 
 
 class UserRole(Base):
@@ -140,6 +174,9 @@ class UserRole(Base):
     role_color = Column(VARCHAR(7), nullable=False, default="#eca7a7")
     font_color = Column(VARCHAR(7), nullable=False, default="#000000")
     creator = Column(INTEGER, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+
+    # can_post = Column(Boolean, nullable=False, default=False)
+    # who_can_see = Column(INTEGER, nullable=False, default=0)
 
     @property
     def serialize(self):

@@ -8,7 +8,7 @@ from argon2 import PasswordHasher
 import datetime
 import re
 from models import User, UserPost, Message, Friend, Chat, Group, GroupPost, UserChatLink, UserRole, \
-    ImageAttachment
+    ImageAttachment, Notification, NotificationChatLink
 from files import FileOperations
 from user_exceptions import UserAlreadyExist
 import json
@@ -252,7 +252,57 @@ class DataBase:
             self.conn_handler.commit_needed = True
             return True
 
-    # TODO: доделать функцию
+    def update_all_v2(self, user_id: int) -> dict[str, list[dict]]:
+        """
+        This function checks all chats for new messages and returns a dict, where in "chats" key lays all chats and
+        amount of messages in them and in "friends" key amount of new friends requests/n
+        :param user_id: Id of user, who getting updates
+        :return: dict {"chats":[{chat.id: message_amount}], "friends": new_requests_amount}
+        """
+        new_notifications = {"chats": []}
+        with self.conn_handler as session:
+            st = select(Chat).join(UserChatLink).filter(UserChatLink.user_id == user_id)
+            chats = session.execute(st).all()
+            for chat in chats:  # Part of the code that deals with amount of new messages and sets notification for them
+
+                # There we getting notification for this user and for this chat from list of all chats
+                st = select(Notification).filter(Notification.user_id == user_id).join(NotificationChatLink).filter(
+                    NotificationChatLink.chat_id == chat[0].id)
+                notification = session.execute(st).scalar()
+                # If user is already notified about new message, we skip this chat
+                if notification.is_notified:
+                    continue
+
+                # There we getting a link with chat and notification by their respective ids
+                st = select(NotificationChatLink).filter((NotificationChatLink.chat_id == chat[0].id) & (
+                        NotificationChatLink.notification_id == notification.id))
+                notification_link = session.execute(st).scalar()
+                # If chat is muted, or user right now uses chat, no need for updating him
+                if notification_link.is_muted or notification_link.last_visited == datetime.datetime.now():
+                    continue
+
+                # There we getting all messages that are new and from this chat and setting counter for them
+                st = select(Message).join(Chat).filter(
+                    (Chat.id == chat[0].id) & (Message.message_date > notification_link.last_visited))
+                messages = session.execute(st).all()
+                self.__set_msg_count_notification(notification.id, chat[0].id, len(messages), session)
+
+                # Adding chat to list of chats with updates
+                new_notifications["chats"].append({chat[0].id: len(messages)})
+                notification.is_notified = True
+
+            # This part of function updates all user friends and get all updates from them
+            st = select(Friend).filter((Friend.is_checked == False) & (Friend.second_user_id == user_id))
+            new_friends = session.execute(st).all()
+            for friend in new_friends:
+                st = update(Friend).filter(Friend.id == friend[0].id).values(is_notified=True)
+                session.execute(st)
+
+            new_notifications["friends"] = len(new_friends)
+            self.conn_handler.commit_needed = True
+        return new_notifications
+
+    # TODO: удалить и заменить везде где используется на update_all_v2
     def update_all(self, userid) -> dict[str, [str, int]]:
         updates = {}
         with self.conn_handler as session:
@@ -582,7 +632,9 @@ class DataBase:
             chat = Chat(chatname=chat_name, rules=rules, chat_color="#d5d6db")
             session.add(chat)
             for user in users:
-                user = self.get_user(self.get_userid_by_name(user, scoped=True), scoped=True)
+                user_id = self.get_userid_by_name(user, scoped=True)
+                user = self.get_user(user_id, scoped=True)
+                self.create_notification(user_id, chat.id, is_scoped=True, scoped_session=session)
                 if user.id == admin_id:
                     session.add(UserChatLink(user_id=user.id, chat_id=chat.id, is_admin=True))
                 elif user:
@@ -1031,6 +1083,66 @@ class DataBase:
             message = session.execute(statement).scalar()
             message.attachment.append(attach)
             self.conn_handler.commit_needed = True
+
+    def create_notification(self, user_id: int, chat_id: int, is_scoped: bool = False, scoped_session=None) -> bool:
+        """
+        This function creates notification with either chat_id.\n
+        :param is_scoped:
+        :param scoped_session:
+        :param user_id: Id of user to whom this notification belongs
+        :param chat_id: Id of chat to which this notification belongs
+        :return: True if creating was successful, else False
+        """
+        notification = Notification(user_id=user_id)
+        if is_scoped:
+            scoped_session.add(notification)
+            scoped_session.flush()
+            scoped_session.refresh(notification)
+            notification_link = NotificationChatLink(notification_id=notification.id, chat_id=chat_id)
+            scoped_session.add(notification_link)
+            self.conn_handler.commit_needed = True
+            return True
+        with self.conn_handler as session:
+            session.add(notification)
+            session.flush()
+            session.refresh(notification)
+            notification_link = NotificationChatLink(notification_id=notification.id, chat_id=chat_id)
+            session.add(notification_link)
+            self.conn_handler.commit_needed = True
+            return True
+
+    def get_chat_notification(self, user_id: int, chat_id: int) -> tuple[dict, dict]:
+        """
+        Gets Notification and NotificationChatLink by user id and chat id\n
+        :param user_id: User.id id of user
+        :param chat_id: Chat.id if of chat
+        :return: tuple, first dict is Notification object and second dict is NotificationChatLink object
+        """
+        with self.conn_handler as session:
+            st = select(Notification).filter(Notification.user_id == user_id).join(NotificationChatLink).filter(
+                NotificationChatLink.chat_id == chat_id)
+            notification = session.execute(st).scalar()
+
+            st = select(NotificationChatLink).filter((NotificationChatLink.chat_id == chat_id) & (
+                    NotificationChatLink.notification_id == notification.id))
+            notification_link = session.execute(st).scalar()
+            return notification.serialize, notification_link.serialize
+
+    @staticmethod
+    def __inc_msg_count_notification(notification_id: int, chat_id: int, message_count: int, session) -> int:
+        st = select(NotificationChatLink).filter((NotificationChatLink.chat_id == chat_id) & (
+                NotificationChatLink.notification_id == notification_id))
+        notification_link = session.execute(st).scalar()
+        notification_link.message_count += message_count
+        return notification_link.message_count
+
+    @staticmethod
+    def __set_msg_count_notification(notification_id: int, chat_id: int, message_count: int, session) -> int:
+        st = select(NotificationChatLink).filter((NotificationChatLink.chat_id == chat_id) & (
+                NotificationChatLink.notification_id == notification_id))
+        notification_link = session.execute(st).scalar()
+        notification_link.message_count = message_count
+        return notification_link.message_count
 
 
 DBC = DataBase()
