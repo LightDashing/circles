@@ -158,6 +158,18 @@ function update_messages(username, chat_id, last_msg_time, type) {
     // В зависимости от того чата, который загружен, будет заполнено #incoming_msg для необходимого чата
     let msg_time = last_msg_time;
     chat_id = parseInt(chat_id)
+    $.ajax({
+        url: '/api/update_all',
+        method: 'GET',
+        success: function (data) {
+            data["chats"].forEach(function (elem) {
+                if (elem["chat_id"] === chat_id) {
+                    Cookies.set("new_messages", parseInt(Cookies.get("new_messages")) - 1)
+                    setMessages(parseInt(Cookies.get("new_messages")))
+                }
+            })
+        }
+    })
     message_updater = window.setInterval(function () {
         $.ajax({
             url: '/api/load_messages',

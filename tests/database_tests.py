@@ -1,3 +1,4 @@
+import time
 import unittest
 from database import DBC
 import datetime
@@ -92,7 +93,7 @@ class TestDataBase(unittest.TestCase):
         if not messages:
             raise AssertionError("Message wasn't delivered")
 
-    def test_14_update_message(self):
+    def test_16_update_message(self):
         user_id = self.DBC.get_userid_by_name("TestUser2")
         chats = self.DBC.get_user_chats(user_id)
         if not chats:
@@ -104,16 +105,14 @@ class TestDataBase(unittest.TestCase):
         if not messages:
             raise AssertionError("Error loading chats")
 
-    def test_16_notification_getting(self):
+    def test_15_notification_getting2(self):
         user_id = self.DBC.get_userid_by_name("TestUser2")
         chats = self.DBC.get_user_chats(user_id)
         if not chats:
             raise AssertionError("Error loading chats")
-        notifications = self.DBC.update_all_v2(user_id)
-        print(notifications)
-        # notification = self.DBC.get_chat_notification(user_id, chats[0]["id"])
-        # if not notification:
-        #     raise AssertionError("Can't load notification")
+        notifications = self.DBC.update_all(user_id)
+        if notifications["chats"]:
+            raise AssertionError("Notifications doesn't work")
 
     def test_17_message_deletion(self):
         user_id = self.DBC.get_userid_by_name("TestUser")

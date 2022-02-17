@@ -252,25 +252,32 @@ class DataBase:
             self.conn_handler.commit_needed = True
             return True
 
-    def update_all_v2(self, user_id: int) -> dict[str, list[dict]]:
+    def update_all(self, user_id: int) -> dict[str, list[dict]]:
         """
         This function checks all chats for new messages and returns a dict, where in "chats" key lays all chats and
         amount of messages in them and in "friends" key amount of new friends requests/n
         :param user_id: Id of user, who getting updates
-        :return: dict {"chats":[{chat.id: message_amount}], "friends": new_requests_amount}
+        :return: dict {"chats":[{"message_amount": message_amount, "is_notified": bool, "chat_id": int}],
+        "friends": new_requests_amount}
         """
         new_notifications = {"chats": []}
         with self.conn_handler as session:
             st = select(Chat).join(UserChatLink).filter(UserChatLink.user_id == user_id)
             chats = session.execute(st).all()
             for chat in chats:  # Part of the code that deals with amount of new messages and sets notification for them
-
+                chat_info = {}
                 # There we getting notification for this user and for this chat from list of all chats
                 st = select(Notification).filter(Notification.user_id == user_id).join(NotificationChatLink).filter(
                     NotificationChatLink.chat_id == chat[0].id)
                 notification = session.execute(st).scalar()
-                # If user is already notified about new message, we skip this chat
+                # If user is already notified about new message, we set is_notified to True
                 if notification.is_notified:
+                    chat_info["is_notified"] = True
+                else:
+                    chat_info["is_notified"] = False
+
+                # if user right now is in chat or already opened it and was it's contents
+                if notification.is_read:
                     continue
 
                 # There we getting a link with chat and notification by their respective ids
@@ -278,7 +285,8 @@ class DataBase:
                         NotificationChatLink.notification_id == notification.id))
                 notification_link = session.execute(st).scalar()
                 # If chat is muted, or user right now uses chat, no need for updating him
-                if notification_link.is_muted or notification_link.last_visited == datetime.datetime.now():
+                if notification_link.is_muted or \
+                        notification_link.last_visited >= datetime.datetime.now() - datetime.timedelta(seconds=5):
                     continue
 
                 # There we getting all messages that are new and from this chat and setting counter for them
@@ -288,50 +296,30 @@ class DataBase:
                 self.__set_msg_count_notification(notification.id, chat[0].id, len(messages), session)
 
                 # Adding chat to list of chats with updates
-                new_notifications["chats"].append({chat[0].id: len(messages)})
+                chat_info["message_amount"] = len(messages)
+                chat_info["chat_id"] = chat[0].id
+                # ID is converted to str, because Flask jsonify doesn't work other way
+                new_notifications["chats"].append(chat_info)
                 notification.is_notified = True
 
             # This part of function updates all user friends and get all updates from them
             st = select(Friend).filter((Friend.is_checked == False) & (Friend.second_user_id == user_id))
             new_friends = session.execute(st).all()
+            is_not_notified = False
             for friend in new_friends:
-                st = update(Friend).filter(Friend.id == friend[0].id).values(is_notified=True)
-                session.execute(st)
+                if not friend.is_notified:
+                    is_not_notified = True
+                friend.is_notified = True
+                # st = update(Friend).filter(Friend.id == friend[0].id).values(is_notified=True)
+                # session.execute(st)
 
             new_notifications["friends"] = len(new_friends)
+            if is_not_notified:
+                new_notifications["new_friends"] = True
+            else:
+                new_notifications["new_friends"] = False
             self.conn_handler.commit_needed = True
         return new_notifications
-
-    # TODO: удалить и заменить везде где используется на update_all_v2
-    def update_all(self, userid) -> dict[str, [str, int]]:
-        updates = {}
-        with self.conn_handler as session:
-            # user = self.get_user(userid, True)
-
-            statement = select(Friend).filter((Friend.is_checked == False) & (Friend.second_user_id == userid))
-            friends = session.execute(statement).all()
-            friends_arr = []
-            for friend in friends:
-                friend = friend[0].serialize
-                friend["first_user_id"] = self.get_name_by_userid(friend["first_user_id"], True)
-                friends_arr.append(friend)
-            updates["friends"] = len(friends_arr)
-
-            statement = select(Message).join(Chat).join(UserChatLink).filter((UserChatLink.user_id == userid) &
-                                                                             (UserChatLink.is_muted != True) &
-                                                                             (UserChatLink.last_visited <
-                                                                              datetime.datetime.now()) &
-                                                                             (Message.message_date >
-                                                                              UserChatLink.last_visited) &
-                                                                             (UserChatLink.is_notified == False))
-
-            messages = session.execute(statement).all()
-            updates['messages'] = len(messages)
-
-            statement = update(UserChatLink).filter(UserChatLink.user_id == userid).values(is_notified=True)
-            session.execute(statement)
-            self.conn_handler.commit_needed = True
-            return updates
 
     def search_for(self, search_query: str, search_type: str = 'user') -> list[dict]:
         """
@@ -340,6 +328,7 @@ class DataBase:
         :param search_type: str, user or group
         :return: array of dicts, User.serialize
         """
+        users = []
         if search_type == 'user':
             with self.conn_handler as session:
                 query = select(User).filter(User.username.like(f"%{search_query}%"))
@@ -589,11 +578,11 @@ class DataBase:
                 if chat[0].is_dialog:
                     return chat[0].serialize
             # If there are chat where is_dialog is True, then it's right chat, else we create new
-            chat = self.create_dialog_chat(users[0], users[1])
+            chat = self.create_dialog_chat(users[0], users[1], session)
             self.conn_handler.commit_needed = True
         return chat
 
-    def create_dialog_chat(self, user: User, s_user: User) -> Chat:
+    def create_dialog_chat(self, user: User, s_user: User, session) -> Chat:
         """
         This function creates chat only for two users with "is_dialog" set to True, it's usual chat but in
         html it would be displayed as dialog\n
@@ -605,7 +594,9 @@ class DataBase:
                       avatar=os.path.join("static", "img", "two-peoples.svg"),
                       chat_color='#FFFFFF')
         # chatname isn't really matters because in html it would be displayed as friends name
-        self.conn_handler.sp_sess.add(dialog)
+        session.add(dialog)
+        self.create_notification(user.id, dialog.id, is_scoped=True, scoped_session=session)
+        self.create_notification(s_user.id, dialog.id, is_scoped=True, scoped_session=session)
         dialog.users.append(user), dialog.users.append(s_user)
         return dialog.serialize
 
@@ -714,10 +705,20 @@ class DataBase:
                 and_(Chat.id == chat_id, Message.message_date > msg_time))
             messages = session.execute(statement).all()
 
-            statement = update(UserChatLink).filter(
-                (UserChatLink.user_id == user_id) & (UserChatLink.chat_id == chat_id)).values(
-                last_visited=datetime.datetime.now())
-            session.execute(statement)
+            statement = select(NotificationChatLink).join(Notification).where(
+                (NotificationChatLink.chat_id == chat_id) & (
+                        Notification.user_id == user_id))
+
+            notification_chat = session.execute(statement).scalar()
+            notification_chat.last_visited = datetime.datetime.now()
+
+            statement = select(Notification).join(NotificationChatLink).where(
+                (NotificationChatLink.chat_id == chat_id) & (
+                        Notification.user_id == user_id))
+            notification = session.execute(statement).scalar()
+            notification.is_read = True
+
+            self.conn_handler.commit_needed = True
 
             all_messages = []
             if messages:
@@ -727,7 +728,6 @@ class DataBase:
                     all_messages.append(message)
             else:
                 return []
-            self.conn_handler.commit_needed = True
         return all_messages
 
     @staticmethod
@@ -759,8 +759,9 @@ class DataBase:
                 attach = self.create_attach(user_id, pinned_images)
                 message.attachment.append(attach)
             session.add(message)
-            statement = update(UserChatLink).filter(UserChatLink.chat_id == chat_id).values(is_notified=False)
-            session.execute(statement)
+
+            statement = update(Notification).filter(Chat.id == chat_id).values(is_notified=False, is_read=False)
+            session.execute(statement, execution_options=({"synchronize_session": 'fetch'}))
         return True
 
     def delete_message(self, user_id: int, chat_id: int, message_id: int) -> bool:

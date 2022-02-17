@@ -134,7 +134,13 @@ class TestServer(unittest.TestCase):
         if not r:
             raise AssertionError
 
-    def test_10_failed_message(self) -> None:
+    def test_10_get_updates(self) -> None:
+        self.login_user()
+        updates = self.session.get("http://127.0.0.1:5000/api/update_all").json()
+        if len(updates["chats"]) != 1:
+            raise AssertionError
+
+    def test_11_failed_message(self) -> None:
         self.login_user()
         r = self.session2.post("http://127.0.0.1:5000/api/send_message", json={
             "pinned_images": [],
@@ -173,7 +179,7 @@ class TestServer(unittest.TestCase):
         if not r.json():
             raise AssertionError
 
-    def test_12_delete_chat(self) -> None:
+    def test_97_delete_chat(self) -> None:
         self.login_user()
         chats = self.session.post("http://127.0.0.1:5000/api/load_chats").json()
         r = self.session.delete("http://127.0.0.1:5000/api/delete_chat", json={
