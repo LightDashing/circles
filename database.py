@@ -72,14 +72,31 @@ class DataBase:
         # TODO: Переписать UserAlreadyExist
         try:
             with self.conn_handler as session:
-                session.add(
-                    User(username=username, email=email, password=self.ph.hash(password),
-                         last_time_online=datetime.datetime.now(),
-                         is_online=False))
+                user = User(username=username, email=email, password=self.ph.hash(password),
+                            last_time_online=datetime.datetime.now(),
+                            is_online=False)
+                user.is_active = False
+                session.add(user)
                 self.conn_handler.commit_needed = True
             return True
         except UserAlreadyExist:
             return False
+
+    def set_user_active(self, user_name: str) -> bool:
+        """
+        This function sets user account active using his user name\n
+        :param user_name: user's User.username
+        :return: True if operation was successful, else False
+        """
+        user_id = self.get_userid_by_name(user_name)
+        with self.conn_handler as session:
+            st = select(User).where(User.id == user_id)
+            user = session.execute(st).scalar()
+            if not user:
+                return False
+            user.is_active = True
+            self.conn_handler.commit_needed = True
+            return True
 
     def delete_user(self, username: str) -> bool:
         """

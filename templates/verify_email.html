@@ -1,0 +1,18 @@
+<head>
+    <title>Circles</title>
+    <style>
+        html {
+            background: #f6f7fb;
+        }
+    </style>
+</head>
+<body>
+<h2>Hello! This is Circles team,</h2>
+<p>We glad that you chose our social network, but before we begin, you need to finish one more step</p>
+<p>Use this link to confirm your email and your account will be ready to go!</p>
+<a href="{{ url_for('confirm_email', token=token, _external=True) }}">Click on this</a>
+<p>If link isn't rendering, you can copy and paste this in your browser</p>
+{{ url_for('confirm_email', token=token, _external=True) }}
+<p>If you have not registered, ignore this email</p>
+<p>Best regards, Circles team</p>
+</body>

@@ -8,6 +8,32 @@
     <script src="//ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 </head>
 <body>
+{% if error == 'confirm_email' or error == 'account_error' %}
+    <div class="confirm-email-popup">
+        <div id="popup_modal" class="index-popup-modal">
+            <div id="popup_modal_content" class="index-popup-modal-content">
+                {% if error == 'confirm_email' %}
+                    <p>Confirm your email and then login, using your credentials</p>
+                    <p>If you didn't get any messages, check spam folder</p>
+                {% elif error == 'account_error' %}
+                    <p>Your account isn't active, you can't log in it</p>
+                    <p>Check your email for activation mail or for support messages</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <script>
+        let email_modal_content = $("#popup_modal_content")
+        let email_modal = $("#popup_modal")
+        window.onclick = function (event) {
+            if (event.target === email_modal[0]) {
+                email_modal_content.removeClass("showModal")
+                email_modal_content.addClass("hideModal")
+                setTimeout(() => email_modal.hide(), 250)
+            }
+        }
+    </script>
+{% endif %}
 <div class="left-text">
     {#        <img class="site-logo" src="/static/img/site-logo.png">#}
     <h1>InRole — Social network</h1>

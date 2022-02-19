@@ -31,6 +31,7 @@ class User(UserMixin, Base):
     is_online = Column(Boolean)
     # age = Column(SMALLINT)
     # email_active = Column(Boolean, nullable=False, default=False)
+    is_active = Column(Boolean, nullable=False, default=False)
     description = Column(VARCHAR(1024))
     status = Column(VARCHAR(30), nullable=False, default=' ')
     age = Column(INTEGER)

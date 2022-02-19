@@ -7,10 +7,8 @@ from database import DBC
 from models import create_all
 from api.api import api_bp
 import json
+from mail import send_verify_email, confirm_token
 
-# from smtp_mail import Email
-# from flask_mail import Message, Mail
-# import jwt
 app = Flask(__name__)
 app.register_blueprint(api_bp, url_prefix='/api')
 with open("settings.json") as settings_file:
@@ -25,17 +23,10 @@ if data:
     app.config['MAX_CONTENT_LENGTH'] = data['MAX_CONTENT_LENGTH']
     app.config['HCAPTCHA_SITE_KEY'] = data['HCAPTCHA_SITE_KEY']
     app.config['HCAPTCHA_SECRET_KEY'] = data['HCAPTCHA_SECRET_KEY']
-    app.config['HCAPTCHA_ENABLED'] = False
+    app.config['HCAPTCHA_ENABLED'] = True
 else:
     raise Exception("Configure your settings.json file!")
 hcaptcha = hCaptcha(app)
-# app.config['MAIL_SERVER'] = 'smtp.googlemail.com'
-# app.config['MAIL_PORT'] = 587
-# app.config['MAIL_USE_TLS'] = True
-# app.config['MAIL_USERNAME'] = 'add your mail'
-# app.config['MAIL_DEFAULT_SENDER'] = 'add your mail'
-# app.config['MAIL_PASSWORD'] = 'add your password'
-# email_app = Email(app)
 
 login_manager = LoginManager()
 login_manager.login_view = '/'
@@ -44,22 +35,6 @@ login_manager.blueprint_login_views = {
 }
 login_manager.init_app(app)
 
-
-# def get_reset_password_token(user_id, expires_in=600):
-#     return jwt.encode({'reset_password': user_id, 'exp':time() + expires_in}, app.secret_key, algorithm='HS256').decode('utf-8')
-
-# def verify_reset_password_token(token):
-#     try:
-#         id = jwt.decode(token, app.secret_key, algorithms=['HS256'])['reset_password']
-#     except:
-#         return
-#     return id
-
-
-# TODO: Авторизация переделана под login-manager однако необходимо добавить генерацию временной уникальной куки,
-#  чтобы нельзя было украсть сессию чужую и использовать её постоянно
-
-# TODO: ВАЖНО! Переделать все endpointы под flask blueprints, чтобы тут остались только респонсы на get'ы
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -121,10 +96,8 @@ def index():
         if not created:
             return render_template('index.html', error='already_exist')
         else:
-            userid = DBC.get_userid_by_name(name)
-            login_user(DBC.get_user(userid))
-            DBC.set_online(userid, True)
-        return redirect(url_for('users_page', name=name))
+            send_verify_email(app.secret_key, name, email)
+            return render_template('index.html', error='confirm_email')
 
 
 @app.route('/users/<string:name>', methods=['GET'])
@@ -236,6 +209,8 @@ def login():
         user = DBC.get_user(user_id)
         login_user(user, remember=True)
         DBC.set_online(user_id, True)
+        if not current_user.is_active:
+            return render_template('index.html', error="account_error")
         return redirect(url_for('users_page', name=current_user.username))
 
 
@@ -245,6 +220,18 @@ def logout():
     DBC.set_online(current_user.id, False)
     logout_user()
     return redirect(request.path)
+
+
+@app.route('/confirm_email/<token>', methods=['GET'])
+def confirm_email(token):
+    result = confirm_token(app.secret_key, token)
+    if result["confirmed"]:
+        result = DBC.set_user_active(result["user_name"])
+        if not result:
+            return render_template('404.html')
+        return render_template('index.html')
+    else:
+        return render_template('404.html')
 
 
 # @app.route('/reset', methods=['GET', 'POST'])

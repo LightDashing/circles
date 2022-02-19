@@ -12,5 +12,10 @@
     "schema": "postgres",
     "hostname": "postgres"
   },
+  "mailgun_settings": {
+    "private_api": "your api key",
+    "mail_api_address": "https://api.eu.mailgun.net/v3/your_domain/messages",
+    "from_mail": "mailgun@your_domain"
+  },
   "first_time_loading": true
 }
