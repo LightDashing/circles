@@ -1,0 +1,51 @@
+.all-groups {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 25px;
+}
+
+.all-groups > .new-button {
+    height: auto;
+}
+
+.group-entry {
+    display: flex;
+    gap: 10px;
+    padding: 15px;
+    border-radius: 25px;
+    align-items: center;
+}
+
+.group-entry:hover{
+    background: var(--object-hover-color);
+    cursor: pointer;
+}
+
+.group-entry > .new-button:hover {
+    background: var(--object-bg-color);
+}
+
+.group-entry-text{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 5px;
+}
+
+.group-name{
+    font-size: 1.3rem;
+}
+
+.group-name:hover{
+    cursor: pointer;
+}
+
+.group-entry > img {
+    width: 75px;
+    height: 75px;
+    border-radius: 30px;
+    cursor: pointer;
+}

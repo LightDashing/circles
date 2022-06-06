@@ -1,42 +1,93 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Create community</title>
-</head>
-<body>
-<div class="left-row">
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script>window.jQuery || document.write('<script src="{{
-  url_for('static', filename='jquery3.6.0.js') }}">\x3C/script>')</script>
-    <script type=text/javascript>
-        $SCRIPT_ROOT = {{ request.script_root|tojson }};
-    </script>
-    <script type="text/javascript" src="{{ url_for("static", filename="create_group.js") }}"></script>
-</div>
-<div class="main-row">
-    <label>Input your community name<br>
-        <input type="text" id="group_name">
-    </label>
-    <label>Input your community description<br>
-        <textarea id="group_description"></textarea>
-    </label>
-    <label>Input your community rules<br>
-        <textarea id="group_rules"></textarea>
-    </label>
-    <label>If you want, add some tags for your community<br>
-        <input type="text">
-    </label>
-    <button id="create_group">Create community</button>
-    {#    TODO: Добавить селектор тегов с поиском пофандомам#}
-</div>
-<div class="right-row">
-
-</div>
-<script>
-    $("#create_group").click(function () {
-        create_group($("#group_name").val(), $("#group_description").val(), $("#group_rules").val())
-    })
-</script>
-</body>
-</html>
+{% extends "layout.html" %}
+{% block title %}Create new group{% endblock %}
+{% block head %}
+    {{ super() }}
+    <script type="text/javascript"
+            src="{{ url_for("static", filename="node_modules/cropperjs/dist/cropper.js") }}"></script>
+    <link rel="stylesheet" href="{{ url_for("static", filename="node_modules/cropperjs/dist/cropper.css") }}">
+    <script type="text/javascript"
+            src="{{ url_for("static", filename="node_modules/jquery-cropper/dist/jquery-cropper.js") }}"></script>
+    <link href="/static/css/create_group.css" rel="stylesheet">
+    <script type="text/javascript" src="{{ url_for("static", filename="js/create_group.js") }}"></script>
+    <link type="text/css" rel="stylesheet" href="/static/css/settings.css">
+    <script type="text/javascript" src="{{ url_for("static", filename="js/image_cropper.js") }}"></script>
+{% endblock %}
+{% block main_row %}
+    <div class="change-avatar" id="set_avatar">
+            <div class="change-avatar-content" id="avatar-modal">
+                <span class="close" id="close_button">&times;</span>
+                <form class="avatar-form" method="post" enctype=multipart/form-data id="set-avatar">
+                    <input class="file-input" type="file" accept="image/png, image/jpeg" id="picture">
+                </form>
+                <div class="previews-column">
+                    <div class="item-preview-flex" id="item-preview-flex-big">
+                        <div class="preview" id="big-preview">
+                        </div>
+                    </div>
+                    <div class="item-preview-flex">
+                        <div class="preview" id="medium-preview">
+                        </div>
+                        <div class="preview" id="small-preview">
+                        </div>
+                    </div>
+                    <div class="control-buttons">
+                        <button class="new-button" style="display: none" id="crop_button" title="Crop"><i
+                                class="bi-crop"></i></button>
+                        <button class="new-button" style="display: none" id="move_button" title="Move"><i
+                                class="bi-arrows-move"></i></button>
+                        <div class="flex-break"></div>
+                        <button class="new-button" style="display: none" id="rotate_90_left" title="Rotate clockwise"><i
+                                class="bi-arrow-clockwise"></i></button>
+                        <button class="new-button" style="display: none" id="rotate_90_right"
+                                title="Rotate counterclockwise"><i class="bi-arrow-counterclockwise"></i></button>
+                        <div class="flex-break"></div>
+                        <button class="new-button" style="display: none" id="save_image" title="Save image"><i
+                                class="bi-upload"></i></button>
+                    </div>
+                </div>
+                <div class="crop-image" id="crop-image">
+                </div>
+            </div>
+        </div>
+    <div class="create-group-flex">
+        <div class="create-group">
+            <div class="group_name_input">
+                <input type="text" id="group_name">
+            </div>
+            <div class="group_name">
+                <label for="group_name">Group name</label>
+            </div>
+            <div class="group_summary_input">
+                <input type="text" id="group_summary">
+            </div>
+            <div class="group_summary">
+                <label for="group_summary">Group summary</label>
+            </div>
+            <div class="group_rules_input">
+                <textarea id="group_rules"></textarea>
+            </div>
+            <div class="group_rules">
+                <label for="group_rules">Group rules</label>
+            </div>
+            <div class="group_description_input">
+                <textarea id="group_description"></textarea>
+            </div>
+            <div class="group_description">
+                <label for="group_description">Group description</label>
+            </div>
+            <div class="group_avatar_input">
+                <button class="new-button" id="avatar_setter">Set avatar</button>
+            </div>
+            <div class="group_avatar">
+                <label for="group_avatar">Choose group avatar</label>
+            </div>
+        </div>
+        <div class="create-group-button-container">
+            <button id="create_group" class="new-button">Create group</button>
+        </div>
+    </div>
+{% endblock %}
+{% block right_row %}
+    {{ super() }}
+    {% block other_profile %}{% endblock %}
+{% endblock %}

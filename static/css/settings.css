@@ -34,7 +34,8 @@ textarea {
 .settings-input {
     padding: 5px;
     border-radius: 10px;
-    border: 1px solid #e3e9ff;
+    /*border: 1px solid #e3e9ff;*/
+    border: none;
     margin-top: 10px;
 }
 
@@ -84,7 +85,6 @@ textarea {
 }
 
 .settings-block.settings-block > .new-button {
-    border: 1px lightblue solid;
     padding: 2px 0;
     height: auto;
 }

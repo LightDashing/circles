@@ -1,0 +1,21 @@
+<div class="post">
+    <div class="post-header">
+        <img class="post-avatar" alt="User avatar" src="{{ get_user_avatar(post['user_id']) }}">
+        <a class="post-nick"
+           href="{{ url_for("users_page", name=get_username(post['user_id'])) }}"><b>{{ get_username(post['user_id']) }}</b></a>
+        <span class="post-date">posted at {{ formate_datetime(post['date_added']) }}</span><br>
+        <span class="material-icons" id="post-more">more_horiz</span>
+    </div>
+    <a class="post-message">{{ post['message'] }}</a>
+    <div class="post-pinned-images">
+        {% if post.attachment %}
+            {% for attach in post.attachment %}
+                {% for image in attach.links_array %}
+                    {% if image %}
+                        <img src="{{ image }}" class="post-pinned-image" alt="attach_img">
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>

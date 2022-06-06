@@ -2,12 +2,88 @@
 {% block title %}{{ group.group_name }}{% endblock %}
 {% block head %}
     {{ super() }}
+    <link type="text/css" rel="stylesheet" href="/static/css/userpage.css">
+    <link type="text/css" rel="stylesheet" href="/static/css/group.css">
     <script type="text/javascript" src="{{ url_for("static", filename="group.js") }}"></script>
 {% endblock %}
 {% block main_row %}
-    <h1 class="group-name">{{ group.group_name }}</h1>
-    <button id="join_b">Join community</button>
-    <button id="leave_b">Leave community</button>
+    <div class="group-card">
+        <div class="group-card-gradient">
+            <img alt="group avatar" src="{{ group.avatar }}">
+            <div class="group-card-text">
+                <span class="group-card-text-name">{{ group.group_name }}</span>
+                <span>{{ group.status }}</span>
+                <span class="small-text">Subscribers: {{ group.users_amount }}</span>
+                {% if current_user.id == group.owner %}
+                    <span class="small-text">You are owner of this group</span>
+                {% endif %}
+                <button id="join_b" class="tag-button-small">Join community</button>
+                <button id="leave_b" class="tag-button-small">Leave community</button>
+            </div>
+        </div>
+        <div class="group-card-description">
+            <span class="small-text">Group description:</span>
+            <span style="font-size: 1.2rem">{{ group.description }}</span>
+        </div>
+    </div>
+    <div class="group-rules">
+        <span class="small-text" style="margin-bottom: 1%">Group rules</span>
+        <span>{{ group.rules }}</span>
+    </div>
+    <span class="posts-span">Posts</span>
+    <div class="new-post">
+        <div style="flex: 1;" class="new-post-sub">
+            <label>
+                <textarea id="post-input" style="flex: 1"></textarea>
+            </label>
+            <div class="new-post-sub-pinned" id="pinned_container">
+            </div>
+            <div class="new-post-sub-tags">
+                <button class="tag-button-small" style="margin-right: 10px" id="is_anonymous">anonymous</button>
+            </div>
+        </div>
+        <div class="post-buttons">
+            <button class="new-button" id="make_post">Post</button>
+        </div>
+    </div>
+    <div class="posts">
+        {% if posts %}
+            {% for post in posts %}
+                <div class="post">
+                    <div class="post-header">
+                        {% if not post.is_anonymous or post.user_id == current_user.id%}
+                            <img class="post-avatar" alt="User avatar" src="{{ get_user_avatar(post.user_id) }}">
+                            <a class="post-nick"
+                               href="{{ url_for("users_page", name=get_username(post.user_id)) }}"><b>{{ get_username(post.user_id) }}</b></a>
+                            <span class="post-date">posted at {{ formate_datetime(post.date_added) }}</span><br>
+                            <span class="material-icons" id="post-more">more_horiz</span>
+                        {% else %}
+                            <img class="post-avatar" alt="User avatar" src="{{ group.avatar }}">
+                            <a class="post-nick"
+                               href="{{ url_for("group_page", group_name=group.group_name) }}"><b>{{ group.group_name }}</b></a>
+                            <span class="post-date">posted at {{ formate_datetime(post.date_added) }}</span><br>
+                            <span class="material-icons" id="post-more">more_horiz</span>
+                        {% endif %}
+                    </div>
+                    <span class="post-message">{{ post.message }}</span>
+                    <div class="post-pinned-images">
+                        {% if post.attachment %}
+                            {% for attach in post.attachment %}
+                                {% for image in attach.links_array %}
+                                    {% if image %}
+                                        <img src="{{ image }}" class="post-pinned-image" alt="attach_img">
+                                    {% endif %}
+                                {% endfor %}
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+    {#    <h1 class="group-name">{{ group.group_name }}</h1>#}
+    {#    <button id="join_b">Join community</button>#}
+    {#    <button id="leave_b">Leave community</button>#}
 {% endblock %}
 {% block scripts %}
     <script>
@@ -26,5 +102,6 @@
         leave_b.click(function () {
             leave("{{ group.group_name }}")
         })
+        const group_id = "{{ group.id }}"
     </script>
 {% endblock %}

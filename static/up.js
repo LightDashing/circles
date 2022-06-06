@@ -3,7 +3,7 @@ let pinned_num = 0
 
 function init(name) {
     //TODO: потом переделать, выглядит некрасиво
-    hide_all()
+    hideFriendsButtons()
     let create_post = $("#create_post")
     create_post.hide()
 
@@ -166,6 +166,14 @@ function init(name) {
         }
     }
 
+    function autoCloseAddModal(callback){
+        /* This function is waiting for add_role_modal window to close and then calls callback
+        * It was designed for role selector, if user closes modal window without creating role */
+        if (add_role_modal.css("display") === "none"){
+            callback()
+        }
+    }
+
     autosize(post_input)
     $('#roles_selector').selectize({
         plugins: ['remove_button'],
@@ -187,10 +195,11 @@ function init(name) {
             }
         },
         create: function createElement(input, callback) {
+            /* This function shows modal window for user to create new role and then sends it to server */
             showModalAddRoles()
             $("#role_name").val(input)
             let role_name, role_color, font_color
-            //TODO: при закрытии модального окна кликом в пустое место, каллбек не срабатывает и происходит нечто ужасное
+            setInterval(() => autoCloseAddModal(callback), 300)
             $("#pin_roles").click(function () {
                 let color_picker = document.querySelector("#role_color").jscolor
                 role_name = $("#role_name").val()
@@ -225,6 +234,7 @@ function init(name) {
     })
 
     $.ajax({
+        /* Setting friend buttons, if user is friend or not */
         url: '/api/check_friend',
         method: 'POST',
         data: JSON.stringify({'name': name}),
@@ -248,6 +258,7 @@ function init(name) {
 }
 
 function add_friend(name) {
+    /* This function sends request to add user to friends*/
     $.ajax({
         url: '/api/add_friend',
         method: 'POST',
@@ -262,6 +273,7 @@ function add_friend(name) {
 }
 
 function accept_request(name) {
+    /* This function sends request to accept friendship request */
     $.ajax({
         url: '/api/accept_friend',
         method: 'POST',
@@ -269,27 +281,29 @@ function accept_request(name) {
         dataType: 'json',
         contentType: 'application/json',
         success: function () {
-            hide_all()
+            hideFriendsButtons()
             $("#remove_friend").show()
         }
     });
 }
 
 function remove_friend(name) {
+    /* This function sends request to delete friend */
     $.ajax({
         url: '/api/remove_friend',
-        method: 'POST',
+        method: 'DELETE',
         data: JSON.stringify({'name': name}),
         dataType: 'json',
         contentType: 'application/json',
         success: function () {
-            hide_all()
+            hideFriendsButtons()
             $("#add_friend").show()
         }
     });
 }
 
-function hide_all() {
+function hideFriendsButtons() {
+    /* This function hides all buttons affiliated with friends system */
     $("#add_friend").hide();
     $("#remove_friend").hide();
     $("#decline_request").hide();
@@ -298,6 +312,7 @@ function hide_all() {
 }
 
 function publish_post(post_msg, where_id, is_private, roles, pinned_images) {
+    /* This function creates new post on user pge */
     $.ajax({
         url: '/api/publish_post',
         method: 'POST',

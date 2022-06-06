@@ -46,11 +46,10 @@
 .header-title {
     font-size: 1.4em;
     font-weight: 700;
-    margin-left: 3%;
 }
 
 .header-title > img {
-    width: 130px;
+    width: 250px;
     height: auto;
 }
 
@@ -283,6 +282,15 @@
     font-size: 0.8em;
     padding: 3px 8px;
     width: max-content;
+}
+
+.tag-button-small:hover{
+    cursor: pointer;
+    background: #c9cae2;
+}
+
+.tag-button-small:active{
+    background: #bbbde1;
 }
 
 .flex-break {

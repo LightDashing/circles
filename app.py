@@ -1,6 +1,6 @@
 import datetime
 
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_hcaptcha import hCaptcha
 from flask_login import LoginManager, login_user, login_required, current_user, logout_user
 from database import DBC
@@ -23,7 +23,7 @@ if data:
     app.config['MAX_CONTENT_LENGTH'] = data['MAX_CONTENT_LENGTH']
     app.config['HCAPTCHA_SITE_KEY'] = data['HCAPTCHA_SITE_KEY']
     app.config['HCAPTCHA_SECRET_KEY'] = data['HCAPTCHA_SECRET_KEY']
-    app.config['HCAPTCHA_ENABLED'] = True
+    app.config['HCAPTCHA_ENABLED'] = False
 else:
     raise Exception("Configure your settings.json file!")
 hcaptcha = hCaptcha(app)
@@ -96,7 +96,12 @@ def index():
         if not created:
             return render_template('index.html', error='already_exist')
         else:
-            send_verify_email(app.secret_key, name, email)
+            # TODO: пока не забыл!! сделать красивую обложку для друзей в друзьях пользователя, как в профиле
+            DBC.set_user_active(name)
+            userid = DBC.get_userid_by_name(name)
+            user = DBC.get_user(userid)
+            login_user(user, remember=True)
+            # send_verify_email(app.secret_key, name, email)
             return render_template('index.html', error='confirm_email')
 
 
@@ -121,19 +126,22 @@ def users_page(name):
 @app.route('/groups/<string:group_name>', methods=['GET'])
 def group_page(group_name):
     data = DBC.get_group_data(group_name)
+    group_posts = DBC.get_group_posts(None, group_name)[::-1]
     is_in_group = DBC.is_joined(group_name, current_user)
-    return render_template('group.html', group=data, joined=is_in_group)
+    return render_template('group.html', group=data, joined=is_in_group, posts=group_posts)
 
 
-@app.route('/create/group', methods=['GET', 'POST'])
+@app.route('/create_group', methods=['GET', 'POST'])
 @login_required
 def create_group():
     if request.method == 'POST':
         data = request.get_json()
-        DBC.create_group(current_user.username, data['group_name'], data['group_description'],
-                         data['group_rules'], data['group_tags'])
-        DBC.join_group(current_user.username, data['group_name'])
-        # TODO: редирект не работает? исправить
+        if data.get('group_avatar', None) is None:
+            data['group_avatar'] = None
+        DBC.create_group(current_user.id, data['group_name'], data['group_description'],
+                         data['group_summary'], data['group_avatar'])
+        DBC.join_group(data['group_name'], current_user)
+        print(url_for("group_page", group_name=data['group_name']))
         return redirect(url_for("group_page", group_name=data['group_name']))
     else:
         return render_template("create_group.html")
@@ -143,6 +151,7 @@ def create_group():
 @login_required
 def user_groups():
     user_subs = DBC.get_user_groups(current_user.id)
+    print(user_subs)
     return render_template('user_groups.html', groups=user_subs)
 
 
@@ -234,33 +243,5 @@ def confirm_email(token):
         return render_template('404.html')
 
 
-# @app.route('/reset', methods=['GET', 'POST'])
-# def reset():
-#     if request.method == 'POST':
-#         db = DBWork()
-#         email = request.form['email']
-#         id = db.get_user_data(db.get_user_nickname(email)).id
-#         token = get_reset_password_token(id)
-#         email_app.send_password_reset_email(token=token, user_id=id, email=email)
-#         return render_template('reset.html')
-#     else:
-#         return render_template('reset.html')
-#
-#
-# @app.route('/reset_password/<token>', methods=['GET', 'POST'])
-# def reset_password(token):
-#     db = DBWork()
-#     user_id = veryfy_reset_password_token(token)
-#     if not user_id:
-#         return render_template('404.html')
-#     if request.method == 'POST':
-#         new_password = request.form['pw']
-#         db.change_user_password(user_id, db.password_crypter(new_password))
-#         db.session.close()
-#         return render_template('index.html')
-#     else:
-#         return render_template('password_change.html')
-
-
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=True, threaded=True)
+    app.run(host="0.0.0.0", debug=True)

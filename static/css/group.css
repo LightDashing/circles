@@ -1,0 +1,61 @@
+.group-card{
+    display: flex;
+    /*align-items: center;*/
+    gap: 20%;
+}
+
+.group-card-gradient{
+    background: linear-gradient(90deg, rgba(206, 214, 231, 1) 4%, rgba(209, 218, 235, 1) 30%, rgba(246, 247, 251, 1) 63%);
+    padding: 30px;
+    border-radius: 55px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.group-card-text{
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: flex-start;
+    font-size: 1.1rem;
+}
+
+.group-card-text-name{
+    font-size: 1.8rem;
+}
+
+.group-card-gradient > img{
+    width: 150px;
+    height: 150px;
+    border-radius: 15px;
+}
+
+.group-card-description{
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+}
+
+.small-text{
+    font-size: 0.95rem;
+    color: var(--object-bg-text-color)
+}
+
+.group-rules{
+    margin-left: 10px;
+    padding-top: 3%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.posts-span{
+    margin-top: 1%;
+    margin-bottom: 1%;
+}
+
+.new-post-sub-tags {
+    margin-left: 10px;
+}

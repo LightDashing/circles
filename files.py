@@ -56,11 +56,12 @@ class FileOperations:
     def __init__(self, userid: int):
         self.userid = userid
         if not os.path.exists(self.SAVE_FOLDER):
-            os.mkdir(self.SAVE_FOLDER)
-            os.mkdir(os.path.join(self.SAVE_FOLDER, "attach"))
-            os.mkdir(os.path.join(self.SAVE_FOLDER, "avatar"))
+            os.makedirs(self.SAVE_FOLDER)
+            os.makedirs(os.path.join(self.SAVE_FOLDER, "attach"))
+            os.makedirs(os.path.join(self.SAVE_FOLDER, "avatar"))
+            os.makedirs(os.path.join(self.SAVE_FOLDER, "group"))
 
-    def save_image(self, file, filetype: str = 'attach', old_avatar: str = None) -> str:
+    def save_user_image(self, file, filetype: str = 'attach', old_avatar: str = None) -> str:
         """This is function to save files, it gets a base64-encoded image file and saves it either in \n
         ../avatar/<userid>/xyz.png or in ../attach/<userid>/xyz.png \n
         Name is generating using uuid1 with userid as node, returns one of the following codes:\n
@@ -80,17 +81,18 @@ class FileOperations:
         if os.path.exists(os.path.join(self.SAVE_FOLDER, filetype, str(self.userid))):
             image.save(filepath, optimize=True, quality=50)
         else:
-            os.mkdir(os.path.join(self.SAVE_FOLDER, filetype, str(self.userid)))
+            os.makedirs(os.path.join(self.SAVE_FOLDER, filetype, str(self.userid)))
             image.save(filepath, optimize=True, quality=50)
         if os.stat(filepath).st_size > self.MAX_SIZE:
             os.remove(filepath)
             return ""
         if filetype == 'avatar':
-            if os.path.basename(old_avatar) != 'user-avatar.svg':
-                if old_avatar.find("\\") != -1:
-                    os.remove(old_avatar[old_avatar.find("\\") + 1:])
-                else:
-                    os.remove(old_avatar)
+            if old_avatar:
+                if os.path.basename(old_avatar) != 'user-avatar.svg':
+                    if old_avatar.find("\\") != -1:
+                        os.remove(old_avatar[old_avatar.find("\\") + 1:])
+                    else:
+                        os.remove(old_avatar)
             return os.path.join("..", filepath)
         else:
             return os.path.join("..", filepath)
@@ -100,3 +102,36 @@ class FileOperations:
 
     def load_object(self, object_id):
         pass
+
+    def save_group_image(self, file, group_id: int, filetype: str = "group_attach", old_avatar: str = None) -> str:
+
+        if not self.is_allowed(self.get_file_extension(file)):
+            return ""
+        print(group_id)
+        image_name = f"{uuid.uuid1(group_id)}.{self.get_file_extension(file)}"
+        filepath = os.path.join(self.SAVE_FOLDER, filetype, str(group_id), image_name)
+        file = file[file.find(',') + 1:]
+        image = base64.decodebytes(file.encode())
+        try:
+            image = self.compress_image(image)
+        except InvalidImageError:
+            return ""
+
+        if os.path.exists(os.path.join(self.SAVE_FOLDER, filetype, str(group_id))):
+            image.save(filepath, optimize=True, quality=50)
+        else:
+            os.makedirs(os.path.join(self.SAVE_FOLDER, filetype, str(group_id)))
+            image.save(filepath, optimize=True, quality=50)
+        if os.stat(filepath).st_size > self.MAX_SIZE:
+            os.remove(filepath)
+            return ""
+        if filetype == 'group_avatar':
+            if old_avatar:
+                if os.path.basename(old_avatar) != 'peoples.svg':
+                    if old_avatar.find("\\") != -1:
+                        os.remove(old_avatar[old_avatar.find("\\") + 1:])
+                    else:
+                        os.remove(old_avatar)
+            return os.path.join("..", filepath)
+        else:
+            return os.path.join("..", filepath)

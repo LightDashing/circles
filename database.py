@@ -2,7 +2,7 @@ import argon2.exceptions
 from sqlalchemy import or_, and_, delete, select, update, inspect, desc
 from sqlalchemy.engine import create_engine
 from sqlalchemy.pool import NullPool, AssertionPool, QueuePool
-from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.orm import sessionmaker, scoped_session, Session
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from argon2 import PasswordHasher
 import datetime
@@ -43,8 +43,15 @@ class DataBase:
                     self.sp_sess.rollback()
                 finally:
                     self.g_session.remove()
+                    del self.sp_sess
+                    self.sp_sess = None
             else:
                 self.g_session.remove()
+                del self.sp_sess
+                self.sp_sess = None
+
+        def __del__(self):
+            self.g_session.remove()
 
     def __init__(self):
         self.conn_handler = self.ConnectionHandler()
@@ -269,6 +276,17 @@ class DataBase:
             self.conn_handler.commit_needed = True
             return True
 
+    def get_group_name(self, group_id: int, scoped=True):
+
+        if scoped:
+            statement = select(Group).filter(Group.id == group_id)
+            group = self.conn_handler.sp_sess.execute(statement).scalar()
+            return group.group_name
+        with self.conn_handler as session:
+            statement = select(Group).filter(Group.id == group_id)
+            group = session.execute(statement).scalar()
+            return group.group_name
+
     def update_all(self, user_id: int) -> dict[str, list[dict]]:
         """
         This function checks all chats for new messages and returns a dict, where in "chats" key lays all chats and
@@ -283,7 +301,7 @@ class DataBase:
             chats = session.execute(st).all()
             for chat in chats:  # Part of the code that deals with amount of new messages and sets notification for them
                 chat_info = {}
-                # There we getting notification for this user and for this chat from list of all chats
+                # There we're getting notification for this user and for this chat from list of all chats
                 st = select(Notification).filter(Notification.user_id == user_id).join(NotificationChatLink).filter(
                     NotificationChatLink.chat_id == chat[0].id)
                 notification = session.execute(st).scalar()
@@ -293,20 +311,20 @@ class DataBase:
                 else:
                     chat_info["is_notified"] = False
 
-                # if user right now is in chat or already opened it and was it's contents
+                # if user right now is in chat or already opened it and was its contents
                 if notification.is_read:
                     continue
 
-                # There we getting a link with chat and notification by their respective ids
+                # There we're getting a link with chat and notification by their respective ids
                 st = select(NotificationChatLink).filter((NotificationChatLink.chat_id == chat[0].id) & (
                         NotificationChatLink.notification_id == notification.id))
                 notification_link = session.execute(st).scalar()
                 # If chat is muted, or user right now uses chat, no need for updating him
                 if notification_link.is_muted or \
-                        notification_link.last_visited >= datetime.datetime.now() - datetime.timedelta(seconds=5):
+                        notification_link.last_visited >= datetime.datetime.now() - datetime.timedelta(seconds=20):
                     continue
 
-                # There we getting all messages that are new and from this chat and setting counter for them
+                # There we're getting all messages that are new and from this chat and setting counter for them
                 st = select(Message).join(Chat).filter(
                     (Chat.id == chat[0].id) & (Message.message_date > notification_link.last_visited))
                 messages = session.execute(st).all()
@@ -324,9 +342,9 @@ class DataBase:
             new_friends = session.execute(st).all()
             is_not_notified = False
             for friend in new_friends:
-                if not friend.is_notified:
+                if not friend[0].is_notified:
                     is_not_notified = True
-                friend.is_notified = True
+                friend[0].is_notified = True
                 # st = update(Friend).filter(Friend.id == friend[0].id).values(is_notified=True)
                 # session.execute(st)
 
@@ -338,7 +356,7 @@ class DataBase:
             self.conn_handler.commit_needed = True
         return new_notifications
 
-    def search_for(self, search_query: str, search_type: str = 'user') -> list[dict]:
+    def search_for(self, search_query: str) -> list[dict]:
         """
         This function search users by their name and then returns result with limit of 5 users\n
         :param search_query: str
@@ -346,14 +364,14 @@ class DataBase:
         :return: array of dicts, User.serialize
         """
         users = []
-        if search_type == 'user':
-            with self.conn_handler as session:
-                query = select(User).filter(User.username.like(f"%{search_query}%"))
-                result = session.execute(query).scalars().fetchmany(5)
-                users = [user.serialize for user in result]
+        with self.conn_handler as session:
+            query = select(User).filter(User.username.like(f"%{search_query}%"))
+            result = session.execute(query).scalars().fetchmany(5)
+            query_2 = select(Group).filter(Group.group_name.like(f"%{search_query}%"))
+            result_2 = session.execute(query_2).scalars().fetchmany(5)
+            users = [user.serialize for user in result]
+            users.extend([group.serialize for group in result_2])
         # TODO: сделать поиск по группам
-        else:
-            query = self.session.query().scalars()
         return users
 
     def search_role(self, search_query: str, user_id: int) -> list[dict]:
@@ -495,12 +513,21 @@ class DataBase:
                 groups.append(group.serialize)
             return groups
 
-    # TODO: переписать
-    def create_group(self, user_id: int, group_name: str, group_desc: str, group_rules: str = None):
+    def create_group(self, user_id: int, group_name: str, group_desc: str, group_summary: str, group_avatar: str = None,
+                     group_rules: str = None):
         with self.conn_handler as session:
-            session.add(
-                Group(group_name=group_name, owner=user_id, description=group_desc,
-                      rules=group_rules))
+            group = Group(group_name=group_name, owner=user_id, description=group_desc,
+                          status=group_summary,
+                          rules=group_rules)
+            session.add(group)
+            session.flush()
+            session.refresh(group)
+            if not group_avatar:
+                group_avatar = os.path.join("..", "static", "img", "peoples.svg")
+            else:
+                fo = FileOperations(user_id)
+                # group_avatar = fo.save_group_image(group_avatar, group_name, "group_avatar")
+                group.avatar = fo.save_group_image(group_avatar, group.id, "group_avatar")
             self.conn_handler.commit_needed = True
         return True
 
@@ -608,10 +635,12 @@ class DataBase:
         :return: created Chat object
         """
         dialog = Chat(chatname=f"{user.username} {s_user.username}", is_dialog=True,
-                      avatar=os.path.join("static", "img", "two-peoples.svg"),
+                      avatar=os.path.join("..", "static", "img", "two-peoples.svg"),
                       chat_color='#FFFFFF')
         # chatname isn't really matters because in html it would be displayed as friends name
         session.add(dialog)
+        session.flush()
+        session.refresh(dialog)
         self.create_notification(user.id, dialog.id, is_scoped=True, scoped_session=session)
         self.create_notification(s_user.id, dialog.id, is_scoped=True, scoped_session=session)
         dialog.users.append(user), dialog.users.append(s_user)
@@ -669,6 +698,24 @@ class DataBase:
     def preload_messages(self, user_id: int, chat_id: int):
         with self.conn_handler as session:
             # statement = update(UserChatLink).filter(UserChatLink.user_id == user_id).values(is_notified=True)
+
+            statement = select(NotificationChatLink).join(Notification).where(
+                (NotificationChatLink.chat_id == chat_id) & (
+                        Notification.user_id == user_id))
+
+            notification_chat = session.execute(statement).scalar()
+            notification_chat.last_visited = datetime.datetime.now()
+            notification_chat.message_count = 0
+
+            statement = select(Notification).join(NotificationChatLink).where(
+                (NotificationChatLink.chat_id == chat_id) & (
+                        Notification.user_id == user_id))
+            notification = session.execute(statement).scalar()
+            notification.is_read = True
+            notification.is_notified = True
+
+            self.conn_handler.commit_needed = True
+
             st = select(UserChatLink).filter((UserChatLink.user_id == user_id) & (UserChatLink.chat_id == chat_id))
             if not session.execute(st).scalar():
                 return []
@@ -734,6 +781,7 @@ class DataBase:
                         Notification.user_id == user_id))
             notification = session.execute(statement).scalar()
             notification.is_read = True
+            notification.is_notified = True
 
             self.conn_handler.commit_needed = True
 
@@ -748,16 +796,24 @@ class DataBase:
         return all_messages
 
     @staticmethod
-    def create_attach(user_id: int, pinned_images: list[str]) -> ImageAttachment:
+    def create_attach(user_id: int, pinned_images: list[str], group_id: int = None) -> ImageAttachment:
         files = FileOperations(user_id)
-        image = files.save_image(pinned_images[0])
+
+        if group_id:
+            image = files.save_group_image(pinned_images[0], group_id)
+        else:
+            image = files.save_user_image(pinned_images[0])
+
         attach = ImageAttachment(a1_link=image, date_added=datetime.datetime.now())
 
         if len(pinned_images) > 1:
             attach_array = []
             for i in range(1, 5):
                 try:
-                    attach_array.append(files.save_image(pinned_images[i]))
+                    if group_id:
+                        attach_array.append(files.save_group_image(pinned_images[i], group_id))
+                    else:
+                        attach_array.append(files.save_user_image(pinned_images[i]))
                 except IndexError:
                     break
             attach.image_links = attach_array
@@ -776,9 +832,17 @@ class DataBase:
                 attach = self.create_attach(user_id, pinned_images)
                 message.attachment.append(attach)
             session.add(message)
+            statement = select(Notification).join(NotificationChatLink).filter(NotificationChatLink.chat_id == chat_id)
+            notifications = session.execute(statement).all()
+            for notification in notifications:
+                notification[0].is_notified = False
+                notification[0].is_read = False
 
-            statement = update(Notification).filter(Chat.id == chat_id).values(is_notified=False, is_read=False)
-            session.execute(statement, execution_options=({"synchronize_session": 'fetch'}))
+            statement = select(Notification).join(NotificationChatLink).filter(
+                (Notification.user_id == user_id) & (NotificationChatLink.chat_id == chat_id))
+            notification = session.execute(statement).scalar()
+            notification.is_notified = True
+            notification.is_read = True
         return True
 
     def delete_message(self, user_id: int, chat_id: int, message_id: int) -> bool:
@@ -803,13 +867,28 @@ class DataBase:
         with self.conn_handler as session:
             st = update(Message).filter(
                 (Message.from_user_id == user_id) & (Message.chat_id == chat_id) & (Message.id == message_id)).values(
-                message=message_text)
+                message=message_text, edited=True)
             rows_affected = session.execute(st).rowcount
             if rows_affected > 0:
                 self.conn_handler.commit_needed = True
                 return True
             else:
                 return False
+
+    def publish_group_post(self, msg: str, user_id: int, group_id: int, pinned_images: list[str], is_anonymous: bool):
+        if not self.is_joined(self.get_group_name(group_id, False), self.get_user(user_id)):
+            return []
+        with self.conn_handler as session:
+            post = GroupPost(group_id=group_id, date_added=datetime.datetime.now(), posted_user_id=user_id,
+                             is_anonymous=is_anonymous, post_text=msg)
+            if pinned_images:
+                attach = self.create_attach(user_id, pinned_images, group_id)
+                post.attachment.append(attach)
+            session.add(post)
+            session.flush()
+            session.refresh(post)
+            self.conn_handler.commit_needed = True
+            return post.serialize
 
     # TODO: добавить ограничение на количество ролей в посте
     #  также нужно переработать этот код
@@ -846,12 +925,29 @@ class DataBase:
             session.execute(statement)
             self.conn_handler.commit_needed = True
 
-    def get_your_post(self, post_id, user_id):
+    def get_your_post(self, post_id: int, user_id: int):
         with self.conn_handler as session:
             statement = select(UserPost).filter(UserPost.id == post_id, UserPost.userid == user_id)
             post = session.execute(statement).scalar()
-            self.conn_handler.commit_needed = True
             return post.serialize
+
+    def get_group_post(self, post_id: int, user_id: int):
+        with self.conn_handler as session:
+            statement = select(GroupPost).filter(GroupPost.id == post_id, GroupPost.posted_user_id == user_id)
+            post = session.execute(statement).scalar()
+            return post.serialize
+
+    def get_group_posts(self, group_id: int, group_name: str = None):
+        with self.conn_handler as session:
+            if group_name:
+                statement = select(GroupPost).join(Group).filter(Group.group_name == group_name)
+            else:
+                statement = select(GroupPost).filter(GroupPost.group_id == group_id)
+            posts = session.execute(statement).all()
+            posts_a = []
+            for post in posts:
+                posts_a.append(post[0].serialize)
+            return posts_a
 
     def create_role(self, role_name: str, role_color: str, user_id: int):
         # TODO: добавить донаты для монетизации, максимальное кол-во ролей для обычного пользователя - 5

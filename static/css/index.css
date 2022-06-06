@@ -16,7 +16,7 @@
 .images-grid {
     display: grid;
     max-width: 100%;
-    gap: 10px;
+    gap: 25px;
 }
 
 .images-grid-main {
@@ -60,6 +60,7 @@
     border-radius: 15px;
     width: auto;
     height: auto;
+    max-width: 100%;
 }
 
 .images-grid-messages > img {
@@ -70,6 +71,7 @@
     border-radius: 15px;
     width: auto;
     height: auto;
+    max-width: 100%;
 }
 
 .images-grid-main > img {
@@ -80,6 +82,7 @@
     width: auto;
     height: auto;
     max-height: 500px;
+    max-width: 100%;
 }
 
 .images-grid-main > img:hover {

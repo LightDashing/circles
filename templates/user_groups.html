@@ -2,18 +2,29 @@
 {% block title %}Communities{% endblock %}
 {% block head %}
     {{ super() }}
+    <link href="/static/css/user_groups.css" rel="stylesheet">
+    <script type="text/javascript" src="{{ url_for("static", filename="js/user_groups.js") }}"></script>
 {% endblock %}
 {% block main_row %}
+    <div class="all-groups">
     {% if groups %}
         {% for group in groups %}
-            <div class="group-place">
-                <span class="group-avatar">{{ group.avatar }}</span>
-                <a class="group-name"
-                   href="{{ url_for("group_page", group_name=group.group_name) }}">{{ group.group_name }}</a><br>
-                <span class="group-status">{{ group.group_status }}</span>
+            <div class="group-entry" id="group_{{ group.id }}">
+                <img alt="group avatar" class="group-avatar" src="{{ group.avatar }}" onclick="location.href='{{ url_for("group_page", group_name=group.group_name) }}'">
+                <div class="group-entry-text" onclick="location.href='{{ url_for("group_page", group_name=group.group_name) }}'">
+                    <span class="group-name"
+                            onclick="location.href='{{ url_for("group_page", group_name=group.group_name) }}'">{{ group.group_name }}</span><br>
+                    <span class="group-status">{{ group.status }}</span>
+                    {% if current_user.id == group.owner %}
+                        <span>Subscribers: {{ group.users_amount }}</span>
+                    {% endif %}
+                </div>
+                <button class="new-button" onclick="leave_group('{{ group.group_name }}', '{{ group.id }}')">Leave group</button>
             </div>
         {% endfor %}
     {% endif %}
+    <button id="new-group" class="new-button" onclick="location.href='{{ url_for("create_group") }}'">Create new group</button>
+    </div>
 {% endblock %}
 {% block right_row %}
     {{ super() }}

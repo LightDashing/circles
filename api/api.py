@@ -19,12 +19,34 @@ def join_group():
     return jsonify(True)
 
 
-@api_bp.route('/leave_group', methods=['POST'])
+@api_bp.route('/leave_group', methods=['DELETE'])
 @login_required
 def leave_group():
     data = request.get_json()
     DBC.leave_group(data['group_name'], current_user)
+    print(data["group_name"])
     return jsonify(True)
+
+
+@api_bp.route("/publish_group_post", methods=["POST"])
+@login_required
+def publish_group_post():
+    data = request.get_json()
+    post_data = DBC.publish_group_post(data["message"], current_user.id, data["group_id"], data["pinned_images"],
+                                       data["is_anonymous"])
+    if not post_data:
+        return jsonify(False)
+    else:
+        return jsonify(post_data)
+
+
+@api_bp.route('/get_group_post', methods=["GET"])
+@login_required
+def get_group_post():
+    post_id = request.args.get("p_id")
+    post = DBC.get_group_post(post_id, current_user.id)
+    print(post)
+    return render_template("group_post_template.html", post=post)
 
 
 @api_bp.route('/publish_post', methods=['POST'])
@@ -45,7 +67,6 @@ def publish_post():
 @login_required
 def get_post():
     post_id = request.args.get("p_id")
-    print(post_id)
     post = DBC.get_your_post(post_id, current_user.id)
     return render_template('user_post_template.html', post=post)
 
@@ -70,10 +91,10 @@ def accept_friend():
         return jsonify(True)
 
 
-@api_bp.route('/remove_friend', methods=['POST'])
+@api_bp.route('/remove_friend', methods=['DELETE'])
 @login_required
 def cancel_request():
-    if request.method == 'POST':
+    if request.method == 'DELETE':
         username = request.get_json()['name']
         response = DBC.remove_friend(current_user.id, DBC.get_userid_by_name(username))
         return jsonify({"success": response})
@@ -138,7 +159,7 @@ def load_old_messages():
 def load_chat_template():
     chat_id = request.args.get('id')
     chat = DBC.get_chat_by_id(chat_id)
-    messages = DBC.preload_messages(current_user.username, chat_id)
+    messages = DBC.preload_messages(current_user.id, chat_id)
     return render_template("chat_template.html", chat=chat, messages=messages)
 
 
@@ -165,7 +186,7 @@ def upload_settings():
     if data:
         image = data.get("image")
         fo = FileOperations(current_user.id)
-        avatar = fo.save_image(image, 'avatar', current_user.avatar)
+        avatar = fo.save_user_image(image, 'avatar', current_user.avatar)
         if not avatar:
             return jsonify(False)
         response = DBC.change_avatar(current_user.id, avatar)

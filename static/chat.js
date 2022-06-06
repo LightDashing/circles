@@ -147,7 +147,8 @@ function send_message(message, user, chat_id) {
         dataType: 'json',
         contentType: 'application/json',
         success: function () {
-            $(`#message_${chat_id}`).val('');
+            $(`#message_area_${chat_id}`).val('');
+            $(`#pinned-container`).val(``);
         }
     })
 }
@@ -232,8 +233,7 @@ function changeChat(l_chat_id, chat_name) {
                 $(".message-input").css("height", `${input_height}px`)
             })
             $(`#send_message_${l_chat_id}`).click(function () {
-                send_message($(`#message_${l_chat_id}`).val(), current_username, l_chat_id);
-                $(`message_${l_chat_id}`).val("");
+                send_message($(`#message_area_${l_chat_id}`).val(), current_username, l_chat_id);
                 update_messages(current_username, l_chat_id, last_msg_time, "update");
             })
             if (!chat_list.includes(chat_name)) {

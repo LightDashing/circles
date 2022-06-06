@@ -238,6 +238,7 @@ class Group(Base):
             "owner": self.owner,
             "description": self.description,
             "rules": self.rules,
+            "users_amount": len(self.users)
         }
 
 
@@ -245,9 +246,27 @@ class GroupPost(Base):
     __tablename__ = 'group_posts'
     id = Column(INTEGER, primary_key=True, autoincrement=True)
     group_id = Column(INTEGER, ForeignKey('groups.id', ondelete='CASCADE'))
+    date_added = Column(DateTime, nullable=False, default=datetime.datetime.now())
+    posted_user_id = Column(INTEGER, ForeignKey('users.id'))
     post_text = Column(VARCHAR(), nullable=False)
+    is_anonymous = Column(Boolean, nullable=False, default=True)
 
     attachment = relationship('ImageAttachment', cascade="all, delete-orphan")
+    group = relationship("Group")
+
+    @property
+    def serialize(self):
+        return {
+            "id": self.id,
+            "group_id": self.group_id,
+            "group_name": self.group.group_name,
+            "user_id": self.posted_user_id,
+            "date_added": self.date_added,
+            "message": self.post_text,
+            "is_anonymous": self.is_anonymous,
+            "group_avatar": self.group.avatar,
+            "attachment": [attach.serialize for attach in self.attachment]
+        }
 
 
 class UserChatLink(Base):
@@ -292,6 +311,7 @@ class Message(Base):
     message_date = Column(DateTime, nullable=False, default=datetime.datetime.now())
     message = Column(TEXT, nullable=False)
     chat_id = Column(INTEGER, ForeignKey('chats.id', ondelete='CASCADE'), nullable=False)
+    edited = Column(Boolean, nullable=False, default=False)
 
     attachment = relationship('ImageAttachment', cascade="all, delete-orphan")
     sender = relationship('User', backref='message')

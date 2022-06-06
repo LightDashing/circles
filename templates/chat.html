@@ -25,38 +25,7 @@
     </div>
     <div class="all_messages">
         <div id="incoming_msg_{{ chat.id }}" class="incoming_msg" data-id="{{ chat.id }}">
-            {% if chat.is_dialog %}
-                {% for message in messages %}
-                    {% if message.from_user_id == current_user.id %}
-                        <div class='message-box' id="message_{{ message.id }}"
-                             style="align-self: end; background: #e3e4f8">
-                    {% else %}
-                        <div class='message-box' id="message_{{ message.id }}">
-                    {% endif %}
-                <div class="message-box-text">
-                    <span class="message-text">{{ message.message }}</span>
-                </div>
-                <span class="message-settings material-icons">more_horiz</span>
-                {% if message.attachment %}
-                    <span class="flex-break"></span>
-                    <div class="message-pinned-images">
-                        {% for attach in message.attachment %}
-                            {% for image in attach.links_array %}
-                                {% if image %}
-                                    <img src="{{ image }}" class="post-pinned-image" alt="attach_img"
-                                         onclick="showModalImage('image_modal', 'image_modal_content',
-                                                 '{{ format_backslash(image) }}', 'image_modal_content',
-                                                 '{{ attach.date_added }}', '{{ get_username(message.from_user_id) }}',
-                                                 '{{ format_backslash(message.user_avatar) }}')">
-                                {% endif %}
-                            {% endfor %}
-                        {% endfor %}
-                    </div>
-                {% endif %}
 
-                </div>
-                {% endfor %}
-            {% else %}
                 {% for message in messages %}
                     {% if message.from_user_id == current_user.id %}
                         <div class='message-box' id="message_{{ message.id }}"
@@ -102,11 +71,10 @@
 
                 </div>
                 {% endfor %}
-            {% endif %}
             </div>
             <div class="message-input">
                 <label class="message-input-label">
-                    <textarea id="message_{{ chat.id }}"></textarea>
+                    <textarea id="message_area_{{ chat.id }}"></textarea>
                     <button class="new-button" style="margin: 0" id="send_message_{{ chat.id }}">Send</button>
                     <button class="new-button" style="margin: 0; display: none" id="edit_message">Edit</button>
                 </label>
@@ -138,8 +106,8 @@
 {% endblock %}
 {% block scripts %}
     <script>
-        let last_msg_time
-        let first_msg_time
+        let last_msg_time;
+        let first_msg_time;
         let chat_id;
         {% if messages %}
             {% set l_item = messages|last %}
@@ -153,7 +121,7 @@
         {% endif %}
 
         $("#send_message_{{ chat.id }}").click(function sendButton() {
-            send_message($("#message_{{ chat.id }}").val(), "{{ current_user.username }}", "{{ chat.id }}")
+            send_message($("#message_area_{{ chat.id }}").val(), "{{ current_user.username }}", "{{ chat.id }}")
         })
         update_messages("{{ current_user.username }}", "{{ chat.id }}", last_msg_time, "update")
     </script>
