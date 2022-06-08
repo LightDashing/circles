@@ -312,6 +312,12 @@
     border-radius: 3px;
 }
 
+.heart {
+	 width: 25px;
+	 height: 25px;
+	 cursor: pointer;
+}
+
 html, body {
     background: var(--page-bg-color);
     font-family: 'Golos Text', sans-serif;

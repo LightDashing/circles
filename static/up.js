@@ -100,7 +100,7 @@ function init(name) {
             edit_role_name.prop('disabled', false)
             $("#edit_role_button").prop("disabled", false)
             $("#delete_role_button").prop("disabled", false)
-            changeRoleHandler(edit_role_color_picker, edit_role_name, $("#roles_selector"), value)
+            changeRoleHandler(edit_role_color_picker, edit_role_name, $("#can_post"), $("#roles_selector"), value)
         }
 
     })
@@ -114,7 +114,11 @@ function init(name) {
     })
 
     $("#make_post").click(function () {
-        let roles = $("#roles_selector")[0].selectize.getValue();
+        let role_selector = $("#roles_selector")
+        let roles = null
+        if (role_selector.length !== 0) {
+            roles = role_selector[0].selectize.getValue();
+        }
         let pinned_images = Array.from($(".pinned-image"));
         for (let i = 0; i < pinned_images.length; i++) {
             pinned_images[i] = pinned_images[i].src;
@@ -131,8 +135,9 @@ function init(name) {
         let selector = $("#edit_roles_selector")
         let old_role_name = selector[0].selectize.getValue()
         let role_name = $("#edit_role_name")
+        let can_post = document.getElementById("can_post").checked
         let color_picker = $("#edit_role_color")[0].jscolor
-        saveRoleHandler(selector, role_name, color_picker, function updateSelector(data) {
+        saveRoleHandler(selector, role_name, color_picker, can_post, function updateSelector(data) {
             $("#roles_selector")[0].selectize.updateOption(old_role_name, {
                 role_name: data["role_name"],
                 role_color: data["role_color"],

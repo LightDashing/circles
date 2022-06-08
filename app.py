@@ -6,6 +6,7 @@ from flask_login import LoginManager, login_user, login_required, current_user, 
 from database import DBC
 from models import create_all
 from api.api import api_bp
+from functools import reduce
 import json
 from mail import send_verify_email, confirm_token
 
@@ -63,7 +64,7 @@ def utility_processor():
         return datetime.datetime.now()
 
     def get_dialog_name(full_name):
-        return full_name.replace(current_user.username, "")
+        return full_name.replace(current_user.username, "").strip()
 
     def format_backslash(backslash_str):
         return backslash_str.replace('\\', '\\\\')
@@ -107,28 +108,38 @@ def index():
 
 @app.route('/users/<string:name>', methods=['GET'])
 def users_page(name):
+    can_post = False
     if current_user.is_anonymous:
         user_roles = []
-        posts = DBC.get_posts_by_id(name, user_roles)
+        posts = DBC.get_posts_by_id(name, -1, user_roles)
     elif name != current_user.username:
         user_roles = DBC.get_friend_roles(DBC.get_userid_by_name(name), current_user.id)
         if user_roles:
+            can_post = reduce(lambda x, y: x or y, [role["can_post"] for role in user_roles])
             user_roles = [role['role_name'] for role in user_roles]
-            posts = DBC.get_posts_by_id(name, user_roles)
+            posts = DBC.get_posts_by_id(name, current_user.id, user_roles)
         else:
-            posts = DBC.get_posts_by_id(name, [])
+            posts = DBC.get_posts_by_id(name, current_user.id, [])
     else:
+        can_post = True
         posts = DBC.get_your_posts(current_user.id)
     user = DBC.userdata_by(DBC.get_userid_by_name(name))
-    return render_template('user.html', name=name, posts=posts, user=user)
+    return render_template('user.html', name=name, posts=posts, user=user, can_post=can_post)
 
 
 @app.route('/groups/<string:group_name>', methods=['GET'])
 def group_page(group_name):
     data = DBC.get_group_data(group_name)
-    group_posts = DBC.get_group_posts(None, group_name)[::-1]
+    group_posts = DBC.get_group_posts(None, current_user.id, group_name)[::-1]
     is_in_group = DBC.is_joined(group_name, current_user)
     return render_template('group.html', group=data, joined=is_in_group, posts=group_posts)
+
+
+@app.route('/feed', methods=['GET'])
+@login_required
+def feed_page():
+    posts_list = DBC.get_user_feed(current_user.id)
+    return render_template("feed.html", posts=posts_list)
 
 
 @app.route('/create_group', methods=['GET', 'POST'])

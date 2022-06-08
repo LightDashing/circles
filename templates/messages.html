@@ -3,13 +3,18 @@
 {% block head %}
     {{ super() }}
     <link type="text/css" rel="stylesheet" href="/static/css/messages.css">
+    <script type="text/javascript" src="{{ url_for("static", filename="js/messages.js") }}"></script>
 {% endblock %}
 {% block main_row %}
     <h1 style="text-align: left; margin-bottom: 30px">Your messages</h1>
     <div class="all-chats">
         {% for chat in chats %}
-            <div class="chat-box" style="background: {{ chat.chat_color }}">
-                <img src="{{ chat.avatar }}" alt="chat-avatar">
+            <div class="chat-box" style="background: {{ chat.chat_color }}" id="chat_box_{{ chat.id }}">
+                {% if chat.is_dialog %}
+                    <img class="chat-avatar" src="{{ get_user_avatar(username=get_dialog_name(chat.chatname)) }}" alt="chat-avatar">
+                {% else %}
+                    <img class="chat-avatar" src="{{ chat.avatar }}" alt="chat-avatar">
+                {% endif %}
                 <div class="chat-box-info">
                     <span class="chat-box-info-d-name">{{ get_dialog_name(chat.chatname) }}</span>
                     {% if not chat.is_dialog %}
@@ -23,7 +28,7 @@
                         Write
                     </button>
                     {% if not chat.is_dialog %}
-                        <button class="new-button">Leave</button>
+                        <button class="new-button" id="leave_{{ chat.id }}" onclick="leave_chat('{{ chat.id }}')">Leave</button>
                     {% endif %}
                 </div>
             </div>

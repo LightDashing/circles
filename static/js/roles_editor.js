@@ -1,4 +1,4 @@
-function changeRoleHandler(color_picker, name_picker, role_selector, value) {
+function changeRoleHandler(color_picker, name_picker, can_post_checkbox, role_selector, value) {
     let options = role_selector[0].selectize.options
     try {
         name_picker.val(options[value]["role_name"])
@@ -7,6 +7,7 @@ function changeRoleHandler(color_picker, name_picker, role_selector, value) {
         return
     }
     color_picker.jscolor.fromString(options[value]["role_color"])
+    can_post_checkbox.prop("checked", options[value]["can_post"])
     color_picker.jscolor.onInput = function () {
         let edit = $(`#edit_${options[value]["id"]}`)
         edit.css("background", `${color_picker.jscolor.toHEXString()}`)
@@ -39,7 +40,7 @@ function deleteRoleHandler(selector, callback) {
     return value
 }
 
-function saveRoleHandler(selector, role_name, color_picker, callback) {
+function saveRoleHandler(selector, role_name, color_picker, can_post, callback) {
     let role_id = selector[0].selectize.options[selector[0].selectize.getValue()]["id"]
     let old_role_name = selector[0].selectize.getValue()
     let role_color = color_picker.toHEXString()
@@ -52,7 +53,8 @@ function saveRoleHandler(selector, role_name, color_picker, callback) {
                 role_name: role_name.val(),
                 role_color: role_color,
                 font_color: font_color,
-                role_id: role_id
+                role_id: role_id,
+                can_post: can_post
             }),
             dataType: 'json',
             contentType: 'application/json',

@@ -1,0 +1,72 @@
+{% extends "layout.html" %}
+{% block title %}Feed{% endblock %}
+{% block head %}
+    {{ super() }}
+    <link type="text/css" rel="stylesheet" href="/static/css/userpage.css">
+    {#    <link href="/static/css/create_chat.css" rel="stylesheet">#}
+    <script type="text/javascript" src="{{ url_for("static", filename="/js/like.js") }}"></script>
+{% endblock %}
+{% block main_row %}
+    <h1 style="text-align: left;margin-bottom: 30px;"> News feed</h1>
+    <div class="posts">
+        {% if posts %}
+            {% for post in posts %}
+                <div class="post">
+                    <div class="post-header">
+                        {% if post.whereid %}
+                            <img class="post-avatar" alt="User avatar" src="{{ get_user_avatar(post.user_id) }}">
+                            <a class="post-nick"
+                               href="{{ url_for("users_page", name=get_username(post.user_id)) }}"><b>{{ get_username(post.user_id) }}</b></a>
+                            <span class="post-date">posted at {{ formate_datetime(post.date_added) }}</span><br>
+                        {% else %}
+                            <img class="post-avatar" alt="User avatar" src="{{ post.group_avatar }}">
+                            <a class="post-nick"
+                               href="{{ url_for("group_page", group_name=post.group_name) }}"><b>{{ post.group_name }}</b></a>
+                            <span class="post-date">posted at {{ formate_datetime(post.date_added) }}</span><br>
+                        {% endif %}
+                    </div>
+                    <span class="post-message">{{ post.message }}</span>
+                    <div class="post-pinned-images">
+                        {% if post.attachment %}
+                            {% for attach in post.attachment %}
+                                {% for image in attach.links_array %}
+                                    {% if image %}
+                                        <img src="{{ image }}" class="post-pinned-image" alt="attach_img">
+                                    {% endif %}
+                                {% endfor %}
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    <div class="likes-div">
+                        {% if post.whereid %}
+                            {% if post.liked %}
+                                <img id="likes_u_{{ post.id }}" class="heart liked" alt="like"
+                                     src="/static/img/like_fill_red.svg"
+                                     onclick="like('{{ post.id }}', 'u')">
+                            {% else %}
+                                <img id="likes_u_{{ post.id }}" class="heart" alt="like" src="/static/img/like_fill.svg"
+                                     onclick="like('{{ post.id }}', 'u')">
+                            {% endif %}
+                            <span id="likes_amount_u_{{ post.id }}">{{ post.likes }}</span>
+                        {% else %}
+                            {% if post.liked %}
+                                <img id="likes_g_{{ post.id }}" class="heart liked" alt="like"
+                                     src="/static/img/like_fill_red.svg"
+                                     onclick="like('{{ post.id }}', 'g')">
+                            {% else %}
+                                <img id="likes_g_{{ post.id }}" class="heart" alt="like" src="/static/img/like_fill.svg"
+                                     onclick="like('{{ post.id }}', 'g')">
+                            {% endif %}
+                            <span id="likes_amount_g_{{ post.id }}">{{ post.likes }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+{% endblock %}
+{% block scripts %}
+    <script>
+
+    </script>
+{% endblock %}

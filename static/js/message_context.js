@@ -23,6 +23,7 @@ function deleteMessage(message_id, chat_id) {
 
 function editMessage(message_id, chat_id, new_text) {
     let message = $(`#message_${message_id}`)
+    console.log(new_text)
     $.ajax({
         url: '/api/edit_message',
         method: 'PATCH',

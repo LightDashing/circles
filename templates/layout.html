@@ -35,7 +35,7 @@
 <div class="header">
     <div class="header-content">
         <span class="header-title"><img src="../static/img/site-logo.png" alt="site logo"></span>
-        <span class="header-label">role-based social network</span>
+        <span class="header-label">manage your social circles</span>
         <div class="dropdown-container">
             <label class="search-label">
                 <input type="text" placeholder="search for users" id="search_users">
@@ -74,6 +74,9 @@
             </button>
             <button class="new-button" id="groups" onclick="location.href='{{ url_for("user_groups") }}'"><i
                     class="material-icons-round">people_outline</i> Communities
+            </button>
+            <button class="new-button" id="groups" onclick="location.href='{{ url_for("feed_page") }}'"><i
+                    class="material-icons">newspaper</i> Feed
             </button>
         {% endif %}
     {% endblock %}

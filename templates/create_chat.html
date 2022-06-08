@@ -2,15 +2,63 @@
 {% block title %}Create chat{% endblock %}
 {% block head %}
     {{ super() }}
+    <script type="text/javascript"
+            src="{{ url_for("static", filename="node_modules/cropperjs/dist/cropper.js") }}"></script>
+    <link rel="stylesheet" href="{{ url_for("static", filename="node_modules/cropperjs/dist/cropper.css") }}">
+    <script type="text/javascript"
+            src="{{ url_for("static", filename="node_modules/jquery-cropper/dist/jquery-cropper.js") }}"></script>
+    <link href="/static/css/create_group.css" rel="stylesheet">
+    <link type="text/css" rel="stylesheet" href="/static/css/settings.css">
+    <script type="text/javascript" src="{{ url_for("static", filename="js/image_cropper.js") }}"></script>
     <link href="/static/css/create_chat.css" rel="stylesheet">
     <script type="text/javascript" src="{{ url_for("static", filename="create_chat.js") }}"></script>
 {% endblock %}
 {% block main_row %}
+    <div class="change-avatar" id="set_avatar">
+            <div class="change-avatar-content" id="avatar-modal">
+                <span class="close" id="close_button">&times;</span>
+                <form class="avatar-form" method="post" enctype=multipart/form-data id="set-avatar">
+                    <input class="file-input" type="file" accept="image/png, image/jpeg" id="picture">
+                </form>
+                <div class="previews-column">
+                    <div class="item-preview-flex" id="item-preview-flex-big">
+                        <div class="preview" id="big-preview">
+                        </div>
+                    </div>
+                    <div class="item-preview-flex">
+                        <div class="preview" id="medium-preview">
+                        </div>
+                        <div class="preview" id="small-preview">
+                        </div>
+                    </div>
+                    <div class="control-buttons">
+                        <button class="new-button" style="display: none" id="crop_button" title="Crop"><i
+                                class="bi-crop"></i></button>
+                        <button class="new-button" style="display: none" id="move_button" title="Move"><i
+                                class="bi-arrows-move"></i></button>
+                        <div class="flex-break"></div>
+                        <button class="new-button" style="display: none" id="rotate_90_left" title="Rotate clockwise"><i
+                                class="bi-arrow-clockwise"></i></button>
+                        <button class="new-button" style="display: none" id="rotate_90_right"
+                                title="Rotate counterclockwise"><i class="bi-arrow-counterclockwise"></i></button>
+                        <div class="flex-break"></div>
+                        <button class="new-button" style="display: none" id="save_image" title="Save image"><i
+                                class="bi-upload"></i></button>
+                    </div>
+                </div>
+                <div class="crop-image" id="crop-image">
+                </div>
+            </div>
+        </div>
     <div class="create-chat">
+    <h1>Create new chat</h1>
+        <div class="create-chat-settings">
         {% if friends %}
             <label>Chat name
                 <input type="text" id="chat_name">
             </label>
+            <button class="new-button" id="set_chat_avatar">Set chat avatar</button>
+            </div>
             {% for friend in friends %}
                 <div class="create-chat-friend">
                     <!-- Сверху сначала должен быть аватар -->

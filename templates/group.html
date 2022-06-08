@@ -5,6 +5,7 @@
     <link type="text/css" rel="stylesheet" href="/static/css/userpage.css">
     <link type="text/css" rel="stylesheet" href="/static/css/group.css">
     <script type="text/javascript" src="{{ url_for("static", filename="group.js") }}"></script>
+    <script type="text/javascript" src="{{ url_for("static", filename="/js/like.js") }}"></script>
 {% endblock %}
 {% block main_row %}
     <div class="group-card">
@@ -51,7 +52,7 @@
             {% for post in posts %}
                 <div class="post">
                     <div class="post-header">
-                        {% if not post.is_anonymous or post.user_id == current_user.id%}
+                        {% if not post.is_anonymous or post.user_id == current_user.id %}
                             <img class="post-avatar" alt="User avatar" src="{{ get_user_avatar(post.user_id) }}">
                             <a class="post-nick"
                                href="{{ url_for("users_page", name=get_username(post.user_id)) }}"><b>{{ get_username(post.user_id) }}</b></a>
@@ -77,13 +78,21 @@
                             {% endfor %}
                         {% endif %}
                     </div>
+                    <div class="likes-div">
+                        {% if post.liked %}
+                            <img id="likes_g_{{ post.id }}" class="heart liked" alt="like"
+                                 src="/static/img/like_fill_red.svg"
+                                 onclick="like('{{ post.id }}', 'g')">
+                        {% else %}
+                            <img id="likes_g_{{ post.id }}" class="heart" alt="like" src="/static/img/like_fill.svg"
+                                 onclick="like('{{ post.id }}', 'g')">
+                        {% endif %}
+                        <span id="likes_amount_g_{{ post.id }}">{{ post.likes }}</span>
+                    </div>
                 </div>
             {% endfor %}
         {% endif %}
     </div>
-    {#    <h1 class="group-name">{{ group.group_name }}</h1>#}
-    {#    <button id="join_b">Join community</button>#}
-    {#    <button id="leave_b">Leave community</button>#}
 {% endblock %}
 {% block scripts %}
     <script>

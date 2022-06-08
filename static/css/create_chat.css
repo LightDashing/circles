@@ -16,10 +16,23 @@
     display: flex;
     gap: 10px;
     align-items: center;
+    border-radius: 15px;
+    padding: 4px;
+    /*background: white;*/
+}
+
+.create-chat-friend:hover{
+    background: white;
+}
+
+.create-chat-settings{
+    display: flex;
+    align-items: center;
+    gap: 20px;
 }
 
 .create-chat .new-button {
-    border: 1px solid;
+
 }
 
 .user-info {
@@ -39,7 +52,7 @@
 }
 
 .create-chat input[type=text] {
-    border: 1px solid black;
+    border: none;
     border-radius: 15px;
     padding: 7px;
     font-size: 1rem;

@@ -61,3 +61,18 @@ $(function () {
         }
     })
 })
+
+function delete_friend(friend_name) {
+     $.ajax({
+            url: '/api/remove_friend',
+            method: 'DELETE',
+            data: JSON.stringify({
+                "name": friend_name
+            }),
+            dataType: 'json',
+            contentType: 'application/json',
+            success: function (data) {
+                $(`#friend_${friend_name}`).remove()
+            }
+        })
+}

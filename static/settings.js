@@ -74,7 +74,7 @@ $(function onReady() {
             edit_role_name.prop("disabled", false)
             $("#edit_role_button").prop("disabled", false)
             $("#delete_role_button").prop("disabled", false)
-            changeRoleHandler(edit_role_color_picker, edit_role_name, $("#roles_selector"), value)
+            changeRoleHandler(edit_role_color_picker, edit_role_name, $("#can_post"), $("#roles_selector"), value)
         }
     })
     $('textarea').each(function () {
@@ -85,7 +85,8 @@ $(function onReady() {
         let selector = $("#roles_selector")
         let role_name = $("#edit_role_name")
         let color_picker = $("#edit_role_color")[0].jscolor
-        saveRoleHandler(selector, role_name, color_picker)
+        let can_post = document.getElementById("can_post").checked
+        saveRoleHandler(selector, role_name, color_picker, can_post)
     })
 
     $("#delete_role_button").click(function () {

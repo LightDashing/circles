@@ -69,14 +69,14 @@
                 <div class="username-error"></div>
 
                 <div class="description-error"></div>
-                <label>Can other post on your wall?
-                    {% if can_post %}
-                        <input type="checkbox" form="main_form" name="can_post"
-                               checked=True>
-                    {% else %}
-                        <input class="settingsInputForm" type="checkbox" form="main_form" name="can_post">
-                    {% endif %}
-                </label>
+{#                <label>Can other post on your wall?#}
+{#                    {% if can_post %}#}
+{#                        <input type="checkbox" form="main_form" name="can_post"#}
+{#                               checked=True>#}
+{#                    {% else %}#}
+{#                        <input class="settingsInputForm" type="checkbox" form="main_form" name="can_post">#}
+{#                    {% endif %}#}
+{#                </label>#}
                 <label>Email
                     <input type="email" maxlength="30" placeholder="enter valid email" class="settings-input"
                            name="email" value="{{ email }}" required>
@@ -117,6 +117,12 @@
                         <input style="margin-top: 5px; padding: 10px" data-jscolor="{}"
                                class="settings-input"
                                id="edit_role_color">
+                    </label>
+                    <label style="grid-area: zz">
+                        Can users with this role post on your wall?
+                         <input style="margin-top: 5px; padding: 10px" type="checkbox"
+                               class="settings-input"
+                               id="can_post">
                     </label>
                     <button class="new-button" id="edit_role_button" style="grid-area: f">Accept changes</button>
                     <button class="new-button" id="delete_role_button" style="grid-area: g">Delete role</button>

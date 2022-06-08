@@ -2,6 +2,7 @@ let usernames = [current_username]
 let admin = null
 let moderators = []
 let chat_name = null
+let chat_avatar = null
 
 function init(friends_count) {
     admin = current_username
@@ -13,12 +14,46 @@ function init(friends_count) {
     $("#create_chat").click(function () {
         create_chat()
     })
+
+    window.onclick = function (event) {
+        if (event.target === modal_avatar) {
+            modal_avatar_content.removeClass("showModal")
+            modal_avatar_content.addClass("hideModal")
+            setTimeout(() => modal_avatar.style.display = "none", 250)
+        }}
+
+    $("#close_button").click(function () {
+        modal_avatar_content.removeClass("showModal")
+        $("#avatar-modal").addClass("hideModal")
+        setTimeout(() => modal_avatar.style.display = "none", 250)
+    })
+
+    const modal_avatar = document.getElementById("set_avatar")
+    const modal_avatar_content = $("#avatar-modal")
+    $("#set_chat_avatar").click(function () {
+        modal_avatar.style.display = "block";
+        $("#avatar-modal").addClass("showModal")
+    })
+
+    const fileInput = document.getElementById("picture")
+    fileInput.addEventListener('change', function () {
+        addImage("avatar-modal", "crop-image","new_image", this.files, get_avatar)
+    }, false)
+
 }
 
 function add_friend(friend_name) {
     usernames.push(friend_name)
 }
 
+function get_avatar(data){
+    chat_avatar =  data.toDataURL()
+    const modal_avatar_content = $("#avatar-modal")
+    modal_avatar_content.removeClass("showModal")
+    modal_avatar_content.addClass("hideModal")
+    setTimeout(() => document.getElementById("set_avatar").style.display = "none", 250)
+
+}
 
 function remove_friend(friend_name) {
     for (let i = 0; i < usernames.length; i++) {
@@ -89,7 +124,8 @@ function create_chat(){
                 "users": usernames,
                 "admin": admin,
                 "moderators": moderators,
-                "chat_name": chat_name
+                "chat_name": chat_name,
+                "avatar": chat_avatar
             }),
             dataType: 'json',
             contentType: 'application/json',

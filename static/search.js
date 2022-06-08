@@ -4,7 +4,7 @@ let dropdown;
 $(function initSearch() {
     const $search_input = $("#search_users");
     dropdown = document.getElementById("dropdown-search")
-    searchInit()
+    setTimeout(() => searchInit(), 250)
 
     $search_input.on('keyup', function (event) {
         console.log(event.key)

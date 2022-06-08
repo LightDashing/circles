@@ -94,10 +94,19 @@ class Friend(Base):
     def serialize(self):
         return {
             "first_user_id": self.first_user_id,
+            "first_username": self.first_user.username,
             "second_user_id": self.second_user_id,
+            "second_username": self.second_user.username,
             "is_request": self.is_request,
             "date_added": self.date_added,
         }
+
+
+class UserPostLikes(Base):
+    __tablename__ = 'user_posts_likes'
+    group_post_id = Column(INTEGER, ForeignKey("userposts.id", ondelete='CASCADE'), primary_key=True)
+    user_id = Column(INTEGER, ForeignKey("users.id", ondelete='CASCADE'), primary_key=True)
+    date_liked = Column(DateTime, nullable=False, default=datetime.datetime.now())
 
 
 class UserPost(Base):
@@ -113,6 +122,7 @@ class UserPost(Base):
 
     roles = relationship("UserRole", secondary="user_post_role_link", cascade="all, delete")
     attachment = relationship('ImageAttachment', cascade="all, delete-orphan")
+    likes = relationship("User", secondary="user_posts_likes", cascade="all, delete")
 
     @property
     def serialize(self):
@@ -124,6 +134,7 @@ class UserPost(Base):
             "message": self.message,
             "is_private": self.is_private,
             "roles": [role.serialize for role in self.roles],
+            "likes": len(self.likes),
             "attachment": [attach.serialize for attach in self.attachment]
         }
 
@@ -174,6 +185,7 @@ class UserRole(Base):
     role_name = Column(VARCHAR(32), index=True, unique=False)
     role_color = Column(VARCHAR(7), nullable=False, default="#eca7a7")
     font_color = Column(VARCHAR(7), nullable=False, default="#000000")
+    can_post = Column(Boolean, nullable=False, default=False)
     creator = Column(INTEGER, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
 
     # can_post = Column(Boolean, nullable=False, default=False)
@@ -186,6 +198,7 @@ class UserRole(Base):
             "role_name": self.role_name,
             "role_color": self.role_color,
             "font_color": self.font_color,
+            "can_post": self.can_post,
             "creator": self.creator
         }
 
@@ -226,7 +239,7 @@ class Group(Base):
     # group_points = Column(INTEGER, default=0)
 
     users = relationship(User, secondary='user_group_link', cascade="all, delete", back_populates="groups")
-    posts = relationship("GroupPost", cascade='all, delete-orphan')
+    posts = relationship("GroupPost", cascade='all, delete-orphan', back_populates="group")
 
     @property
     def serialize(self):
@@ -242,6 +255,13 @@ class Group(Base):
         }
 
 
+class GroupPostLikes(Base):
+    __tablename__ = 'group_posts_likes'
+    group_post_id = Column(INTEGER, ForeignKey("group_posts.id", ondelete='CASCADE'), primary_key=True)
+    user_id = Column(INTEGER, ForeignKey("users.id", ondelete='CASCADE'), primary_key=True)
+    date_liked = Column(DateTime, nullable=False, default=datetime.datetime.now())
+
+
 class GroupPost(Base):
     __tablename__ = 'group_posts'
     id = Column(INTEGER, primary_key=True, autoincrement=True)
@@ -252,7 +272,8 @@ class GroupPost(Base):
     is_anonymous = Column(Boolean, nullable=False, default=True)
 
     attachment = relationship('ImageAttachment', cascade="all, delete-orphan")
-    group = relationship("Group")
+    group = relationship("Group", back_populates="posts")
+    likes = relationship("User", secondary="group_posts_likes", cascade="all, delete")
 
     @property
     def serialize(self):
@@ -265,6 +286,7 @@ class GroupPost(Base):
             "message": self.post_text,
             "is_anonymous": self.is_anonymous,
             "group_avatar": self.group.avatar,
+            "likes": len(self.likes),
             "attachment": [attach.serialize for attach in self.attachment]
         }
 

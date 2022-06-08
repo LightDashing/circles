@@ -55,7 +55,7 @@ $(function onReady() {
 })
 
 function enableEditing(message_id, chat_id) {
-    let text_editor = $(`#message_${chat_id}`)
+    let text_editor = $(`#message_area_${chat_id}`)
     let edit_button = $(`#edit_message`)
     let send_button = $(`#send_message_${chat_id}`)
     if (send_button.css("display") === "none") {
@@ -189,7 +189,7 @@ function update_messages(username, chat_id, last_msg_time, type) {
                 }
             }
         });
-    }, 1550);
+    }, 2000);
     // На случай если функция вызывается один раз просто чтобы загрузить все сообщения
     if (type === "load") {
         window.clearInterval(message_updater);

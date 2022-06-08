@@ -8,7 +8,7 @@ from argon2 import PasswordHasher
 import datetime
 import re
 from models import User, UserPost, Message, Friend, Chat, Group, GroupPost, UserChatLink, UserRole, \
-    ImageAttachment, Notification, NotificationChatLink
+    ImageAttachment, Notification, NotificationChatLink, UserGroupLink
 from files import FileOperations
 from user_exceptions import UserAlreadyExist
 import json
@@ -221,8 +221,7 @@ class DataBase:
             session.execute(statement)
         return 0
 
-    # TODO: ПеределатЬ!
-    def change_mail(self, name: str, email: str) -> int:
+    def change_mail(self, user_id: int, email: str) -> int:
         """
         This function changes user e-mail, it returns one of the codes
         0: email was successfully changed
@@ -235,7 +234,7 @@ class DataBase:
         if not re.fullmatch(pattern, email):
             return 1
         with self.conn_handler as session:
-            statement = select(User).filter(User.username == name)
+            statement = select(User).filter(User.id == user_id)
             user = session.execute(statement).scalar()
             if user.email == email:
                 return 3
@@ -245,8 +244,6 @@ class DataBase:
             if user.email == email:
                 return 2
 
-            statement = update(User).filter(User.username == name).values(email=email)
-            session.execute(statement)
             self.conn_handler.commit_needed = True
             return 0
 
@@ -451,23 +448,53 @@ class DataBase:
             statement = select(UserPost).filter(UserPost.whereid == user_id)
             posts = session.execute(statement)
             if posts:
-                posts = [post[0].serialize for post in posts]
-                return posts[::-1]
+                all_posts = []
+                for post in posts:
+                    ser = post[0].serialize
+                    ser["liked"] = self.is_liked(ser["id"], "u", user_id, session)
+                    all_posts.append(ser)
+                return all_posts[::-1]
 
-    def get_posts_by_id(self, username: str, user_roles: list[str]) -> list[UserPost]:
+    def like_post(self, user_id: int, post_type: str, post_id: int):
+        with self.conn_handler as session:
+            stmt = select(User).filter(User.id == user_id)
+            user = session.execute(stmt).scalar()
+            if post_type == "g":
+                stmt = select(GroupPost).filter(GroupPost.id == post_id)
+            else:
+                stmt = select(UserPost).filter(UserPost.id == post_id)
+            post = session.execute(stmt).scalar()
+            if user in post.likes:
+                post.likes.remove(user)
+            else:
+                post.likes.append(user)
+            self.conn_handler.commit_needed = True
+            return True
+
+    def get_posts_by_id(self, username: str, your_id: int, user_roles: list[str]) -> list[UserPost]:
         """
         This function gets all posts on user page with specified view level\n
         :param user_roles:
         :param username: str, User.username
+        :param your_id: int, id of current user
         :return: list of UserPost objects or None if there was no UserPosts
         """
         user_id = self.get_userid_by_name(username)
+        is_friend = self.is_friend(user_id, your_id)
         with self.conn_handler as session:
             if not user_roles:
-                statement = select(UserPost).filter(UserPost.whereid == user_id, UserPost.is_private == False)
+                if is_friend:
+                    statement = select(UserPost).filter(UserPost.whereid == user_id)
+                else:
+                    statement = select(UserPost).filter(UserPost.whereid == user_id, UserPost.is_private == False)
                 posts = session.execute(statement).all()
                 if posts:
-                    s_posts = [post[0].serialize for post in posts]
+                    s_posts = []
+                    for post in posts:
+                        ser = post[0].serialize
+                        ser["liked"] = self.is_liked(ser["id"], "u", your_id, session)
+                        s_posts.append(ser)
+                    # s_posts = [post[0].serialize for post in posts]
                     return s_posts[::-1]
             else:
                 statement = select(UserPost).filter(UserPost.whereid == user_id)
@@ -476,7 +503,9 @@ class DataBase:
                 for post in posts:
                     role_names = [role.role_name for role in post[0].roles]
                     if self.is_arr_part(role_names, user_roles):
-                        s_posts.append(post[0].serialize)
+                        ser = post[0].serialize
+                        ser["liked"] = self.is_liked(ser["id"], "u", your_id, session)
+                        s_posts.append(ser)
                 return s_posts[::-1]
 
     def get_avatar_by_name(self, username: str) -> str:
@@ -658,7 +687,7 @@ class DataBase:
             return chat.serialize
 
     # TODO: переделать
-    def create_chat(self, users: list, chat_name: str, admin: str, rules: str = "There is no rules!") -> int:
+    def create_chat(self, users: list, chat_name: str, admin: str, rules: str = "There is no rules!", avatar: str = None) -> int:
         admin_id = self.get_userid_by_name(admin)
         admin = self.get_user(admin_id)
         with self.conn_handler as session:
@@ -668,6 +697,10 @@ class DataBase:
                 return chat.id
             chat = Chat(chatname=chat_name, rules=rules, chat_color="#d5d6db")
             session.add(chat)
+            if avatar:
+                fo = FileOperations(admin_id)
+                avatar = fo.save_user_image(avatar)
+                chat.avatar = avatar
             for user in users:
                 user_id = self.get_userid_by_name(user, scoped=True)
                 user = self.get_user(user_id, scoped=True)
@@ -694,6 +727,13 @@ class DataBase:
                 self.conn_handler.commit_needed = True
                 delete(Chat).filter((Chat.id == chat_id))
                 return True
+
+    def leave_chat(self, chat_id: int, user_id: int):
+        with self.conn_handler as session:
+            stmt = delete(UserChatLink).filter((UserChatLink.chat_id == chat_id) & (UserChatLink.user_id == user_id))
+            session.execute(stmt)
+            self.conn_handler.commit_needed = True
+            return True
 
     def preload_messages(self, user_id: int, chat_id: int):
         with self.conn_handler as session:
@@ -894,6 +934,8 @@ class DataBase:
     #  также нужно переработать этот код
     def publish_post(self, msg: str, user_id: int, roles: list[str], pinned_images: list[str], is_private: bool,
                      where_id: int = None) -> bool:
+        if where_id:
+            roles = self.get_friend_roles(where_id, user_id)
         with self.conn_handler as session:
             if not where_id:
                 if not is_private:
@@ -903,16 +945,25 @@ class DataBase:
                     post = UserPost(userid=user_id, message=msg, whereid=user_id, is_private=is_private,
                                     date_added=datetime.datetime.now())
                     for role in roles:
-                        statement = select(UserRole).filter(UserRole.role_name == role)
+                        statement = select(UserRole).filter(
+                            (UserRole.role_name == role) & (UserRole.creator == user_id))
                         role = session.execute(statement).scalar()
                         post.roles.append(role)
                 if pinned_images:
                     attach = self.create_attach(user_id, pinned_images)
                     post.attachment.append(attach)
             else:
-                # TODO: пока что другие люди не могут постить на стене вообще, нужно придумать как поступать с их
-                #  ролями в случае постинга
-                pass
+                post = UserPost(userid=user_id, message=msg, whereid=where_id, is_private=True,
+                                date_added=datetime.datetime.now())
+                for role in roles:
+                    statement = select(UserRole).filter(
+                        (UserRole.role_name == role["role_name"]) & (UserRole.creator == where_id))
+                    role = session.execute(statement).scalar()
+                    post.roles.append(role)
+                print(roles)
+                if pinned_images:
+                    attach = self.create_attach(user_id, pinned_images)
+                    post.attachment.append(attach)
             session.add(post)
             session.flush()
             session.refresh(post)
@@ -937,7 +988,7 @@ class DataBase:
             post = session.execute(statement).scalar()
             return post.serialize
 
-    def get_group_posts(self, group_id: int, group_name: str = None):
+    def get_group_posts(self, group_id: int, user_id: int, group_name: str = None):
         with self.conn_handler as session:
             if group_name:
                 statement = select(GroupPost).join(Group).filter(Group.group_name == group_name)
@@ -946,8 +997,75 @@ class DataBase:
             posts = session.execute(statement).all()
             posts_a = []
             for post in posts:
-                posts_a.append(post[0].serialize)
+                ser = post[0].serialize
+                ser["liked"] = self.is_liked(ser["id"], "g", user_id, session)
+                posts_a.append(ser)
             return posts_a
+
+    def is_liked(self, post_id: int, post_type: str, user_id: int, session=None) -> bool:
+        if session:
+            user = session.execute(select(User).filter(User.id == user_id)).scalar()
+            if post_type == 'g':
+                post = session.execute(select(GroupPost).filter(GroupPost.id == post_id)).scalar()
+            else:
+                post = session.execute(select(UserPost).filter(UserPost.id == post_id)).scalar()
+            if user in post.likes:
+                return True
+            else:
+                return False
+        else:
+            with self.conn_handler as session:
+                user = session.execute(select(User).filter(User.id == user_id)).scalar()
+                if post_type == 'g':
+                    post = session.execute(select(GroupPost).filter(GroupPost.id == post_id)).scalar()
+                else:
+                    post = session.execute(select(UserPost).filter(UserPost.id == post_id)).scalar()
+                if user in post.likes:
+                    return True
+                else:
+                    return False
+
+    def get_user_friends_posts(self, user_id: int) -> list:
+        posts = []
+        with self.conn_handler as session:
+            statement = select(User).filter(User.id == user_id)
+            user = session.execute(statement).scalar()
+            friends_list = []
+            for friend in user.friends:
+                friends_list.append(friend.serialize)
+        for friend in friends_list:
+            if friend["first_user_id"] == user_id:
+                roles = self.get_friend_roles(friend["second_user_id"], user_id)
+                if roles:
+                    roles = [role['role_name'] for role in roles]
+                u_posts = DBC.get_posts_by_id(friend["second_username"], user_id, roles)
+            else:
+                roles = self.get_friend_roles(friend["first_user_id"], user_id)
+                if roles:
+                    roles = [role['role_name'] for role in roles]
+                u_posts = DBC.get_posts_by_id(friend["first_username"], user_id, roles)
+            if u_posts:
+                posts.extend(u_posts)
+        return posts
+
+    def get_user_groups_posts(self, user_id: int) -> list:
+        posts = []
+        with self.conn_handler as session:
+            stmt = select(GroupPost).join(Group).join(UserGroupLink).filter(UserGroupLink.user_id == user_id)
+            all_posts = session.execute(stmt).all()
+            for post in all_posts:
+                serialized = post[0].serialize
+                serialized["liked"] = self.is_liked(serialized["id"], "g", user_id, session)
+                posts.append(serialized)
+        return posts
+
+    def get_user_feed(self, user_id: int):
+        friends_posts = self.get_user_friends_posts(user_id)
+        groups_posts = self.get_user_groups_posts(user_id)
+        your_wall_posts = self.get_your_posts(user_id)
+        all_posts = [*friends_posts, *groups_posts, *your_wall_posts]
+        all_posts.sort(key=lambda x: x["date_added"], reverse=True)
+        return all_posts
 
     def create_role(self, role_name: str, role_color: str, user_id: int):
         # TODO: добавить донаты для монетизации, максимальное кол-во ролей для обычного пользователя - 5
@@ -979,7 +1097,7 @@ class DataBase:
         return user_roles
 
     def change_role(self, role_id: int, user_id: int, new_role_name: str = None, new_role_color: str = None,
-                    new_font_color: str = None) -> dict:
+                    new_font_color: str = None, can_post: bool = None) -> dict:
         with self.conn_handler as session:
             statement = select(UserRole).filter(UserRole.creator == user_id, UserRole.id == role_id)
             user_role = session.execute(statement).scalar()
@@ -990,6 +1108,8 @@ class DataBase:
                     user_role.role_color = new_role_color
                 if new_font_color:
                     user_role.font_color = new_font_color
+                if can_post:
+                    user_role.can_post = can_post
                 self.conn_handler.commit_needed = True
                 return user_role.serialize
             else:

@@ -13,7 +13,7 @@
         <h1 style="text-align: left; margin-bottom: 30px">Your friends</h1>
         <div class="all-friends">
             {% for friend in friends %}
-                <div class="friend-block">
+                <div class="friend-block" id="friend_{{ friend.username }}">
                     <img src="{{ friend['avatar'] }}" alt="user avatar"
                          onclick="location.href='{{ url_for("users_page", name=friend["username"]) }}'">
                     <div class="friend-block-description">
@@ -37,7 +37,7 @@
                             Write message
                         </button>
                         {#                        <button>Edit roles</button>#}
-                        <button>Delete friend</button>
+                        <button onclick="delete_friend('{{ friend.username }}')">Delete friend</button>
                     </div>
                 </div>
             {% endfor %}

@@ -11,6 +11,7 @@
     <script type="text/javascript"
             src="{{ url_for("static", filename="js/jscolor.js") }}"></script>
     <script type="text/javascript" src="{{ url_for("static", filename="js/roles_editor.js") }}"></script>
+    <script type="text/javascript" src="{{ url_for("static", filename="/js/like.js") }}"></script>
 {% endblock %}
 {% block main_row %}
     <div class="user-card">
@@ -46,29 +47,33 @@
         </div>
     </div>
     <span class="posts-span">Posts</span>
-    <div class="new-post">
-        <div style="flex: 1;" class="new-post-sub">
-            <label>
-                <textarea id="post-input" style="flex: 1"></textarea>
-            </label>
-            <div class="new-post-sub-pinned" id="pinned_container">
-            </div>
-            <div class="new-post-sub-tags">
-                <a>Type:</a>
-                <button class="tag-button-small" style="margin-right: 10px" id="private_post">private</button>
-                <label id="role_selector" for="roles_selector">
-                    Roles:
-                    <select id="roles_selector" multiple="multiple" style="width: 100%; justify-self: center">
-                    </select>
+    {% if can_post %}
+        <div class="new-post">
+            <div style="flex: 1;" class="new-post-sub">
+                <label>
+                    <textarea id="post-input" style="flex: 1"></textarea>
                 </label>
-                <button class="new-button" style="margin-right: auto; margin-left: 0" id="edit_roles">Edit roles
-                </button>
+                {% if current_user.id == user.id %}
+                    <div class="new-post-sub-pinned" id="pinned_container">
+                    </div>
+                    <div class="new-post-sub-tags">
+                        <a>Type:</a>
+                        <button class="tag-button-small" style="margin-right: 10px" id="private_post">private</button>
+                        <label id="role_selector" for="roles_selector">
+                            Roles:
+                            <select id="roles_selector" multiple="multiple" style="width: 100%; justify-self: center">
+                            </select>
+                        </label>
+                        <button class="new-button" style="margin-right: auto; margin-left: 0" id="edit_roles">Edit roles
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="post-buttons">
+                <button class="new-button" id="make_post">Post</button>
             </div>
         </div>
-        <div class="post-buttons">
-            <button class="new-button" id="make_post">Post</button>
-        </div>
-    </div>
+    {% endif %}
     <div class="modal-window" id="add_role_modal">
         <div class="modal-window-content" id="add_role_modal_content">
             <label>
@@ -98,6 +103,10 @@
                 Edit role color:
                 <input class="role-inputs" style="margin-top: 5px; padding: 10px" data-jscolor="{}"
                        id="edit_role_color">
+            </label>
+            <label>
+                Can users with this role post on your page?
+                <input id="can_post" class="role-inputs" style="margin-top: 5px; padding: 10px" type="checkbox">
             </label>
             <button class="new-button" id="edit_role_button">Accept changes</button>
             <button class="new-button" id="delete_role_button">Delete role</button>
@@ -139,6 +148,17 @@
                                 {% endfor %}
                             {% endfor %}
                         {% endif %}
+                    </div>
+                    <div class="likes-div">
+                        {% if post.liked %}
+                            <img id="likes_u_{{ post.id }}" class="heart liked" alt="like"
+                                 src="/static/img/like_fill_red.svg"
+                                 onclick="like('{{ post.id }}', 'u')">
+                        {% else %}
+                            <img id="likes_u_{{ post.id }}" class="heart" alt="like" src="/static/img/like_fill.svg"
+                                 onclick="like('{{ post.id }}', 'u')">
+                        {% endif %}
+                        <span id="likes_amount_u_{{ post.id }}">{{ post.likes }}</span>
                     </div>
                 </div>
             {% endfor %}

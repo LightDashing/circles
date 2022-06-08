@@ -59,7 +59,7 @@ def publish_post():
                                          data["is_private"])
         else:
             post_data = DBC.publish_post(data["message"], current_user.id, [], data["pinned_images"],
-                                         data["is_private"], data["where_id"])
+                                         True, data["where_id"])
         return jsonify(post_data)
 
 
@@ -175,9 +175,17 @@ def load_chats():
 @login_required
 def create_chat():
     data = request.get_json()
-    chat_id = DBC.create_chat(data['users'], data['chat_name'], data['admin'])
+    chat_id = DBC.create_chat(data['users'], data['chat_name'], data['admin'], rules=data.get("rules", None),
+                              avatar=data.get("avatar", None))
     return jsonify(chat_id)
 
+
+@api_bp.route('/leave_chat', methods=['DELETE'])
+@login_required
+def leave_chat():
+    data = request.get_json()
+    result = DBC.leave_chat(data["chat_id"], current_user.id)
+    return jsonify(True)
 
 @api_bp.route('/upload_settings', methods=['POST'])
 @login_required
@@ -193,13 +201,13 @@ def upload_settings():
         return jsonify(response)
     username = str(request.form["username"])
     description = str(request.form["desc"])
-    can_post = bool(request.form["can_post"])
+    # can_post = bool(request.form["can_post"])
     email = str(request.form["email"])
     password = str(request.form['pw1'])
     response = {}
     response['u_name_r'] = DBC.change_username(current_user.username, username)
     response['u_desc_r'] = DBC.change_description(current_user.id, description)
-    response['u_pub_r'] = DBC.change_publish_settings(current_user.id, can_post)
+    # response['u_pub_r'] = DBC.change_publish_settings(current_user.id, can_post)
     response['u_email_r'] = DBC.change_mail(current_user.id, email)
     if password:
         # Do something
@@ -224,7 +232,7 @@ def create_role():
 def change_user_role():
     data = request.get_json()
     changed_role = DBC.change_role(data['role_id'], current_user.id, data['role_name'], data['role_color'],
-                                   data['font_color'])
+                                   data['font_color'], data["can_post"])
     return jsonify(changed_role)
 
 
@@ -242,6 +250,14 @@ def search():
     data = request.get_json()
     search_input = data['search_input']
     results = DBC.search_for(search_input)
+    return jsonify(results)
+
+
+@api_bp.route('/like', methods=["PATCH"])
+@login_required
+def like_post():
+    data = request.get_json()
+    results = DBC.like_post(current_user.id, data["post_type"], data["post_id"])
     return jsonify(results)
 
 
