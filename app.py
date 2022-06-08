@@ -150,7 +150,7 @@ def create_group():
         if data.get('group_avatar', None) is None:
             data['group_avatar'] = None
         DBC.create_group(current_user.id, data['group_name'], data['group_description'],
-                         data['group_summary'], data['group_avatar'])
+                         data['group_summary'], data['group_avatar'], data["group_rules"])
         DBC.join_group(data['group_name'], current_user)
         print(url_for("group_page", group_name=data['group_name']))
         return redirect(url_for("group_page", group_name=data['group_name']))

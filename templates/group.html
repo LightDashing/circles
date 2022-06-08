@@ -5,7 +5,7 @@
     <link type="text/css" rel="stylesheet" href="/static/css/userpage.css">
     <link type="text/css" rel="stylesheet" href="/static/css/group.css">
     <script type="text/javascript" src="{{ url_for("static", filename="group.js") }}"></script>
-    <script type="text/javascript" src="{{ url_for("static", filename="/js/like.js") }}"></script>
+    <script type="text/javascript" src="{{ url_for("static", filename="js/like.js") }}"></script>
 {% endblock %}
 {% block main_row %}
     <div class="group-card">
@@ -24,7 +24,7 @@
         </div>
         <div class="group-card-description">
             <span class="small-text">Group description:</span>
-            <span style="font-size: 1.2rem">{{ group.description }}</span>
+            <span class="group-description" style="font-size: 1.2rem">{{ group.description }}</span>
         </div>
     </div>
     <div class="group-rules">

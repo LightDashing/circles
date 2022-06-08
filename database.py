@@ -29,6 +29,9 @@ class DataBase:
                 **{"poolclass": QueuePool, "pool_size": 6, "max_overflow": 0,
                    "pool_timeout": 6})
             self.g_session = scoped_session(sessionmaker(self.engine))
+            print("Connection to database successful!")
+            print(self.engine)
+
 
         def __enter__(self):
             self.sp_sess = self.g_session()
@@ -197,6 +200,7 @@ class DataBase:
         """
         if not new_name or len(new_name) < 3 or len(new_name) > 30:
             return 2
+        user_id = self.get_userid_by_name(old_name)
         with self.conn_handler as session:
             statement = select(User).filter(User.username == new_name)
             if old_name == new_name:
@@ -206,6 +210,13 @@ class DataBase:
             self.conn_handler.commit_needed = True
             statement = update(User).filter(User.username == old_name).values(username=new_name)
             session.execute(statement)
+
+            statement = select(Chat).join(UserChatLink).filter(UserChatLink.user_id == user_id)
+            all_chats = session.execute(statement).all()
+            for chat in all_chats:
+                if chat[0].is_dialog:
+                    chat[0].chatname = chat[0].chatname.replace(old_name, new_name)
+
 
     def change_description(self, user_id: int, desc: str) -> int:
         """
@@ -512,6 +523,7 @@ class DataBase:
         with self.conn_handler as session:
             statement = select(User).filter(User.username == username)
             user = session.execute(statement).scalar()
+            print(username, user)
             return user.avatar
 
     def get_user_chats(self, user_id: int) -> list:

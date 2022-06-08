@@ -90,9 +90,9 @@ class FileOperations:
             if old_avatar:
                 if os.path.basename(old_avatar) != 'user-avatar.svg':
                     if old_avatar.find("\\") != -1:
-                        os.remove(old_avatar[old_avatar.find("\\") + 1:])
+                        os.unlink(old_avatar[old_avatar.find("\\") + 1:])
                     else:
-                        os.remove(old_avatar)
+                        os.unlink(old_avatar[old_avatar.find("..") + 1:])
             return os.path.join("..", filepath)
         else:
             return os.path.join("..", filepath)

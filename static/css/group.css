@@ -1,7 +1,7 @@
 .group-card{
     display: flex;
     /*align-items: center;*/
-    gap: 20%;
+    gap: 5%;
 }
 
 .group-card-gradient{
@@ -11,6 +11,11 @@
     display: flex;
     align-items: center;
     gap: 15px;
+    min-width: 40%;
+}
+
+.group-description {
+    text-align: left;
 }
 
 .group-card-text{
