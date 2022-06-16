@@ -223,7 +223,8 @@
     border-radius: 10px;
     margin: 5px 0;
     width: 140px;
-    height: 35px;
+    height: auto;
+    min-height: 35px;
     background: #f6f7fb;
     cursor: pointer;
     border: none;
@@ -316,6 +317,24 @@
 	 width: 25px;
 	 height: 25px;
 	 cursor: pointer;
+}
+
+.language-buttons {
+    margin: 5px 0;
+    padding-left: 8px;
+    display: flex;
+    justify-content: left;
+    width: 140px;
+    gap: 15px;
+}
+
+.text-small {
+    color: var(--object-bg-text-color);
+    font-size: 0.8rem;
+}
+
+.language-buttons > .text-small {
+    cursor: pointer;
 }
 
 html, body {

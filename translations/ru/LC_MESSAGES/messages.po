@@ -1,0 +1,616 @@
+# Russian translations for PROJECT.
+# Copyright (C) 2022 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+#
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2022.
+# lightdashing <chugunnic@gmail.com>, 2022.
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2022-06-15 19:30+0300\n"
+"PO-Revision-Date: 2022-06-15 19:41+0300\n"
+"Last-Translator: lightdashing <chugunnic@gmail.com>\n"
+"Language-Team: English <kde-i18n-doc@kde.org>\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Generated-By: Babel 2.10.1\n"
+"X-Generator: Poedit 3.0.1\n"
+
+#: api/templates/chat_template.html:26 templates/chat.html:48
+msgid "Delete message"
+msgstr "Удалить"
+
+#: api/templates/chat_template.html:29 templates/chat.html:51
+msgid "Edit message"
+msgstr "Редактировать"
+
+#: api/templates/chat_template.html:55 templates/chat.html:78
+msgid "Send"
+msgstr "Отправить"
+
+#: api/templates/chat_template.html:57 templates/chat.html:79
+msgid "Edit"
+msgstr "Редактировать"
+
+#: api/templates/group_post_template.html:6
+#: api/templates/user_post_template.html:6 templates/feed.html:20
+#: templates/feed.html:25 templates/group.html:59 templates/group.html:65
+#: templates/user.html:123
+msgid "posted at"
+msgstr "размещено"
+
+#: api/templates/user_post_template.html:10 static/up.js:162
+#: templates/user.html:61 templates/user.html:127
+msgid "private"
+msgstr "приватно"
+
+#: api/templates/user_post_template.html:12 static/group.js:17 static/up.js:156
+#: templates/user.html:129
+msgid "public"
+msgstr "публично"
+
+#: api/templates/user_post_template.html:14
+msgid "only for: "
+msgstr "только для: "
+
+#: static/create_chat.js:114
+msgid "Enter chat name!"
+msgstr "Введите название беседы!"
+
+#: static/create_chat.js:117
+msgid "Add more friends to chat!"
+msgstr "Добавьте больше друзей в беседу!"
+
+#: static/group.js:20 templates/group.html:43
+msgid "anonymous"
+msgstr "анонимно"
+
+#: static/search.js:106 templates/user.html:24
+msgid "common user"
+msgstr "пользователь"
+
+#: static/search.js:108
+msgid "it's you"
+msgstr "это вы"
+
+#: static/settings.js:114
+msgid "You already have 6 tags created!"
+msgstr "У вас уже создано 6 ролей!"
+
+#: static/settings.js:134
+msgid "This file is too large!"
+msgstr "Этот файл слишком большой!"
+
+#: static/settings.js:152
+msgid "Some unknown error occurred!"
+msgstr "Произошла неизвестная ошибка!"
+
+#: static/settings.js:157
+msgid "User with that username already exist!"
+msgstr "Пользователь с таким никнеймом уже существует!"
+
+#: static/settings.js:161
+msgid "Username length is incorrect!"
+msgstr "Длина никнейма некорректна!"
+
+#: static/settings.js:166
+msgid "Email isn't valid!"
+msgstr "E-mail некорректен!"
+
+#: static/settings.js:170
+msgid "That email already belongs to someone!"
+msgstr "Пользователь с такой электронной почтой уже существует!"
+
+#: static/up.js:187
+msgid "Start typing something..."
+msgstr "Начните писать..."
+
+#: static/up.js:225
+msgid "You already have 6 tags created!'"
+msgstr "У вас уже создано 6 ролей!"
+
+#: static/updates.js:2 templates/layout.html:71 templates/messages.html:2
+msgid "Messages"
+msgstr "Сообщения"
+
+#: static/updates.js:3 templates/friends.html:2 templates/layout.html:74
+msgid "Friends"
+msgstr "Друзья"
+
+#: static/js/create_group.js:52
+msgid "Group summary must be less than 128!"
+msgstr "Краткое описание группы должно быть менее 128 символов!"
+
+#: static/js/create_group.js:56
+msgid "One of the fields are empty!"
+msgstr "Одно или несколько полей пустые!"
+
+#: static/js/image_cropper.js:11
+msgid "File isn't image!"
+msgstr "Файл не является изображением!"
+
+#: static/js/main.js:7
+msgid "Drag image here"
+msgstr "Перетащите изображение сюда"
+
+#: static/js/main.js:19
+msgid "Size of file must be less than 25 megabytes"
+msgstr "Размер файла должен быть менее 25 мегабайт"
+
+#: static/js/main.js:23
+msgid "File must be image!"
+msgstr "Файл не является изображением!"
+
+#: templates/404.html:39
+msgid "oops!"
+msgstr "упс!"
+
+#: templates/404.html:40
+msgid "Error 404 : Page Not Found"
+msgstr "Ошибка 404: Страница не найдена"
+
+#: templates/404.html:41
+msgid "go back"
+msgstr "вернуться"
+
+#: templates/chat.html:95 templates/create_chat.html:54
+#: templates/messages.html:38
+msgid "Create new chat"
+msgstr "Создать новую беседу"
+
+#: templates/chat.html:101
+msgid "All messages"
+msgstr "Все беседы"
+
+#: templates/create_chat.html:2 templates/create_chat.html:82
+msgid "Create chat"
+msgstr "Создать беседу"
+
+#: templates/create_chat.html:57
+msgid "Chat name"
+msgstr "Имя беседы"
+
+#: templates/create_chat.html:60
+msgid "Set chat avatar"
+msgstr "Установить аватар беседы"
+
+#: templates/create_chat.html:72 templates/user.html:33
+msgid "Add friend"
+msgstr "Добавить друга"
+
+#: templates/create_chat.html:73 templates/user.html:34
+msgid "Remove friend"
+msgstr "Удалить друга"
+
+#: templates/create_chat.html:74
+msgid "Is moderator"
+msgstr "Модератор"
+
+#: templates/create_chat.html:80 templates/friends.html:46
+msgid "You don't have friends"
+msgstr "У вас нету друзей"
+
+#: templates/create_group.html:2 templates/create_group.html:16
+#: templates/user_groups.html:28
+msgid "Create new group"
+msgstr "Создать новую группу"
+
+#: templates/create_group.html:59
+msgid "Group name"
+msgstr "Имя группы"
+
+#: templates/create_group.html:65
+msgid "Group summary"
+msgstr "Краткое описание группы"
+
+#: templates/create_group.html:71 templates/group.html:31
+msgid "Group rules"
+msgstr "Правила группы"
+
+#: templates/create_group.html:77
+msgid "Group description"
+msgstr "Описание группы"
+
+#: templates/create_group.html:80
+msgid "Set avatar"
+msgstr "Установить аватар"
+
+#: templates/create_group.html:83
+msgid "Choose group avatar"
+msgstr "Выбрать аватар группы"
+
+#: templates/create_group.html:87
+msgid "Create group"
+msgstr "Создать группу"
+
+#: templates/feed.html:2 templates/layout.html:80
+msgid "Feed"
+msgstr "Лента"
+
+#: templates/feed.html:10
+msgid "News feed"
+msgstr "Лента новостей"
+
+#: templates/friends.html:13
+msgid "Your friends"
+msgstr "Ваши друзья"
+
+#: templates/friends.html:23 templates/user.html:26
+msgid "online"
+msgstr "в сети"
+
+#: templates/friends.html:25
+msgid "offline"
+msgstr "не в сети"
+
+#: templates/friends.html:37
+msgid "Write message"
+msgstr "Написать сообщение"
+
+#: templates/friends.html:40
+msgid "Delete friend"
+msgstr "Удалить друга"
+
+#: templates/group.html:17 templates/user_groups.html:20
+msgid "Subscribers:"
+msgstr "Подписчиков:"
+
+#: templates/group.html:19
+msgid "You are owner of this group"
+msgstr "Вы владелец этой группы"
+
+#: templates/group.html:21
+msgid "Join community"
+msgstr "Присоединиться к группе"
+
+#: templates/group.html:22
+msgid "Leave community"
+msgstr "Выйти из группы"
+
+#: templates/group.html:26
+msgid "Group description:"
+msgstr "Описание группы:"
+
+#: templates/group.html:34 templates/user.html:49
+msgid "Posts"
+msgstr "Записи"
+
+#: templates/group.html:47 templates/user.html:73
+msgid "Post"
+msgstr "Разместить запись"
+
+#: templates/index.html:5 templates/index.html:76
+msgid "Register"
+msgstr "Регистрация"
+
+#: templates/index.html:16
+msgid "Confirm your email and then login, using your credentials"
+msgstr "Подтвердите ваш е-мейл и войдите используя введённые данные"
+
+#: templates/index.html:17
+msgid "If you didn't get any messages, check spam folder"
+msgstr "Если вы не получили никаких сообщение, проверьте папку \"Спам\""
+
+#: templates/index.html:19
+msgid "Your account isn't active, you can't log in it"
+msgstr "Ваш аккаунт не активен, вы не можете войти"
+
+#: templates/index.html:20
+msgid "Check your email for activation mail or for support messages"
+msgstr ""
+"Проверьте вашу почту для письма-активации или для сообщений от тех. поддержки"
+
+#: templates/index.html:39
+msgid "Circles — Social network"
+msgstr "Circles — Социальная сеть"
+
+#: templates/index.html:40
+msgid ""
+"Circles is my student project, it's a social network with fluent modern "
+"design and a unique role-based system.<br>\n"
+"        You can add roles to all your friends, and when you create a post, "
+"you can add roles to it too, so only a specific\n"
+"            group of your friends with same roles as post will see it."
+msgstr ""
+"Circles это мой дипломный проект, это социальная сеть с ярким современным "
+"дизайном и уникальной системой ролей.<br>\n"
+"\tВы можете добавить роли своим друзьям, и когда вы размещаете записи, вы "
+"также можете добавлять к ним роли, чтобы только определённая\n"
+"группа ваших друзей с установленными ролями видела эту запись."
+
+#: templates/index.html:57
+msgid "You can register right now"
+msgstr "Регистрация нового профиля"
+
+#: templates/index.html:58 templates/settings.html:64
+msgid "Username"
+msgstr "Никнейм"
+
+#: templates/index.html:59 templates/settings.html:66
+msgid "5+ symbols"
+msgstr "минимум 5 символов"
+
+#: templates/index.html:61 templates/index.html:82
+msgid "E-mail"
+msgstr "E-mail"
+
+#: templates/index.html:62 templates/index.html:83 templates/settings.html:81
+msgid "enter valid email"
+msgstr "введите e-mail"
+
+#: templates/index.html:64 templates/index.html:67 templates/index.html:85
+#: templates/settings.html:85
+msgid "Password"
+msgstr "Пароль"
+
+#: templates/index.html:65 templates/index.html:68 templates/index.html:86
+#: templates/settings.html:87
+msgid "6+ symbols"
+msgstr "минимум 6 символов"
+
+#: templates/index.html:73 templates/index.html:91
+msgid "Complete captcha!"
+msgstr "Выполните капчу!"
+
+#: templates/index.html:77 templates/index.html:95
+msgid "Or"
+msgstr "Или"
+
+#: templates/index.html:78 templates/index.html:94 templates/layout.html:56
+msgid "Login"
+msgstr "Войти"
+
+#: templates/index.html:81
+msgid "Sign in"
+msgstr "Войти"
+
+#: templates/index.html:96
+msgid "Sign Up"
+msgstr "Регистрация"
+
+#: templates/index.html:101
+msgid "Passwords aren't equal!"
+msgstr "Пароли не совпадают!"
+
+#: templates/index.html:103
+msgid "Username or user already exist!"
+msgstr "Пользователь с таким никнеймом уже существует!"
+
+#: templates/layout.html:39
+msgid "manage your social circles"
+msgstr "управляйте вашими кругами общения"
+
+#: templates/layout.html:42
+msgid "search for users"
+msgstr "поиск"
+
+#: templates/layout.html:57
+msgid "Sign In"
+msgstr "Войти"
+
+#: templates/layout.html:65
+msgid "Profile"
+msgstr "Профиль"
+
+#: templates/layout.html:68 templates/settings.html:2
+msgid "Settings"
+msgstr "Настройки"
+
+#: templates/layout.html:77
+msgid "Communities"
+msgstr "Группы"
+
+#: templates/messages.html:9
+msgid "Your messages"
+msgstr "Ваши сообщения"
+
+#: templates/messages.html:21
+msgid "users:"
+msgstr "пользователей:"
+
+#: templates/messages.html:23
+msgid "dialog"
+msgstr "переписка"
+
+#: templates/messages.html:28
+msgid "Write"
+msgstr "Написать"
+
+#: templates/messages.html:32
+msgid "Leave"
+msgstr "Выйти"
+
+#: templates/settings.html:22
+msgid "Profile settings"
+msgstr "Настройки профиля"
+
+#: templates/settings.html:41
+msgid "Crop"
+msgstr "Обрезать"
+
+#: templates/settings.html:43
+msgid "Move"
+msgstr "Двигать"
+
+#: templates/settings.html:46
+msgid "Rotate clockwise"
+msgstr "Повернуть по часовой"
+
+#: templates/settings.html:49
+msgid "Rotate counterclockwise"
+msgstr "Повернуть против часовой"
+
+#: templates/settings.html:51
+msgid "Save image"
+msgstr "Сохранить изображение"
+
+#: templates/settings.html:60 templates/user.html:45
+msgid "About me"
+msgstr "Обо мне"
+
+#: templates/settings.html:80
+msgid "Email"
+msgstr "E-mail"
+
+#: templates/settings.html:91
+msgid "Save changes"
+msgstr "Сохранить"
+
+#: templates/settings.html:96
+msgid "Change avatar"
+msgstr "Сменить аватар"
+
+#: templates/settings.html:97
+msgid "Manage your roles"
+msgstr "Редактировать роли"
+
+#: templates/settings.html:104
+msgid "Role to edit"
+msgstr "Роль для редактирования"
+
+#: templates/settings.html:109
+msgid "Edit role name"
+msgstr "Имя роли"
+
+#: templates/settings.html:116
+msgid "Edit role color"
+msgstr "Цвет роли"
+
+#: templates/settings.html:122
+msgid "Can users with this role post on your wall?"
+msgstr "Могут ли пользователи с этой ролью размещать записи?"
+
+#: templates/settings.html:127 templates/user.html:111
+msgid "Accept changes"
+msgstr "Сохранить изменения"
+
+#: templates/settings.html:128 templates/user.html:112
+msgid "Delete role"
+msgstr "Удалить роль"
+
+#: templates/settings.html:130
+msgid "Create new role"
+msgstr "Создать новую роль"
+
+#: templates/settings.html:134
+msgid "Role color"
+msgstr "Цвет роли"
+
+#: templates/settings.html:138
+msgid "Create role"
+msgstr "Создать роль"
+
+#: templates/user.html:30
+msgid "friends"
+msgstr "друзья"
+
+#: templates/user.html:35
+msgid "Accept request"
+msgstr "Принять"
+
+#: templates/user.html:36
+msgid "Decline request"
+msgstr "Отклонить"
+
+#: templates/user.html:37
+msgid "Cancel request"
+msgstr "Отменить запрос"
+
+#: templates/user.html:39
+msgid "change cover"
+msgstr "изменить обложку"
+
+#: templates/user.html:60
+msgid "Type:"
+msgstr "Тип:"
+
+#: templates/user.html:63
+msgid "Roles:"
+msgstr "Роль:"
+
+#: templates/user.html:67
+msgid "Edit roles"
+msgstr "Редактировать роли"
+
+#: templates/user.html:80
+msgid "Color:"
+msgstr "Цвет:"
+
+#: templates/user.html:84
+msgid "Role name:"
+msgstr "Имя роли:"
+
+#: templates/user.html:88
+msgid "Add new role"
+msgstr "Добавить новую роль"
+
+#: templates/user.html:94
+msgid "Choose role to edit:"
+msgstr "Выбрать роль для редактирования:"
+
+#: templates/user.html:98
+msgid "Edit role name:"
+msgstr "Имя роли:"
+
+#: templates/user.html:103
+msgid "Edit role color:"
+msgstr "Цвет роли:"
+
+#: templates/user.html:108
+msgid "Can users with this role post on your page?"
+msgstr "Могут ли пользователи с этой ролью размещать записи?"
+
+#: templates/user.html:131
+msgid "only for:"
+msgstr "только для:"
+
+#: templates/user_groups.html:10
+msgid "Your groups"
+msgstr "Ваши группы"
+
+#: templates/user_groups.html:23
+msgid ""
+"Leave\n"
+"                        group"
+msgstr "Покинуть группу"
+
+#: templates/verify_email.html:10
+msgid "Hello! This is Circles team,"
+msgstr "Привет! Это команда Circles,"
+
+#: templates/verify_email.html:11
+msgid ""
+"We glad that you chose our social network, but before we begin, you need to "
+"finish one more step"
+msgstr ""
+"Мы рады что вы выбрали нашу социальную сеть, но прежде чем начать вам нужно "
+"завершить ещё один шаг"
+
+#: templates/verify_email.html:12
+msgid ""
+"Use this link to confirm your email and your account will be ready to go!"
+msgstr ""
+"Используйте эту ссылку чтобы подтвердить вашу электронную почту и всё готово!"
+
+#: templates/verify_email.html:13
+msgid "Click on this"
+msgstr "Нажмите сюда"
+
+#: templates/verify_email.html:14
+msgid "If link isn't rendering, you can copy and paste this in your browser"
+msgstr ""
+"Если ссылка не отображается, вы можете скопировать и вставить эту ссылку в "
+"адресную строку вашего браузера"
+
+#: templates/verify_email.html:16
+msgid "If you have not registered, ignore this email"
+msgstr "Если вы не регистрировались, игнорируйте это сообщение"
+
+#: templates/verify_email.html:17
+msgid "Best regards, Circles team"
+msgstr "С лучшими пожеланиями, команда Circles"

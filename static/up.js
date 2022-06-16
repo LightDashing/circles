@@ -153,13 +153,13 @@ function init(name) {
             is_post_private = false
             roles_selector.fadeOut(250)
             setTimeout(() => tags_flexbox.css("display", "inline"), 240)
-            private_selector.html("public")
+            private_selector.html(_("public"))
 
         } else {
             is_post_private = true
             tags_flexbox.css("display", "flex")
             roles_selector.fadeIn(250)
-            private_selector.html("private")
+            private_selector.html(_("private"))
         }
     })
 
@@ -184,7 +184,7 @@ function init(name) {
         plugins: ['remove_button'],
         valueField: "role_name",
         labelField: "role_name",
-        placeholder: 'Start typing something...',
+        placeholder: _('Start typing something...'),
         searchField: ["role_name"],
         maxItems: 6,
         preload: true,
@@ -222,7 +222,8 @@ function init(name) {
                             $("#edit_roles_selector")[0].selectize.addOption(data)
                             callback(data)
                         } else {
-                            alert('You already have 6 tags created!')
+                            let alert_message = _("You already have 6 tags created!'")
+                            alert(alert_message)
                         }
                     }
                 })

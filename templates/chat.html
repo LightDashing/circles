@@ -45,10 +45,10 @@
                     <div id="settings_context_{{ message.id }}" class="message-settings-context">
                         <span class="message-settings-context-text"
                               onclick="deleteMessage(parseInt({{ message.id }}), parseInt({{ chat.id }}))"><i
-                                class="material-icons">delete</i>Delete message</span>
+                                class="material-icons">delete</i>{{ _("Delete message")}}</span>
                         <span class="message-settings-context-text"
                               onclick="enableEditing(parseInt({{ message.id }}), parseInt({{ chat.id }}))"><i
-                                class="material-icons">edit</i>Edit message</span>
+                                class="material-icons">edit</i>{{ _("Edit message")}}</span>
                     </div>
                 </div>
                 {#                        TODO: картинки занимают лишнее место, исправить#}
@@ -75,8 +75,8 @@
             <div class="message-input">
                 <label class="message-input-label">
                     <textarea id="message_area_{{ chat.id }}"></textarea>
-                    <button class="new-button" style="margin: 0" id="send_message_{{ chat.id }}">Send</button>
-                    <button class="new-button" style="margin: 0; display: none" id="edit_message">Edit</button>
+                    <button class="new-button" style="margin: 0" id="send_message_{{ chat.id }}">{{ _("Send") }}</button>
+                    <button class="new-button" style="margin: 0; display: none" id="edit_message">{{ _("Edit") }}</button>
                 </label>
                 <div class="message-input-pinned" id="pinned-container">
 
@@ -92,13 +92,13 @@
                     <a>{{ chat.chatname }}</a><br>
                 </div>
             {% endfor %}
-            <a href="/user/create_chat">Create new chat</a>
+            <a href="/user/create_chat">{{ _("Create new chat")}}</a>
         </div>
     </div>
 {% endblock %}
 {% block right_row %}
     <div class="chat-control-buttons">
-        <button class="new-button" id="all_messages_button">All messages</button>
+        <button class="new-button" id="all_messages_button">{{ _("All messages")}}</button>
         <div class="chat-messages-buttons">
 
         </div>

@@ -7,41 +7,54 @@
     </div>
     <div class="all_messages">
         <div id="incoming_msg_{{ chat.id }}" class="incoming_msg" data-id="{{ chat.id }}">
-                {% for message in messages %}
-                    {% if message.from_user_id == current_user.id %}
-                        <div class='message-box' style="align-self: end; background: #e3e4f8">
-                    {% else %}
-                        <div class='message-box'>
-                    {% endif %}
-                <img src="{{ message.user_avatar }}" class="message-box-avatar">
-                <div class="message-box-text">
-                    <span class="from-user">{{ get_username(message.from_user_id) }}</span>
-                    <span class="message-text">{{ message.message }}</span>
-                </div>
-                {#                        TODO: картинки занимают лишнее место, исправить#}
-                {% if message.attachment %}
-                    <span class="flex-break"></span>
-                    <div class="message-pinned-images">
-                        {% for attach in message.attachment %}
-                            {% for image in attach.links_array %}
-                                {% if image %}
-                                    <img src="{{ image }}" class="post-pinned-image" alt="attach_img"
-                                         onclick="showModalImage('image_modal', 'image_modal_content',
-                                                 '{{ format_backslash(image) }}', 'image_modal_content',
-                                                 '{{ attach.date_added }}', '{{ get_username(message.from_user_id) }}',
-                                                 '{{ format_backslash(message.user_avatar) }}')">
-                                {% endif %}
-                            {% endfor %}
-                        {% endfor %}
-                    </div>
+            {% for message in messages %}
+                {% if message.from_user_id == current_user.id %}
+                    <div class='message-box' style="align-self: end; background: #e3e4f8">
+                {% else %}
+                    <div class='message-box'>
                 {% endif %}
+            <img src="{{ message.user_avatar }}" class="message-box-avatar">
+            <div class="message-box-text">
+                <span class="from-user">{{ get_username(message.from_user_id) }}</span>
+                <span class="message-text">{{ message.message }}</span>
+            </div>
+            <span id="settings_{{ message.id }}" class="message-settings material-icons"
+                  onclick="toggleMenu(parseInt({{ message.id }}))">more_horiz</span>
+            <div id="settings_context_{{ message.id }}" class="message-settings-context">
+                        <span class="message-settings-context-text"
+                              onclick="deleteMessage(parseInt({{ message.id }}), parseInt({{ chat.id }}))"><i
+                                class="material-icons">delete</i>{{ _("Delete message") }}</span>
+                <span class="message-settings-context-text"
+                      onclick="enableEditing(parseInt({{ message.id }}), parseInt({{ chat.id }}))"><i
+                        class="material-icons">edit</i>{{ _("Edit message") }}</span>
+            </div>
+            {#                        TODO: картинки занимают лишнее место, исправить#}
+            {% if message.attachment %}
+                <span class="flex-break"></span>
+                <div class="message-pinned-images">
+                    {% for attach in message.attachment %}
+                        {% for image in attach.links_array %}
+                            {% if image %}
+                                <img src="{{ image }}" class="post-pinned-image" alt="attach_img"
+                                     onclick="showModalImage('image_modal', 'image_modal_content',
+                                             '{{ format_backslash(image) }}', 'image_modal_content',
+                                             '{{ attach.date_added }}', '{{ get_username(message.from_user_id) }}',
+                                             '{{ format_backslash(message.user_avatar) }}')">
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
                 </div>
-                {% endfor %}
+            {% endif %}
+            </div>
+            {% endfor %}
             </div>
             <div class="message-input">
                 <label class="message-input-label">
                     <textarea id="message_area_{{ chat.id }}"></textarea>
-                    <button class="new-button" style="margin: 0" id="send_message_{{ chat.id }}">Send</button>
+                    <button class="new-button" style="margin: 0"
+                            id="send_message_{{ chat.id }}">{{ _("Send") }}</button>
+                    <button class="new-button" style="margin: 0; display: none"
+                            id="edit_message">{{ _("Edit") }}</button>
                 </label>
                 <div class="message-input-pinned" id="pinned-container">
 

@@ -1,10 +1,38 @@
+$(function () {
+    $("#eng_lang").click(function () {
+        $.ajax({
+            url: '/api/language',
+            method: 'POST',
+            dataType: 'json',
+            contentType: 'application/json',
+            data: JSON.stringify({lang: "en"}),
+            success: function () {
+                document.location.reload()
+            }
+        })
+    })
+
+    $("#ru_lang").click(function () {
+        $.ajax({
+            url: '/api/language',
+            method: 'POST',
+            dataType: 'json',
+            contentType: 'application/json',
+            data: JSON.stringify({lang: "ru"}),
+            success: function () {
+                document.location.reload()
+            }
+        })
+    })
+})
+
 function pinToObject(params) {
     let html = jQuery("html")
 
     html.on("dragover", function (e) {
         e.preventDefault()
         e.stopPropagation()
-        params["obj"].attr("placeholder", "Drag image here")
+        params["obj"].attr("placeholder", _("Drag image here"))
     })
     html.on("drop", function (e) {
         e.preventDefault();
@@ -16,11 +44,11 @@ function pinToObject(params) {
         e.stopPropagation()
         let file = e.originalEvent.dataTransfer.files[0];
         if (file.size > 1024 * 1024 * 25) {
-            alert("Size of file must be less than 25 megabytes");
+            alert(_("Size of file must be less than 25 megabytes"));
             return;
         }
         if (file.type.substring(0, 5) !== 'image') {
-            alert("File must be image!");
+            alert(_("File must be image!"));
             return;
         }
         if (FileReader && file && file.size) {

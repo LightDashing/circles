@@ -7,7 +7,7 @@
 {% endblock %}
 {% block main_row %}
     <div class="all-groups">
-    <h1>Your groups</h1>
+    <h1>{{ _("Your groups")}}</h1>
     {% if groups %}
         {% for group in groups %}
             <div class="group-entry" id="group_{{ group.id }}">
@@ -17,14 +17,15 @@
                             onclick="location.href='{{ url_for("group_page", group_name=group.group_name) }}'">{{ group.group_name }}</span><br>
                     <span class="group-status">{{ group.status }}</span>
                     {% if current_user.id == group.owner %}
-                        <span>Subscribers: {{ group.users_amount }}</span>
+                        <span>{{ _("Subscribers:")}} {{ group.users_amount }}</span>
                     {% endif %}
                 </div>
-                <button class="new-button" onclick="leave_group('{{ group.group_name }}', '{{ group.id }}')">Leave group</button>
+                <button class="new-button" onclick="leave_group('{{ group.group_name }}', '{{ group.id }}')">{{ _("Leave
+                        group")}}</button>
             </div>
         {% endfor %}
     {% endif %}
-    <button id="new-group" class="new-button" onclick="location.href='{{ url_for("create_group") }}'">Create new group</button>
+    <button id="new-group" class="new-button" onclick="location.href='{{ url_for("create_group") }}'">{{ _("Create new group")}}</button>
     </div>
 {% endblock %}
 {% block right_row %}

@@ -17,10 +17,10 @@ function renderChatMessage(username, message) {
             <div id="settings_context_${message["id"]}" class="message-settings-context">
                 <span class="message-settings-context-text"
                               onclick="deleteMessage(${message["id"]}, ${message["chat_id"]})"><i
-                                class="material-icons">delete</i>Delete message</span>
+                                class="material-icons">delete</i>${_("Delete message")}</span>
                 <span class="message-settings-context-text" 
                 onclick="enableEditing(${message["id"]}, ${message["chat_id"]})"><i
-                                class="material-icons">edit</i>Edit message</span>
+                                class="material-icons">edit</i>${_("Edit message")}</span>
             </div>
         </div>`
 

@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block title %}Friends{% endblock %}
+{% block title %}{{ _("Friends") }}{% endblock %}
 {% block head %}
     {{ super() }}
     <link type="text/css" rel="stylesheet" href="/static/css/friends.css">
@@ -10,7 +10,7 @@
 {% endblock %}
 {% block main_row %}
     {% if friends %}
-        <h1 style="text-align: left; margin-bottom: 30px">Your friends</h1>
+        <h1 style="text-align: left; margin-bottom: 30px">{{ _("Your friends")}}</h1>
         <div class="all-friends">
             {% for friend in friends %}
                 <div class="friend-block" id="friend_{{ friend.username }}">
@@ -20,9 +20,9 @@
                         <a class="friend-nick"
                            href="{{ url_for("users_page", name=friend["username"]) }}">{{ friend["username"] }}</a>
                         {% if friend["is_online"] %}
-                            <span style="color: green; font-size: 0.95em">online</span>
+                            <span style="color: green; font-size: 0.95em">{{ _("online") }}</span>
                         {% else %}
-                            <span style="color: red; font-size: 0.95em">offline</span>
+                            <span style="color: red; font-size: 0.95em">{{ _("offline") }}</span>
                         {% endif %}
                         <label class="friend-block-description-roles">
                             <select id="f{{ friend["id"] }}"
@@ -34,16 +34,16 @@
                     </div>
                     <div class="friend-block-buttons">
                         <button onclick="location.href='{{ url_for("dialog_page", username=friend["username"]) }}'">
-                            Write message
+                            {{ _("Write message")}}
                         </button>
                         {#                        <button>Edit roles</button>#}
-                        <button onclick="delete_friend('{{ friend.username }}')">Delete friend</button>
+                        <button onclick="delete_friend('{{ friend.username }}')">{{ _("Delete friend")}}</button>
                     </div>
                 </div>
             {% endfor %}
         </div>
     {% else %}
-        <a>You don't have friends</a>
+        <a>{{ _("You don't have friends")}}</a>
     {% endif %}
 {% endblock %}
 {% block right_row %}

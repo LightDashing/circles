@@ -3,7 +3,7 @@
         <img class="post-avatar" alt="User avatar" src="{{ get_user_avatar(post['user_id']) }}">
         <a class="post-nick"
            href="{{ url_for("users_page", name=get_username(post['user_id'])) }}"><b>{{ get_username(post['user_id']) }}</b></a>
-        <span class="post-date">posted at {{ formate_datetime(post['date_added']) }}</span><br>
+        <span class="post-date">{{ _("posted at")}} {{ formate_datetime(post['date_added']) }}</span><br>
         <span class="material-icons" id="post-more">more_horiz</span>
     </div>
     <a class="post-message">{{ post['message'] }}</a>

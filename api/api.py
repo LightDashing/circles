@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, render_template
+from flask import Blueprint, request, jsonify, render_template, session
 from database import DataBase, DBC
 from flask_login import login_required, current_user, logout_user
 from files import FileOperations
@@ -10,6 +10,11 @@ api_bp = Blueprint('api_bp', __name__, template_folder='templates')
 
 # DBC = DataBase()
 
+@api_bp.route('/language', methods=["POST"])
+def change_language():
+    data = request.get_json()
+    session["lang"] = data["lang"]
+    return jsonify(data["lang"])
 
 @api_bp.route('/join_group', methods=['POST'])
 @login_required

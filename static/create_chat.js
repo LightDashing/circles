@@ -111,10 +111,10 @@ function bind_checkbox(number){
 function create_chat(){
     chat_name = $("#chat_name").val()
     if (chat_name === ''){
-        alert("Enter chat name!")
+        alert(_("Enter chat name!"))
     } else if (usernames.length < 2){
         // TODO: здесь нужно поменять на кнопку "перейти в диалог"
-        alert("Add more friends to chat!")
+        alert(_("Add more friends to chat!"))
     } else {
         console.log(chat_name)
         $.ajax({

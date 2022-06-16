@@ -14,10 +14,10 @@ $(function onReady() {
     anonimity_b.click(function () {
         if (is_anonymous){
             is_anonymous = false
-            anonimity_b.html("public")
+            anonimity_b.html(_("public"))
         } else{
             is_anonymous = true
-            anonimity_b.html("anonymous")
+            anonimity_b.html(_("anonymous"))
         }
     })
 

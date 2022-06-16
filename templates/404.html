@@ -36,13 +36,9 @@
 				<div></div>
 				<div></div>
 			</div>
-			<h1>oops!</h1>
-			<h2>Error 404 : Page Not Found</h2>
-			{% if session['username'] %}
-			<a href={{"/users/" + session['username'] }}>go back</a>
-			{% else %}
-			<a href="/">go back</a>
-			{% endif %}
+			<h1>{{ _("oops!") }}</h1>
+			<h2>{{ _("Error 404 : Page Not Found")}}</h2>
+                <a href="/">{{ _("go back")}}</a>
 		</div>
 	</div>
 

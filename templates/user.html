@@ -21,32 +21,32 @@
             </div>
             <div class="user-card-nickname-section">
                 <span class="user-nickname">{{ user.username }}</span>
-                <span style="font-size: 0.8em">common user</span>
+                <span style="font-size: 0.8em">{{ _("common user")}}</span>
                 {% if user.is_online %}
-                    <span style="font-size: 0.8em; color: green">online</span>
+                    <span style="font-size: 0.8em; color: green">{{ _("online") }}</span>
                 {% else %}
                     <span style="font-size: 0.8em">{{ user.last_time_online }}</span>
                 {% endif %}
-                <span style="font-size: 0.8em">{{ user.friends_count }} friends</span>
+                <span style="font-size: 0.8em">{{ user.friends_count }} {{ _("friends") }}</span>
                 <div class="user-card-other-block">
                     {% if name != current_user.username %}
-                        <button class="tag-button-small" id="add_friend" value="Add friend">Add friend</button>
-                        <button class="tag-button-small" id="remove_friend" value="">Remove friend</button>
-                        <button class="tag-button-small" id="accept_request" value="">Accept request</button>
-                        <button class="tag-button-small" id="decline_request" value="">Decline request</button>
-                        <button class="tag-button-small" id="cancel_request" value="">Cancel request</button>
+                        <button class="tag-button-small" id="add_friend" value="Add friend">{{ _("Add friend")}}</button>
+                        <button class="tag-button-small" id="remove_friend" value="">{{ _("Remove friend")}}</button>
+                        <button class="tag-button-small" id="accept_request" value="">{{ _("Accept request")}}</button>
+                        <button class="tag-button-small" id="decline_request" value="">{{ _("Decline request")}}</button>
+                        <button class="tag-button-small" id="cancel_request" value="">{{ _("Cancel request")}}</button>
                     {% else %}
-                        <span class="tag-button-small">change cover</span>
+                        <span class="tag-button-small">{{ _("change cover")}}</span>
                     {% endif %}
                 </div>
             </div>
         </div>
         <div class="user-card-description">
-            <span style="color: var(--object-bg-text-color)">About me</span>
+            <span style="color: var(--object-bg-text-color)">{{ _("About me")}}</span>
             <a class="user-description">{{ user.description }}</a>
         </div>
     </div>
-    <span class="posts-span">Posts</span>
+    <span class="posts-span">{{ _("Posts") }}</span>
     {% if can_post %}
         <div class="new-post">
             <div style="flex: 1;" class="new-post-sub">
@@ -57,59 +57,59 @@
                     <div class="new-post-sub-pinned" id="pinned_container">
                     </div>
                     <div class="new-post-sub-tags">
-                        <a>Type:</a>
-                        <button class="tag-button-small" style="margin-right: 10px" id="private_post">private</button>
+                        <a>{{ _("Type:")}}</a>
+                        <button class="tag-button-small" style="margin-right: 10px" id="private_post">{{ _("private") }}</button>
                         <label id="role_selector" for="roles_selector">
-                            Roles:
+                            {{ _("Roles:")}}
                             <select id="roles_selector" multiple="multiple" style="width: 100%; justify-self: center">
                             </select>
                         </label>
-                        <button class="new-button" style="margin-right: auto; margin-left: 0" id="edit_roles">Edit roles
+                        <button class="new-button" style="margin-right: auto; margin-left: 0" id="edit_roles">{{ _("Edit roles")}}
                         </button>
                     </div>
                 {% endif %}
             </div>
             <div class="post-buttons">
-                <button class="new-button" id="make_post">Post</button>
+                <button class="new-button" id="make_post">{{ _("Post") }}</button>
             </div>
         </div>
     {% endif %}
     <div class="modal-window" id="add_role_modal">
         <div class="modal-window-content" id="add_role_modal_content">
             <label>
-                Color:
+                {{ _("Color:")}}
                 <input class="role-inputs" style="margin-top: 5px; padding: 5px" data-jscolor="{}" id="role_color">
             </label>
             <label>
-                Role name:
+                {{ _("Role name:")}}
                 <input class="role-inputs" style="margin-top: 5px; padding: 5px" type="text" id="role_name"
                        maxlength="32">
             </label>
-            <button class="new-button" id="pin_roles">Add new role</button>
+            <button class="new-button" id="pin_roles">{{ _("Add new role")}}</button>
         </div>
     </div>
     <div class="modal-window" id="modal_edit_role">
         <div class="modal-window-role-edit-content" id="modal_edit_role_content">
             <label>
-                Choose role to edit:
+                {{ _("Choose role to edit:")}}
                 <select id="edit_roles_selector"></select>
             </label>
             <label>
-                Edit role name:
+                {{ _("Edit role name:")}}
                 <input class="role-inputs" style="margin-top: 5px; padding: 10px" type="text" id="edit_role_name"
                        maxlength="32">
             </label>
             <label>
-                Edit role color:
+                {{ _("Edit role color:")}}
                 <input class="role-inputs" style="margin-top: 5px; padding: 10px" data-jscolor="{}"
                        id="edit_role_color">
             </label>
             <label>
-                Can users with this role post on your page?
+                {{ _("Can users with this role post on your page?")}}
                 <input id="can_post" class="role-inputs" style="margin-top: 5px; padding: 10px" type="checkbox">
             </label>
-            <button class="new-button" id="edit_role_button">Accept changes</button>
-            <button class="new-button" id="delete_role_button">Delete role</button>
+            <button class="new-button" id="edit_role_button">{{ _("Accept changes")}}</button>
+            <button class="new-button" id="delete_role_button">{{ _("Delete role")}}</button>
         </div>
     </div>
     <div class="posts">
@@ -120,15 +120,15 @@
                         <img class="post-avatar" alt="User avatar" src="{{ get_user_avatar(post['user_id']) }}">
                         <a class="post-nick"
                            href="{{ url_for("users_page", name=get_username(post['user_id'])) }}"><b>{{ get_username(post['user_id']) }}</b></a>
-                        <span class="post-date">posted at {{ formate_datetime(post['date_added']) }}</span><br>
+                        <span class="post-date">{{ _("posted at")}} {{ formate_datetime(post['date_added']) }}</span><br>
                         {% if current_user.username == name %}
                             <div class="private-info">
                                 {% if post.is_private %}
-                                    <span class="tag-button-small">private</span>
+                                    <span class="tag-button-small">{{ _("private") }}</span>
                                 {% else %}
-                                    <span class="tag-button-small">public</span>
+                                    <span class="tag-button-small">{{ _("public") }}</span>
                                 {% endif %}
-                                <span class="private-role-info">only for: </span>
+                                <span class="private-role-info">{{ _("only for:")}} </span>
                                 {% for role in post.roles %}
                                     <span class="tag-button-small role-display-{{ role.id }}"
                                           style="background: {{ role.role_color }}; color: {{ role.font_color }}">{{ role.role_name }}</span>

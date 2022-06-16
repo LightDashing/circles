@@ -49,11 +49,11 @@ function create_group() {
     let group_rules = $("#group_rules").val()
     let group_description = $("#group_description").val()
     if (group_summary.length > 128){
-        alert("Group summary must be less than 128!")
+        alert(_("Group summary must be less than 128!"))
         return
     }
     if (group_name === "" || group_summary === "" || group_rules === "" || group_description === "") {
-        alert("One of the fields are empty!")
+        alert(_("One of the fields are empty!"))
     } else {
         $.ajax({
             url: '/create_group',

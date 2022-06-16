@@ -95,22 +95,22 @@ function createDropdownElement(element) {
         drop_element.innerHTML = ` <img src="${element['avatar']}" alt="user_avatar" class="dropdown-profile-avatar">
                                         <div class="dropdown-profile-description">
                                             <span>${element['group_name']}</span>
-                                            <span class="dropdown-profile-description-status">Subscribers: ${element["users_amount"]}</span>
-                                            <span class="dropdown-profile-description-type">Group</span>
+                                            <span class="dropdown-profile-description-status">${_('Subscribers:')} ${element["users_amount"]}</span>
+                                            <span class="dropdown-profile-description-type">${_("Group")}</span>
                                         </div>`
     } else {
         drop_element.onclick = function () {
             location.href = `/users/${element['username']}`
         }
         drop_element.id = `drop_user_${element['id']}`
-        let user_type = 'common user'
+        let user_type = _('common user')
         if (element['id'] === current_userid) {
-            user_type = "it's you"
+            user_type = _("it's you")
         }
         drop_element.innerHTML = ` <img src="${element['avatar']}" alt="user_avatar" class="dropdown-profile-avatar">
                                         <div class="dropdown-profile-description">
                                             <span>${element['username']}</span>
-                                            <span class="dropdown-profile-description-status">online</span>
+                                            <span class="dropdown-profile-description-status">${_("online")}</span>
                                             <span class="dropdown-profile-description-type">${user_type}</span>
                                         </div>`
     }

@@ -1,4 +1,7 @@
 // import Cookies from '/static/node_modules/js-cookie/dist/js.cookie.min'
+let messages_field = _("Messages")
+let friends_field = _("Friends")
+
 let notification_sound
 $(function onReady() {
     notification_sound = new Audio('/static/audio/notification.mp3')
@@ -6,14 +9,14 @@ $(function onReady() {
     const message_b = $('#messages')
     const friends_b = $("#friends")
     if (Cookies.get("new_messages") && Cookies.get("new_messages") !== "0") {
-        message_b.html(`<i class="material-icons">mail</i> Messages +${Cookies.get("new_messages")}`)
+        message_b.html(`<i class="material-icons">mail</i> ${messages_field} +${Cookies.get("new_messages")}`)
     } else {
-        message_b.html(`<i class="material-icons">mail</i> Messages`)
+        message_b.html(`<i class="material-icons">mail</i> ${messages_field}`)
     }
     if (Cookies.get("new_friends") && Cookies.get("new_friends") !== "0") {
-        friends_b.html(`<i class="material-icons">people</i> Friends +${Cookies.get("new_friends")}`)
+        friends_b.html(`<i class="material-icons">people</i> ${friends_field} +${Cookies.get("new_friends")}`)
     } else {
-        friends_b.html(`<i class="material-icons">people</i> Friends`)
+        friends_b.html(`<i class="material-icons">people</i> ${friends_field}`)
     }
 })
 
@@ -41,20 +44,20 @@ function checkAllUpdates() {
                 if (data["chats"].length > 0) {
                     const messages_button = $("#messages")
                     messages_button.html(`
-                     <i class="material-icons">mail</i> Messages +${data["chats"].length}`)
+                     <i class="material-icons">mail</i> ${messages_field} +${data["chats"].length}`)
                     Cookies.set("new_messages", data["chats"].length)
                 }
                 if (data["friends"] !== 0) {
                     const friends_button = $("#friends")
                     friends_button.html(`
-                     <i class="material-icons">people</i> Friends +${data["friends"]}`)
+                     <i class="material-icons">people</i> ${friends_field} +${data["friends"]}`)
                     Cookies.set("new_friends", 0)
                 }
 
             } else {
                 Cookies.set("new_messages", 0)
-                $("#messages").html(`<i class="material-icons">mail</i> Messages`)
-                $("#friends").html(`<i class="material-icons">people</i> Friends`)
+                $("#messages").html(`<i class="material-icons">mail</i> ${messages_field}`)
+                $("#friends").html(`<i class="material-icons">people</i> ${friends_field}`)
                 Cookies.set("new_friends", 0)
             }
             if (playNotification) {
@@ -70,17 +73,17 @@ function checkAllUpdates() {
 
 function setMessages(value) {
     if (value > 0) {
-        $("#messages").html(`<i class="material-icons">mail</i> Messages +${value}`)
+        $("#messages").html(`<i class="material-icons">mail</i> ${messages_field} +${value}`)
     } else {
-        $("#messages").html(`<i class="material-icons">mail</i> Messages`)
+        $("#messages").html(`<i class="material-icons">mail</i> ${messages_field}`)
     }
 }
 
 function setFriends(value) {
     if (value > 0) {
-        $("#friends").html(`<i class="material-icons">people</i> Friends +${value}`)
+        $("#friends").html(`<i class="material-icons">people</i> ${friends_field} +${value}`)
     } else {
-        $("#friends").html(`<i class="material-icons">people</i> Friends`)
+        $("#friends").html(`<i class="material-icons">people</i> ${friends_field}`)
     }
 }
 

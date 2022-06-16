@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block title %}Settings{% endblock %}
+{% block title %}{{ _("Settings") }}{% endblock %}
 {% block head %}
     {{ super() }}
     <link type="text/css" rel="stylesheet" href="/static/css/settings.css">
@@ -19,7 +19,7 @@
 {% endblock %}
 {% block main_row %}
     <div class="settings-block">
-        <h1>Profile settings</h1>
+        <h1>{{ _("Profile settings")}}</h1>
         <div class="change-avatar" id="change_avatar">
             <div class="change-avatar-content" id="avatar-modal">
                 <span class="close" id="close_button">&times;</span>
@@ -38,17 +38,17 @@
                         </div>
                     </div>
                     <div class="control-buttons">
-                        <button class="new-button" style="display: none" id="crop_button" title="Crop"><i
+                        <button class="new-button" style="display: none" id="crop_button" title="{{ _("Crop") }}"><i
                                 class="bi-crop"></i></button>
-                        <button class="new-button" style="display: none" id="move_button" title="Move"><i
+                        <button class="new-button" style="display: none" id="move_button" title="{{ _("Move") }}"><i
                                 class="bi-arrows-move"></i></button>
                         <div class="flex-break"></div>
-                        <button class="new-button" style="display: none" id="rotate_90_left" title="Rotate clockwise"><i
+                        <button class="new-button" style="display: none" id="rotate_90_left" title="{{ _("Rotate clockwise")}}"><i
                                 class="bi-arrow-clockwise"></i></button>
                         <button class="new-button" style="display: none" id="rotate_90_right"
-                                title="Rotate counterclockwise"><i class="bi-arrow-counterclockwise"></i></button>
+                                title="{{ _("Rotate counterclockwise")}}"><i class="bi-arrow-counterclockwise"></i></button>
                         <div class="flex-break"></div>
-                        <button class="new-button" style="display: none" id="save_image" title="Save image"><i
+                        <button class="new-button" style="display: none" id="save_image" title="{{ _("Save image")}}"><i
                                 class="bi-upload"></i></button>
                     </div>
                 </div>
@@ -57,13 +57,13 @@
             </div>
         </div>
         <form method="POST" id="main_form" class="settings-form">
-            <label style="width: 65%">About me
+            <label style="width: 65%">{{ _("About me")}}
                 <textarea class="desc" name='desc' form="main_form">{{ descrip }}</textarea>
             </label>
             <div class="inputs-block">
-                <label>Username
+                <label>{{ _("Username") }}
                     <input type='text' minlength="3" maxlength="30" class="settings-input"
-                           placeholder="5+ symbols"
+                           placeholder="{{ _("5+ symbols") }}"
                            name="username" value="{{ name }}" required>
                 </label>
                 <div class="username-error"></div>
@@ -77,65 +77,65 @@
 {#                        <input class="settingsInputForm" type="checkbox" form="main_form" name="can_post">#}
 {#                    {% endif %}#}
 {#                </label>#}
-                <label>Email
-                    <input type="email" maxlength="30" placeholder="enter valid email" class="settings-input"
+                <label>{{ _("Email") }}
+                    <input type="email" maxlength="30" placeholder="{{ _("enter valid email")}}" class="settings-input"
                            name="email" value="{{ email }}" required>
                 </label>
                 <div class="email-error"></div>
-                <label>Password
+                <label>{{ _("Password") }}
                     <input type="password" minlength="6" maxlength="20" class="settings-input"
-                           placeholder="6+ symbols"
+                           placeholder="{{ _("6+ symbols") }}"
                            name="pw1">
                 </label>
                 <div class="password-error"></div>
-                <input class="new-button" type="submit" value="Save changes">
+                <input class="new-button" type="submit" value="{{ _("Save changes")}}">
                 <div class="unknown-error"></div>
             </div>
         </form>
         <div class="settings-block buttons-block">
-            <button class="new-button" id="avatar_changer">Change avatar</button>
-            <button class="new-button" id="roles_menu">Manage your roles</button>
+            <button class="new-button" id="avatar_changer">{{ _("Change avatar")}}</button>
+            <button class="new-button" id="roles_menu">{{ _("Manage your roles")}}</button>
         </div>
         <div class="change-avatar" id="roles_changer">
             <div class="change-avatar-content roles-content" id="roles_modal">
                 <div class="roles-modal">
                     <div class="roles-modal-cell" style="grid-area: a">
                         <label style="grid-area: a; width: 100%">
-                            Role to edit
+                            {{ _("Role to edit")}}
                             <select id="roles_selector" style="width: 90%"></select>
                         </label>
                     </div>
                     <label style="grid-area: c">
-                        Edit role name<br>
+                        {{ _("Edit role name")}}<br>
                         <input style="" type="text"
                                class="settings-input"
                                id="edit_role_name"
                                maxlength="32">
                     </label>
                     <label style="grid-area: d">
-                        Edit role color<br>
+                        {{ _("Edit role color")}}<br>
                         <input style="margin-top: 5px; padding: 10px" data-jscolor="{}"
                                class="settings-input"
                                id="edit_role_color">
                     </label>
                     <label style="grid-area: zz">
-                        Can users with this role post on your wall?
+                        {{ _("Can users with this role post on your wall?")}}
                          <input style="margin-top: 5px; padding: 10px" type="checkbox"
                                class="settings-input"
                                id="can_post">
                     </label>
-                    <button class="new-button" id="edit_role_button" style="grid-area: f">Accept changes</button>
-                    <button class="new-button" id="delete_role_button" style="grid-area: g">Delete role</button>
+                    <button class="new-button" id="edit_role_button" style="grid-area: f">{{ _("Accept changes")}}</button>
+                    <button class="new-button" id="delete_role_button" style="grid-area: g">{{ _("Delete role")}}</button>
                     <label style="grid-area: b">
-                        Create new role<br>
+                        {{ _("Create new role")}}<br>
                         <input class="settings-input" type="text" maxlength="32" id="create_role_name">
                     </label>
                     <label style="grid-area: e">
-                        Role color<br>
+                        {{ _("Role color")}}<br>
                         <input style="margin-top: 5px; padding: 10px" class="settings-input" data-jscolor="{}"
                                id="create_role_color">
                     </label>
-                    <button class="new-button" style="grid-area: i" id="create_role_b">Create role</button>
+                    <button class="new-button" style="grid-area: i" id="create_role_b">{{ _("Create role")}}</button>
                 </div>
             </div>
             {#                <span class="close" id="close_roles_button">&times;</span>#}

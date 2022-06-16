@@ -11,6 +11,7 @@
               rel="stylesheet">
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round"
               rel="stylesheet">
+        <script src="{{ url_for("babel_catalog") }}"></script>
         <script>window.jQuery || document.write('<script src="{{
   url_for('static', filename='jquery3.6.0.js') }}">\x3C/script>')</script>
         <script type=text/javascript>
@@ -35,10 +36,10 @@
 <div class="header">
     <div class="header-content">
         <span class="header-title"><img src="../static/img/site-logo.png" alt="site logo"></span>
-        <span class="header-label">manage your social circles</span>
+        <span class="header-label">{{ _("manage your social circles") }}</span>
         <div class="dropdown-container">
             <label class="search-label">
-                <input type="text" placeholder="search for users" id="search_users">
+                <input type="text" placeholder="{{ _("search for users")}}" id="search_users">
                 <span class="material-icons">search</span>
             </label>
             <div id="dropdown-search" class="dropdown-content">
@@ -52,8 +53,8 @@
             <img src="{{ current_user.avatar }}" class="header-avatar"
                  onclick="location.href='{{ url_for("users_page", name=current_user.username) }}'">
         {% else %}
-            <button class="new-button" id="login-button" onclick="location.href='{{ url_for('login') }}'">Login</button>
-            <button class="new-button" id="sign-in-button">Sign In</button>
+            <button class="new-button" id="login-button" onclick="location.href='{{ url_for('login') }}'">{{ _("Login") }}</button>
+            <button class="new-button" id="sign-in-button">{{ _("Sign In")}}</button>
         {% endif %}
     </div>
 </div>
@@ -61,23 +62,27 @@
     {% block left_row %}
         {% if not current_user.is_anonymous %}
             <button class="new-button" id="profile" onclick="location.href='{{ url_for("index") }}'"><i
-                    class="material-icons">home</i> Profile
+                    class="material-icons">home</i> {{ _("Profile") }}
             </button>
             <button class="new-button" id="settings" onclick="location.href='{{ url_for("user_settings") }}'"><i
-                    class="material-icons">settings</i> Settings
+                    class="material-icons">settings</i> {{ _("Settings") }}
             </button>
             <button class="new-button" id="messages" onclick="location.href='{{ url_for("messages") }}'"><i
-                    class="material-icons">mail</i> Messages
+                    class="material-icons">mail</i> {{ _("Messages") }}
             </button>
             <button class="new-button" id="friends" onclick="location.href='{{ url_for("friends_page") }}'"><i
-                    class="material-icons">people</i> Friends
+                    class="material-icons">people</i> {{ _("Friends") }}
             </button>
             <button class="new-button" id="groups" onclick="location.href='{{ url_for("user_groups") }}'"><i
-                    class="material-icons-round">people_outline</i> Communities
+                    class="material-icons-round">people_outline</i> {{ _("Communities") }}
             </button>
             <button class="new-button" id="groups" onclick="location.href='{{ url_for("feed_page") }}'"><i
-                    class="material-icons">newspaper</i> Feed
+                    class="material-icons">newspaper</i> {{ _("Feed") }}
             </button>
+            <div class="language-buttons">
+                <span class="text-small" id="eng_lang">english</span>
+                <span class="text-small" id="ru_lang">русский</span>
+            </div>
         {% endif %}
     {% endblock %}
 </div>

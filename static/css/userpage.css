@@ -297,6 +297,16 @@
     gap: 5px;
 }
 
+.new-post-sub-tags > .new-button{
+    height: auto;
+    min-height: 35px;
+}
+
+.post-buttons > .new-button {
+    height: auto;
+    min-height: 35px;
+}
+
 .new-post-sub-tags .tag-button-small {
     cursor: pointer;
 }

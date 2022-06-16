@@ -10,6 +10,11 @@
     justify-content: center;
 }
 
+.group_avatar_input > .new-button{
+    height: auto;
+    min-height: 35px;
+}
+
 .create-group {
   display: grid;
   grid-template-columns: 0.5fr 1.5fr;

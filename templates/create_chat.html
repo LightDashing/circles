@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block title %}Create chat{% endblock %}
+{% block title %}{{ _("Create chat")}}{% endblock %}
 {% block head %}
     {{ super() }}
     <script type="text/javascript"
@@ -51,13 +51,13 @@
             </div>
         </div>
     <div class="create-chat">
-    <h1>Create new chat</h1>
+    <h1>{{ _("Create new chat")}}</h1>
         <div class="create-chat-settings">
         {% if friends %}
-            <label>Chat name
+            <label>{{ _("Chat name")}}
                 <input type="text" id="chat_name">
             </label>
-            <button class="new-button" id="set_chat_avatar">Set chat avatar</button>
+            <button class="new-button" id="set_chat_avatar">{{ _("Set chat avatar")}}</button>
             </div>
             {% for friend in friends %}
                 <div class="create-chat-friend">
@@ -69,17 +69,17 @@
                               class="create-chat-friend user-name"
                               id="friend_{{ loop.index - 1 }}">{{ friend.username }}</span>
                     </div>
-                    <button id="add_friend_{{ loop.index - 1 }}" class="new-button">Add friend</button>
-                    <button id="remove_friend_{{ loop.index - 1 }}" class="new-button">Remove friend</button>
-                    <label>Is moderator</label>
+                    <button id="add_friend_{{ loop.index - 1 }}" class="new-button">{{ _("Add friend")}}</button>
+                    <button id="remove_friend_{{ loop.index - 1 }}" class="new-button">{{ _("Remove friend")}}</button>
+                    <label>{{ _("Is moderator")}}</label>
                     <input type="checkbox" id='is_moderator_{{ loop.index - 1 }}'><br>
                 </div>
             {% endfor %}
 
         {% else %}
-            <a>You don't have friends</a>
+            <a>{{ _("You don't have friends")}}</a>
         {% endif %}
-        <button id="create_chat" class="new-button">Create chat</button>
+        <button id="create_chat" class="new-button">{{ _("Create chat")}}</button>
     </div>
 {% endblock %}
 {% block scripts %}

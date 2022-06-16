@@ -14,24 +14,24 @@
             <div class="group-card-text">
                 <span class="group-card-text-name">{{ group.group_name }}</span>
                 <span>{{ group.status }}</span>
-                <span class="small-text">Subscribers: {{ group.users_amount }}</span>
+                <span class="small-text">{{ _("Subscribers:") }} {{ group.users_amount }}</span>
                 {% if current_user.id == group.owner %}
-                    <span class="small-text">You are owner of this group</span>
+                    <span class="small-text">{{ _("You are owner of this group")}}</span>
                 {% endif %}
-                <button id="join_b" class="tag-button-small">Join community</button>
-                <button id="leave_b" class="tag-button-small">Leave community</button>
+                <button id="join_b" class="tag-button-small">{{ _("Join community")}}</button>
+                <button id="leave_b" class="tag-button-small">{{ _("Leave community")}}</button>
             </div>
         </div>
         <div class="group-card-description">
-            <span class="small-text">Group description:</span>
+            <span class="small-text">{{ _("Group description:")}}</span>
             <span class="group-description" style="font-size: 1.2rem">{{ group.description }}</span>
         </div>
     </div>
     <div class="group-rules">
-        <span class="small-text" style="margin-bottom: 1%">Group rules</span>
+        <span class="small-text" style="margin-bottom: 1%">{{ _("Group rules")}}</span>
         <span>{{ group.rules }}</span>
     </div>
-    <span class="posts-span">Posts</span>
+    <span class="posts-span">{{ _("Posts") }}</span>
     <div class="new-post">
         <div style="flex: 1;" class="new-post-sub">
             <label>
@@ -40,11 +40,11 @@
             <div class="new-post-sub-pinned" id="pinned_container">
             </div>
             <div class="new-post-sub-tags">
-                <button class="tag-button-small" style="margin-right: 10px" id="is_anonymous">anonymous</button>
+                <button class="tag-button-small" style="margin-right: 10px" id="is_anonymous">{{ _("anonymous") }}</button>
             </div>
         </div>
         <div class="post-buttons">
-            <button class="new-button" id="make_post">Post</button>
+            <button class="new-button" id="make_post">{{ _("Post") }}</button>
         </div>
     </div>
     <div class="posts">
@@ -56,13 +56,13 @@
                             <img class="post-avatar" alt="User avatar" src="{{ get_user_avatar(post.user_id) }}">
                             <a class="post-nick"
                                href="{{ url_for("users_page", name=get_username(post.user_id)) }}"><b>{{ get_username(post.user_id) }}</b></a>
-                            <span class="post-date">posted at {{ formate_datetime(post.date_added) }}</span><br>
+                            <span class="post-date">{{ _("posted at")}} {{ formate_datetime(post.date_added) }}</span><br>
                             <span class="material-icons" id="post-more">more_horiz</span>
                         {% else %}
                             <img class="post-avatar" alt="User avatar" src="{{ group.avatar }}">
                             <a class="post-nick"
                                href="{{ url_for("group_page", group_name=group.group_name) }}"><b>{{ group.group_name }}</b></a>
-                            <span class="post-date">posted at {{ formate_datetime(post.date_added) }}</span><br>
+                            <span class="post-date">{{ _("posted at")}} {{ formate_datetime(post.date_added) }}</span><br>
                             <span class="material-icons" id="post-more">more_horiz</span>
                         {% endif %}
                     </div>

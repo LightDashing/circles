@@ -1,6 +1,8 @@
 import datetime
-
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session
+from flask_babel import lazy_gettext as _
+from flask_babel import Babel, gettext
+from flask_babel_js import BabelJS
 from flask_hcaptcha import hCaptcha
 from flask_login import LoginManager, login_user, login_required, current_user, logout_user
 from database import DBC
@@ -35,6 +37,23 @@ login_manager.blueprint_login_views = {
     'api': '/404/'
 }
 login_manager.init_app(app)
+babel = Babel(app)
+app.config["LANGUAGES"] = {
+    'en': 'English',
+    'ru': 'Russian'
+}
+babel_js = BabelJS()
+babel_js.init_app(app)
+
+
+@babel.localeselector
+def get_locale():
+    if session.get("lang", None) == "ru":
+        return "ru"
+    elif session.get("lang", None) == "en":
+        return "en"
+    else:
+        request.accept_languages.best_match(app.config['LANGUAGES'].keys())
 
 
 @login_manager.user_loader

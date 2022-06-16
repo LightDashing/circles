@@ -8,7 +8,7 @@ function addImage(modal_content_id, cropper_id, image_id, files, send_function) 
     const fileList = files;
     let modal_content = document.getElementById(`${modal_content_id}`);
     if (!IMAGES_EXTENSIONS.includes(getFileExtension(fileList[0].name))) {
-        console.log("File isn't image!")
+        console.log(_("File isn't image!"))
         return
     }
     if ($(`#${image_id}`).length !== 0) {

@@ -1,12 +1,12 @@
 {% extends "layout.html" %}
-{% block title %}Messages{% endblock %}
+{% block title %}{{ _("Messages") }}{% endblock %}
 {% block head %}
     {{ super() }}
     <link type="text/css" rel="stylesheet" href="/static/css/messages.css">
     <script type="text/javascript" src="{{ url_for("static", filename="js/messages.js") }}"></script>
 {% endblock %}
 {% block main_row %}
-    <h1 style="text-align: left; margin-bottom: 30px">Your messages</h1>
+    <h1 style="text-align: left; margin-bottom: 30px">{{ _("Your messages")}}</h1>
     <div class="all-chats">
         {% for chat in chats %}
             <div class="chat-box" style="background: {{ chat.chat_color }}" id="chat_box_{{ chat.id }}">
@@ -18,23 +18,24 @@
                 <div class="chat-box-info">
                     <span class="chat-box-info-d-name">{{ get_dialog_name(chat.chatname) }}</span>
                     {% if not chat.is_dialog %}
-                        <span>users: {{ chat.user_count }}</span>
+                        <span>{{ _("users:")}} {{ chat.user_count }}</span>
                     {% else %}
-                        <span>dialog</span>
+                        <span>{{ _("dialog") }}</span>
                     {% endif %}
                 </div>
                 <div class="chat-box-buttons">
                     <button class="new-button" onclick="location.href='{{ url_for('chat', chat_id=chat["id"]) }}'">
-                        Write
+                        {{ _("Write") }}
                     </button>
                     {% if not chat.is_dialog %}
-                        <button class="new-button" id="leave_{{ chat.id }}" onclick="leave_chat('{{ chat.id }}')">Leave</button>
+                        <button class="new-button" id="leave_{{ chat.id }}" onclick="leave_chat('{{ chat.id }}')">
+                            {{ _("Leave") }}</button>
                     {% endif %}
                 </div>
             </div>
         {% endfor %}
         <div class="create-chat-display">
-            <button class="new-button" onclick="location.href='{{ url_for('create_chat') }}'">Create new chat</button>
+            <button class="new-button" onclick="location.href='{{ url_for('create_chat') }}'">{{ _("Create new chat")}}</button>
         </div>
     </div>
 {% endblock %}

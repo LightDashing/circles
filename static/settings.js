@@ -111,7 +111,7 @@ $(function onReady() {
                     if (data) {
                         $("#roles_selector")[0].selectize.addOption(data)
                     } else {
-                        alert('You already have 6 tags created!')
+                        alert(_('You already have 6 tags created!'))
                     }
                 }
             })
@@ -131,9 +131,9 @@ function send_avatar(data) {
         success: function updateModal(data) {
             console.log(data)
             if (data === 2) {
-                alert('This file is too large!')
+                alert(_('This file is too large!'))
             } else if (data === 1) {
-                alert('You little cheater')
+                // alert('You little cheater')
             }
         }
     });
@@ -149,25 +149,25 @@ function send_settings(form) {
         success: function displayErrors(data) {
             let msg = document.createElement('span');
             if (data['unknown_error']) {
-                msg.innerText = 'Some unknown error occurred!';
+                msg.innerText = _("Some unknown error occurred!");
                 msg.classList.add('error-message');
                 $(".unknown-error").append(msg);
             }
             if (data['u_name_r'] === 1) {
-                msg.innerText = 'User with that username already exist!';
+                msg.innerText = _("User with that username already exist!");
                 msg.classList.add('error-message');
                 $(".username-error").append(msg);
             } else if (data['u_name_r'] === 2) {
-                msg.innerText = 'Username length is incorrect!';
+                msg.innerText = _("Username length is incorrect!");
                 msg.classList.add('error-message');
                 $(".username-error").append(msg);
             }
             if (data['u_email_r'] === 1) {
-                msg.innerText = "Email isn't valid!";
+                msg.innerText = _("Email isn't valid!");
                 msg.classList.add('error-message');
                 $(".email-error").append(msg)
             } else if (data['u_email_r'] === 2) {
-                msg.innerText = "That email already belongs to someone!";
+                msg.innerText = _("That email already belongs to someone!")
                 msg.classList.add('error-message');
                 $(".email-error").append(msg)
             }

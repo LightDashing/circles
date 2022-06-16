@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block title %}Create new group{% endblock %}
+{% block title %}{{ _("Create new group")}}{% endblock %}
 {% block head %}
     {{ super() }}
     <script type="text/javascript"
@@ -13,7 +13,7 @@
     <script type="text/javascript" src="{{ url_for("static", filename="js/image_cropper.js") }}"></script>
 {% endblock %}
 {% block main_row %}
-    <h1 style="text-align: left; margin-bottom: 30px;">Create new group</h1>
+    <h1 style="text-align: left; margin-bottom: 30px;">{{ _("Create new group")}}</h1>
     <div class="change-avatar" id="set_avatar">
             <div class="change-avatar-content" id="avatar-modal">
                 <span class="close" id="close_button">&times;</span>
@@ -56,35 +56,35 @@
                 <input type="text" id="group_name">
             </div>
             <div class="group_name">
-                <label for="group_name">Group name</label>
+                <label for="group_name">{{ _("Group name")}}</label>
             </div>
             <div class="group_summary_input">
                 <input type="text" id="group_summary">
             </div>
             <div class="group_summary">
-                <label for="group_summary">Group summary</label>
+                <label for="group_summary">{{ _("Group summary")}}</label>
             </div>
             <div class="group_rules_input">
                 <textarea id="group_rules"></textarea>
             </div>
             <div class="group_rules">
-                <label for="group_rules">Group rules</label>
+                <label for="group_rules">{{ _("Group rules")}}</label>
             </div>
             <div class="group_description_input">
                 <textarea id="group_description"></textarea>
             </div>
             <div class="group_description">
-                <label for="group_description">Group description</label>
+                <label for="group_description">{{ _("Group description")}}</label>
             </div>
             <div class="group_avatar_input">
-                <button class="new-button" id="avatar_setter">Set avatar</button>
+                <button class="new-button" id="avatar_setter">{{ _("Set avatar")}}</button>
             </div>
             <div class="group_avatar">
-                <label for="group_avatar">Choose group avatar</label>
+                <label for="group_avatar">{{ _("Choose group avatar")}}</label>
             </div>
         </div>
         <div class="create-group-button-container">
-            <button id="create_group" class="new-button">Create group</button>
+            <button id="create_group" class="new-button">{{ _("Create group")}}</button>
         </div>
     </div>
 {% endblock %}
