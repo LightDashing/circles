@@ -14,7 +14,8 @@
             <div class="group-card-text">
                 <span class="group-card-text-name">{{ group.group_name }}</span>
                 <span>{{ group.status }}</span>
-                <span class="small-text">{{ _("Subscribers:") }} {{ group.users_amount }}</span>
+                <span class="small-text">{{ _("Subscribers:") }} {{ group.users_amount }}, {% if current_user.is_admin %} id:
+                    {{ group.id }} {% endif %}</span>
                 {% if current_user.id == group.owner %}
                     <span class="small-text">{{ _("You are owner of this group")}}</span>
                 {% endif %}

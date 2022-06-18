@@ -32,7 +32,6 @@ class DataBase:
             print("Connection to database successful!")
             print(self.engine)
 
-
         def __enter__(self):
             self.sp_sess = self.g_session()
             self.commit_needed = False
@@ -1078,6 +1077,30 @@ class DataBase:
         all_posts = [*friends_posts, *groups_posts, *your_wall_posts]
         all_posts.sort(key=lambda x: x["date_added"], reverse=True)
         return all_posts
+
+    def a_delete_u_post(self, u_post_id: int):
+        with self.conn_handler as session:
+            stmt = delete(UserPost).filter(UserPost.id == u_post_id)
+            session.execute(stmt)
+            self.conn_handler.commit_needed = True
+
+    def a_delete_g_post(self, g_post_id: int):
+        with self.conn_handler as session:
+            stmt = delete(GroupPost).filter(GroupPost.id == g_post_id)
+            session.execute(stmt)
+            self.conn_handler.commit_needed = True
+
+    def a_delete_user(self, user_id: int):
+        with self.conn_handler as session:
+            stmt = delete(User).filter(User.id == user_id)
+            session.execute(stmt)
+            self.conn_handler.commit_needed = True
+
+    def a_delete_group(self, group_id: int):
+        with self.conn_handler as session:
+            stmt = delete(Group).filter(Group.id == group_id)
+            session.execute(stmt)
+            self.conn_handler.commit_needed = True
 
     def create_role(self, role_name: str, role_color: str, user_id: int):
         # TODO: добавить донаты для монетизации, максимальное кол-во ролей для обычного пользователя - 5

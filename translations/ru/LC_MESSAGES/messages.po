@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-06-15 19:30+0300\n"
-"PO-Revision-Date: 2022-06-15 19:41+0300\n"
+"POT-Creation-Date: 2022-06-18 15:05+0300\n"
+"PO-Revision-Date: 2022-06-18 15:07+0300\n"
 "Last-Translator: lightdashing <chugunnic@gmail.com>\n"
 "Language-Team: English <kde-i18n-doc@kde.org>\n"
 "Language: ru\n"
@@ -39,18 +39,18 @@ msgstr "Редактировать"
 
 #: api/templates/group_post_template.html:6
 #: api/templates/user_post_template.html:6 templates/feed.html:20
-#: templates/feed.html:25 templates/group.html:59 templates/group.html:65
-#: templates/user.html:123
+#: templates/feed.html:25 templates/group.html:60 templates/group.html:66
+#: templates/user.html:128
 msgid "posted at"
 msgstr "размещено"
 
 #: api/templates/user_post_template.html:10 static/up.js:162
-#: templates/user.html:61 templates/user.html:127
+#: templates/user.html:65 templates/user.html:132
 msgid "private"
 msgstr "приватно"
 
 #: api/templates/user_post_template.html:12 static/group.js:17 static/up.js:156
-#: templates/user.html:129
+#: templates/user.html:134
 msgid "public"
 msgstr "публично"
 
@@ -66,7 +66,7 @@ msgstr "Введите название беседы!"
 msgid "Add more friends to chat!"
 msgstr "Добавьте больше друзей в беседу!"
 
-#: static/group.js:20 templates/group.html:43
+#: static/group.js:20 templates/group.html:44
 msgid "anonymous"
 msgstr "анонимно"
 
@@ -122,6 +122,22 @@ msgstr "Сообщения"
 msgid "Friends"
 msgstr "Друзья"
 
+#: static/js/admin_panel.js:1
+msgid "Deletion was successful!"
+msgstr "Удаление успешно!"
+
+#: static/js/admin_panel.js:17 static/js/admin_panel.js:35
+msgid "You need to input post id!"
+msgstr "Введите ID записи!"
+
+#: static/js/admin_panel.js:53
+msgid "You need to input user id!"
+msgstr "Введите ID пользователя!"
+
+#: static/js/admin_panel.js:71
+msgid "You need to input group id!"
+msgstr "Введите ID группы!"
+
 #: static/js/create_group.js:52
 msgid "Group summary must be less than 128!"
 msgstr "Краткое описание группы должно быть менее 128 символов!"
@@ -134,15 +150,15 @@ msgstr "Одно или несколько полей пустые!"
 msgid "File isn't image!"
 msgstr "Файл не является изображением!"
 
-#: static/js/main.js:7
+#: static/js/main.js:35
 msgid "Drag image here"
 msgstr "Перетащите изображение сюда"
 
-#: static/js/main.js:19
+#: static/js/main.js:47
 msgid "Size of file must be less than 25 megabytes"
 msgstr "Размер файла должен быть менее 25 мегабайт"
 
-#: static/js/main.js:23
+#: static/js/main.js:51
 msgid "File must be image!"
 msgstr "Файл не является изображением!"
 
@@ -157,6 +173,47 @@ msgstr "Ошибка 404: Страница не найдена"
 #: templates/404.html:41
 msgid "go back"
 msgstr "вернуться"
+
+#: templates/admin_panel.html:2 templates/admin_panel.html:9
+msgid "Admin panel"
+msgstr "Панель администратора"
+
+#: templates/admin_panel.html:12
+msgid "Delete user post"
+msgstr "Удалить запись пользователя"
+
+#: templates/admin_panel.html:15
+msgid "Input user post id..."
+msgstr "Введите ID записи пользователя..."
+
+#: templates/admin_panel.html:17 templates/admin_panel.html:25
+#: templates/admin_panel.html:33 templates/admin_panel.html:41
+msgid "Delete"
+msgstr "Удалить"
+
+#: templates/admin_panel.html:20
+msgid "Delete group post"
+msgstr "Удалить запись группы"
+
+#: templates/admin_panel.html:23
+msgid "Input group post id..."
+msgstr "Введите ID записи групппы..."
+
+#: templates/admin_panel.html:28
+msgid "Delete user profile"
+msgstr "Удалить профиль пользователя"
+
+#: templates/admin_panel.html:31
+msgid "Input user id"
+msgstr "Введите ID пользователя"
+
+#: templates/admin_panel.html:36
+msgid "Delete group"
+msgstr "Удалить группу"
+
+#: templates/admin_panel.html:39
+msgid "Input group id"
+msgstr "Введите ID группы"
 
 #: templates/chat.html:95 templates/create_chat.html:54
 #: templates/messages.html:38
@@ -179,11 +236,11 @@ msgstr "Имя беседы"
 msgid "Set chat avatar"
 msgstr "Установить аватар беседы"
 
-#: templates/create_chat.html:72 templates/user.html:33
+#: templates/create_chat.html:72 templates/user.html:35
 msgid "Add friend"
 msgstr "Добавить друга"
 
-#: templates/create_chat.html:73 templates/user.html:34
+#: templates/create_chat.html:73 templates/user.html:36
 msgid "Remove friend"
 msgstr "Удалить друга"
 
@@ -208,7 +265,7 @@ msgstr "Имя группы"
 msgid "Group summary"
 msgstr "Краткое описание группы"
 
-#: templates/create_group.html:71 templates/group.html:31
+#: templates/create_group.html:71 templates/group.html:32
 msgid "Group rules"
 msgstr "Правила группы"
 
@@ -240,7 +297,7 @@ msgstr "Лента новостей"
 msgid "Your friends"
 msgstr "Ваши друзья"
 
-#: templates/friends.html:23 templates/user.html:26
+#: templates/friends.html:23 templates/user.html:27
 msgid "online"
 msgstr "в сети"
 
@@ -260,27 +317,27 @@ msgstr "Удалить друга"
 msgid "Subscribers:"
 msgstr "Подписчиков:"
 
-#: templates/group.html:19
+#: templates/group.html:20
 msgid "You are owner of this group"
 msgstr "Вы владелец этой группы"
 
-#: templates/group.html:21
+#: templates/group.html:22
 msgid "Join community"
 msgstr "Присоединиться к группе"
 
-#: templates/group.html:22
+#: templates/group.html:23
 msgid "Leave community"
 msgstr "Выйти из группы"
 
-#: templates/group.html:26
+#: templates/group.html:27
 msgid "Group description:"
 msgstr "Описание группы:"
 
-#: templates/group.html:34 templates/user.html:49
+#: templates/group.html:35 templates/user.html:52
 msgid "Posts"
 msgstr "Записи"
 
-#: templates/group.html:47 templates/user.html:73
+#: templates/group.html:48 templates/user.html:78
 msgid "Post"
 msgstr "Разместить запись"
 
@@ -449,7 +506,7 @@ msgstr "Повернуть против часовой"
 msgid "Save image"
 msgstr "Сохранить изображение"
 
-#: templates/settings.html:60 templates/user.html:45
+#: templates/settings.html:60 templates/user.html:48
 msgid "About me"
 msgstr "Обо мне"
 
@@ -485,11 +542,11 @@ msgstr "Цвет роли"
 msgid "Can users with this role post on your wall?"
 msgstr "Могут ли пользователи с этой ролью размещать записи?"
 
-#: templates/settings.html:127 templates/user.html:111
+#: templates/settings.html:127 templates/user.html:116
 msgid "Accept changes"
 msgstr "Сохранить изменения"
 
-#: templates/settings.html:128 templates/user.html:112
+#: templates/settings.html:128 templates/user.html:117
 msgid "Delete role"
 msgstr "Удалить роль"
 
@@ -505,67 +562,67 @@ msgstr "Цвет роли"
 msgid "Create role"
 msgstr "Создать роль"
 
-#: templates/user.html:30
+#: templates/user.html:31
 msgid "friends"
 msgstr "друзья"
 
-#: templates/user.html:35
+#: templates/user.html:37
 msgid "Accept request"
 msgstr "Принять"
 
-#: templates/user.html:36
+#: templates/user.html:39
 msgid "Decline request"
 msgstr "Отклонить"
 
-#: templates/user.html:37
+#: templates/user.html:40
 msgid "Cancel request"
 msgstr "Отменить запрос"
 
-#: templates/user.html:39
+#: templates/user.html:42
 msgid "change cover"
 msgstr "изменить обложку"
 
-#: templates/user.html:60
+#: templates/user.html:63
 msgid "Type:"
 msgstr "Тип:"
 
-#: templates/user.html:63
+#: templates/user.html:67
 msgid "Roles:"
 msgstr "Роль:"
 
-#: templates/user.html:67
+#: templates/user.html:72
 msgid "Edit roles"
 msgstr "Редактировать роли"
 
-#: templates/user.html:80
+#: templates/user.html:85
 msgid "Color:"
 msgstr "Цвет:"
 
-#: templates/user.html:84
+#: templates/user.html:89
 msgid "Role name:"
 msgstr "Имя роли:"
 
-#: templates/user.html:88
+#: templates/user.html:93
 msgid "Add new role"
 msgstr "Добавить новую роль"
 
-#: templates/user.html:94
+#: templates/user.html:99
 msgid "Choose role to edit:"
 msgstr "Выбрать роль для редактирования:"
 
-#: templates/user.html:98
+#: templates/user.html:103
 msgid "Edit role name:"
 msgstr "Имя роли:"
 
-#: templates/user.html:103
+#: templates/user.html:108
 msgid "Edit role color:"
 msgstr "Цвет роли:"
 
-#: templates/user.html:108
+#: templates/user.html:113
 msgid "Can users with this role post on your page?"
 msgstr "Могут ли пользователи с этой ролью размещать записи?"
 
-#: templates/user.html:131
+#: templates/user.html:136
 msgid "only for:"
 msgstr "только для:"
 

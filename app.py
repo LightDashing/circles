@@ -154,6 +154,15 @@ def group_page(group_name):
     return render_template('group.html', group=data, joined=is_in_group, posts=group_posts)
 
 
+@app.route('/admin', methods=['GET'])
+@login_required
+def admin_page():
+    if current_user.is_admin:
+        return render_template('admin_panel.html')
+    else:
+        return render_template('404.html')
+
+
 @app.route('/feed', methods=['GET'])
 @login_required
 def feed_page():

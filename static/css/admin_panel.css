@@ -1,0 +1,60 @@
+.admin-panel {  display: grid;
+  grid-template-columns: 0.5fr 1.5fr;
+  grid-template-rows: 1fr 1fr 1fr 1fr;
+  grid-auto-flow: row;
+  gap: 15px;
+  max-width: 50%;
+  grid-template-areas:
+    "user_post_delete user_post_delete_input"
+    "group_post_delete group_post_delete_input"
+    "user_profile_delete user_profile_delete_input"
+    "group_profile_delete group_profile_delete_input";
+}
+
+.user_post_delete {
+  grid-area: user_post_delete;
+  display: flex;
+  align-items: center;
+}
+
+.user_post_delete_input {
+  grid-area: user_post_delete_input;
+  display: flex;
+  gap: 5px;
+}
+
+.group_post_delete {
+  grid-area: group_post_delete;
+  display: flex;
+  align-items: center;
+}
+
+.group_post_delete_input {
+  grid-area: group_post_delete_input;
+  display: flex;
+  gap: 5px;
+}
+
+.user_profile_delete {
+  grid-area: user_profile_delete;
+  display: flex;
+  align-items: center;
+}
+
+.user_profile_delete_input {
+  grid-area: user_profile_delete_input;
+  display: flex;
+  gap: 5px;
+}
+
+.group_profile_delete {
+  grid-area: group_profile_delete;
+  display: flex;
+  align-items: center;
+}
+
+.group_profile_delete_input {
+  grid-area: group_profile_delete_input;
+  display: flex;
+  gap: 5px;
+}

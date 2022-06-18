@@ -335,3 +335,47 @@ def delete_chat():
     data = request.get_json()
     response = DBC.delete_chat(current_user.id, data["chat_id"])
     return jsonify(response)
+
+
+@api_bp.route('/admin/delete_user_post', methods=['DELETE'])
+@login_required
+def a_delete_u_post():
+    data = request.get_json()
+    if current_user.is_admin:
+        DBC.a_delete_u_post(data["post_id"])
+        return jsonify(True)
+    else:
+        return jsonify(None)
+
+
+@api_bp.route('/admin/delete_group_post', methods=['DELETE'])
+@login_required
+def a_delete_group_post():
+    data = request.get_json()
+    if current_user.is_admin:
+        DBC.a_delete_g_post(data["post_id"])
+        return jsonify(True)
+    else:
+        return jsonify(None)
+
+
+@api_bp.route('/admin/delete_user', methods=['DELETE'])
+@login_required
+def a_delete_user():
+    data = request.get_json()
+    if current_user.is_admin:
+        DBC.a_delete_user(data["user_id"])
+        return jsonify(True)
+    else:
+        return jsonify(None)
+
+
+@api_bp.route('/admin/delete_group', methods=['DELETE'])
+@login_required
+def a_delete_group():
+    data = request.get_json()
+    if current_user.is_admin:
+        DBC.a_delete_group(data["group_id"])
+        return jsonify(True)
+    else:
+        return jsonify(None)

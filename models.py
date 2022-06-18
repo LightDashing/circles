@@ -32,6 +32,7 @@ class User(UserMixin, Base):
     # age = Column(SMALLINT)
     # email_active = Column(Boolean, nullable=False, default=False)
     is_active = Column(Boolean, nullable=False, default=False)
+    is_admin = Column(Boolean, nullable=False, default=False)
     description = Column(VARCHAR(1024))
     status = Column(VARCHAR(30), nullable=False, default=' ')
     age = Column(INTEGER)
@@ -329,7 +330,7 @@ class Chat(Base):
 class Message(Base):
     __tablename__ = 'messages'
     id = Column(INTEGER, primary_key=True, autoincrement=True)
-    from_user_id = Column(INTEGER, ForeignKey("users.id"), nullable=False)
+    from_user_id = Column(INTEGER, ForeignKey("users.id", ondelete='SET NULL'))
     message_date = Column(DateTime, nullable=False, default=datetime.datetime.now())
     message = Column(TEXT, nullable=False)
     chat_id = Column(INTEGER, ForeignKey('chats.id', ondelete='CASCADE'), nullable=False)

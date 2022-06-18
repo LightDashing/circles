@@ -1,0 +1,48 @@
+{% extends "layout.html" %}
+{% block title %}{{ _("Admin panel") }}{% endblock %}
+{% block head %}
+    {{ super() }}
+    <link type="text/css" rel="stylesheet" href="/static/css/admin_panel.css">
+    <script type="text/javascript" src="{{ url_for("static", filename="js/admin_panel.js") }}"></script>
+{% endblock %}
+{% block main_row %}
+    <h1 style="text-align: left; margin-bottom: 30px">{{ _("Admin panel") }}</h1>
+    <div class="admin-panel">
+        <div class="user_post_delete">
+            <label for="user_post_delete">{{ _("Delete user post") }}</label>
+        </div>
+        <div class="user_post_delete_input">
+            <input type="text" id="user_post_delete" placeholder="{{ _("Input user post id...") }}">
+            <button id="user_post_delete_button" class="new-button"
+                    onclick="delete_user_post($('#user_post_delete').val())">{{ _("Delete") }}</button>
+        </div>
+        <div class="group_post_delete">
+            <label for="group_post_delete">{{ _("Delete group post") }}</label>
+        </div>
+        <div class="group_post_delete_input">
+            <input type="text" id="group_post_delete" placeholder="{{ _("Input group post id...") }}">
+            <button id="group_post_delete_button" class="new-button"
+                    onclick="delete_group_post($('#group_post_delete').val())">{{ _("Delete") }}</button>
+        </div>
+        <div class="user_profile_delete">
+            <label for="user_profile_delete">{{ _("Delete user profile") }}</label>
+        </div>
+        <div class="user_profile_delete_input">
+            <input type="text" id="user_profile_delete" placeholder="{{ _("Input user id") }}">
+            <button id="user_post_delete_button" class="new-button"
+                    onclick="delete_user($('#user_profile_delete').val())">{{ _("Delete") }}</button>
+        </div>
+        <div class="group_profile_delete">
+            <label for="group_delete">{{ _("Delete group") }}</label>
+        </div>
+        <div class="group_profile_delete_input">
+            <input type="text" id="group_delete" placeholder="{{ _("Input group id") }}">
+            <button id="group_profile_delete_button" class="new-button"
+                    onclick="delete_group($('#group_delete').val())">{{ _("Delete") }}</button>
+        </div>
+    </div>
+{% endblock %}
+{% block right_row %}
+    {{ super() }}
+    {% block other_profile %}{% endblock %}
+{% endblock %}
