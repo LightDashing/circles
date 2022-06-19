@@ -1,11 +1,13 @@
 let is_post_private = true
 let pinned_num = 0
+let username
 
 function init(name) {
     //TODO: потом переделать, выглядит некрасиво
     hideFriendsButtons()
     let create_post = $("#create_post")
     create_post.hide()
+    username = name
 
     let roles_selector = $("#role_selector")
     let private_selector = $("#private_post")
@@ -123,8 +125,10 @@ function init(name) {
         for (let i = 0; i < pinned_images.length; i++) {
             pinned_images[i] = pinned_images[i].src;
         }
-        if (post_input.val() !== '') {
+        if (post_input.val() !== '' || pinned_images.length > 0) {
             publish_post(post_input.val(), where_id, is_post_private, roles, pinned_images);
+            post_input.val("")
+            $(".pinned-image").remove()
         }
     })
 
@@ -330,7 +334,7 @@ function publish_post(post_msg, where_id, is_private, roles, pinned_images) {
         contentType: 'application/json',
         success: function (data) {
             $.ajax({
-                url: '/api/get_your_post', data: `p_id=${data["id"]}`,
+                url: '/api/get_your_post', data: `p_id=${data["id"]}&u_name=${username}`,
                 success: function (data) {
                     $(".posts").prepend(data)
                 }

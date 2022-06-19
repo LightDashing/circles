@@ -990,8 +990,9 @@ class DataBase:
     def get_your_post(self, post_id: int, user_id: int):
         with self.conn_handler as session:
             statement = select(UserPost).filter(UserPost.id == post_id, UserPost.userid == user_id)
-            post = session.execute(statement).scalar()
-            return post.serialize
+            post = session.execute(statement).scalar().serialize
+            post["liked"] = self.is_liked(post["id"], "u", user_id, session)
+            return post
 
     def get_group_post(self, post_id: int, user_id: int):
         with self.conn_handler as session:

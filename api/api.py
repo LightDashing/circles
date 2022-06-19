@@ -72,8 +72,9 @@ def publish_post():
 @login_required
 def get_post():
     post_id = request.args.get("p_id")
+    u_name = request.args.get("u_name")
     post = DBC.get_your_post(post_id, current_user.id)
-    return render_template('user_post_template.html', post=post)
+    return render_template('user_post_template.html', post=post, name=u_name)
 
 
 @api_bp.route('/add_friend', methods=['POST'])

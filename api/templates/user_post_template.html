@@ -3,7 +3,7 @@
         <img class="post-avatar" alt="User avatar" src="{{ get_user_avatar(post['user_id']) }}">
         <a class="post-nick"
            href="{{ url_for("users_page", name=get_username(post['user_id'])) }}"><b>{{ get_username(post['user_id']) }}</b></a>
-        <span class="post-date">{{ _("posted at")}} {{ formate_datetime(post['date_added']) }}</span><br>
+        <span class="post-date">{{ _("posted at") }} {{ formate_datetime(post['date_added']) }}</span><br>
         {% if current_user.username == name %}
             <div class="private-info">
                 {% if post.is_private %}
@@ -11,7 +11,7 @@
                 {% else %}
                     <span class="tag-button-small">{{ _("public") }}</span>
                 {% endif %}
-                <span class="private-role-info">{{ _("only for: ")}}</span>
+                <span class="private-role-info">{{ _("only for: ") }}</span>
                 {% for role in post.roles %}
                     <span class="tag-button-small role-display-{{ role.id }}"
                           style="background: {{ role.role_color }}; color: {{ role.font_color }}">{{ role.role_name }}</span>
@@ -31,5 +31,16 @@
                 {% endfor %}
             {% endfor %}
         {% endif %}
+    </div>
+    <div class="likes-div">
+        {% if post.liked %}
+            <img id="likes_u_{{ post.id }}" class="heart liked" alt="like"
+                 src="/static/img/like_fill_red.svg"
+                 onclick="like('{{ post.id }}', 'u')">
+        {% else %}
+            <img id="likes_u_{{ post.id }}" class="heart" alt="like" src="/static/img/like_fill.svg"
+                 onclick="like('{{ post.id }}', 'u')">
+        {% endif %}
+        <span id="likes_amount_u_{{ post.id }}">{{ post.likes }}</span>
     </div>
 </div>
