@@ -56,9 +56,8 @@
                 <label>
                     <textarea id="post-input" style="flex: 1"></textarea>
                 </label>
+                <div class="new-post-sub-pinned" id="pinned_container"></div>
                 {% if current_user.id == user.id %}
-                    <div class="new-post-sub-pinned" id="pinned_container">
-                    </div>
                     <div class="new-post-sub-tags">
                         <a>{{ _("Type:") }}</a>
                         <button class="tag-button-small" style="margin-right: 10px"

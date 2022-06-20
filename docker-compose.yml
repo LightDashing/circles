@@ -5,11 +5,13 @@ services:
     command: gunicorn -b 0.0.0.0:5000 app:app
     build: .
     volumes:
-      - ./docker/static/user_files:/static/user_files/
+      - ./docker/static/user_files:/code/static/user_files/
     depends_on:
       - postgres
   postgres:
     image: postgres:13-alpine
+    ports:
+      - "5432:5432"
     volumes:
       - ./docker/pg_data:/var/lib/postgresql/data
     environment:

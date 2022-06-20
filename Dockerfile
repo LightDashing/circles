@@ -5,7 +5,7 @@ WORKDIR /code
 ENV FLASK_APP=app.py
 ENV FLASK_RUN_HOST=0.0.0.0
 RUN apk add --update nodejs npm
-RUN apk add --no-cache gcc musl-dev linux-headers zlib-dev jpeg-dev libffi-dev
+RUN apk add --no-cache gcc musl-dev linux-headers zlib-dev jpeg-dev libffi-dev git
 RUN pip install -U  cffi pip setuptools
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt

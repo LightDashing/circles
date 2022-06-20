@@ -494,7 +494,7 @@ class DataBase:
         with self.conn_handler as session:
             if not user_roles:
                 if is_friend:
-                    statement = select(UserPost).filter(UserPost.whereid == user_id)
+                    statement = select(UserPost).filter((UserPost.whereid == user_id) & (UserPost.roles == None))
                 else:
                     statement = select(UserPost).filter(UserPost.whereid == user_id, UserPost.is_private == False)
                 posts = session.execute(statement).all()

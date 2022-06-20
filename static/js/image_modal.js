@@ -19,6 +19,8 @@ function renderModalImage(image_src, div_id, image_date, username, user_avatar) 
     console.log(div_id)
     let parent_div = $(`#${div_id}`)
     parent_div.html("")
+    image_date = image_date.toString()
+    image_date = image_date.substring(0, image_date.lastIndexOf(":"))
     let element = `<div class="modal-content">
     <div class="modal-content-image">
         <img src="${image_src}" alt="image big">

@@ -1,5 +1,5 @@
 from sqlalchemy import Column, INTEGER, Text, ForeignKey, DateTime, \
-    Boolean, or_, and_, Index, SMALLINT, ForeignKeyConstraint
+    Boolean, or_, and_, Index, SMALLINT, ForeignKeyConstraint, UniqueConstraint
 from sqlalchemy.dialects.postgresql import VARCHAR, TEXT
 from sqlalchemy.engine import create_engine
 from sqlalchemy.orm import relationship
@@ -189,6 +189,7 @@ class UserRole(Base):
     can_post = Column(Boolean, nullable=False, default=False)
     creator = Column(INTEGER, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
 
+    __table_args__ = (UniqueConstraint('role_name', 'creator', name='role_name_creator_uc'),)
     # can_post = Column(Boolean, nullable=False, default=False)
     # who_can_see = Column(INTEGER, nullable=False, default=0)
 
@@ -208,7 +209,7 @@ class FriendRoleLink(Base):
     __tablename__ = 'friend_role_link'
     first_u_id = Column(INTEGER, ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
     second_u_id = Column(INTEGER, ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
-    role_id = Column(INTEGER, ForeignKey("user_roles.id"), primary_key=True)
+    role_id = Column(INTEGER, ForeignKey("user_roles.id", ondelete='CASCADE'), primary_key=True)
 
 
 class UserPostRoleLink(Base):

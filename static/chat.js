@@ -56,6 +56,7 @@ $(function onReady() {
 
 function enableEditing(message_id, chat_id) {
     let text_editor = $(`#message_area_${chat_id}`)
+    text_editor.val($(`#message_${message_id} > .message-box-all > .message-box-text > .message-text`)[0].textContent)
     let edit_button = $(`#edit_message`)
     let send_button = $(`#send_message_${chat_id}`)
     if (send_button.css("display") === "none") {
@@ -131,10 +132,12 @@ function deleteImageContainer(element) {
 
 function send_message(message, user, chat_id) {
     chat_id = parseInt(chat_id);
-    let pinned_images = Array.from($(".message-input-pinned > img"));
+    let all_messages = $(".message-input-pinned > img")
+    let pinned_images = Array.from(all_messages);
     for (let i = 0; i < pinned_images.length; i++) {
         pinned_images[i] = pinned_images[i].src;
     }
+    all_messages.remove()
     $.ajax({
         url: '/api/send_message',
         method: 'POST',
