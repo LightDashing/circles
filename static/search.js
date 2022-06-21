@@ -7,7 +7,6 @@ $(function initSearch() {
     setTimeout(() => searchInit(), 250)
 
     $search_input.on('keyup', function (event) {
-        console.log(event.key)
         if ($search_input.val() !== '') {
             let query = $search_input.val()
             findDropdown(query)

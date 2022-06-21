@@ -33,6 +33,22 @@ function init(name) {
         image_desc_class: 'pinned-image-description',
     })
 
+    document.addEventListener("mousedown", function (e) {
+        if ($(e.target).parent()[0].classList !== undefined) {
+            if (!e.target.classList.contains("post-settings-context") && !$(e.target).parent()[0].classList.contains("post-settings-context")) {
+                let context_menu = document.getElementsByClassName("post-settings-context-displayed")
+                if (context_menu.length !== 0) {
+                    toggleMenu(context_menu[0].id.split("_")[2])
+                }
+            }
+        } else {
+            let context_menu = document.getElementsByClassName("post-settings-context-displayed")
+            if (context_menu.length !== 0) {
+                toggleMenu(context_menu[0].id.split("_")[2])
+            }
+        }
+    })
+
     function showModalEditRoles() {
         edit_role_modal.show()
         edit_role_modal_content.addClass("showModal")
@@ -175,10 +191,10 @@ function init(name) {
         }
     }
 
-    function autoCloseAddModal(callback){
+    function autoCloseAddModal(callback) {
         /* This function is waiting for add_role_modal window to close and then calls callback
         * It was designed for role selector, if user closes modal window without creating role */
-        if (add_role_modal.css("display") === "none"){
+        if (add_role_modal.css("display") === "none") {
             callback()
         }
     }

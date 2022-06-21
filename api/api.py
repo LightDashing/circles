@@ -16,6 +16,7 @@ def change_language():
     session["lang"] = data["lang"]
     return jsonify(data["lang"])
 
+
 @api_bp.route('/join_group', methods=['POST'])
 @login_required
 def join_group():
@@ -31,6 +32,14 @@ def leave_group():
     DBC.leave_group(data['group_name'], current_user)
     print(data["group_name"])
     return jsonify(True)
+
+
+@api_bp.route('/delete_user_post', methods=['DELETE'])
+@login_required
+def delete_user_post():
+    data = request.get_json()
+    result = DBC.delete_user_post(current_user.id, data['post_id'])
+    return jsonify({"result": result})
 
 
 @api_bp.route("/publish_group_post", methods=["POST"])

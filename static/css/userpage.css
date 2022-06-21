@@ -353,6 +353,28 @@
     gap: 10px;
 }
 
+.post-settings-context-displayed {
+    display: flex !important;
+}
+
+.post-settings-context {
+    display: none;
+    left: 100%;
+    width: 8vw;
+    flex-direction: column;
+    position: absolute;
+    z-index: 2;
+    background: white;
+    border-radius: 15px;
+    padding: 5px;
+    gap: 7px;
+    align-items: flex-start;
+}
+
+.post-settings-context-text {
+    cursor: pointer;
+}
+
 #role_selector {
     flex: 1;
     margin-right: 10px;

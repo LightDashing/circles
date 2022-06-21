@@ -12,6 +12,7 @@
             src="{{ url_for("static", filename="js/jscolor.js") }}"></script>
     <script type="text/javascript" src="{{ url_for("static", filename="js/roles_editor.js") }}"></script>
     <script type="text/javascript" src="{{ url_for("static", filename="js/like.js") }}"></script>
+    <script type="text/javascript" src="{{ url_for("static", filename="js/post_context.js") }}"></script>
 {% endblock %}
 {% block main_row %}
     <div class="user-card">
@@ -28,7 +29,7 @@
                 {% else %}
                     <span style="font-size: 0.8em">{{ user.last_time_online }}</span>
                 {% endif %}
-{#                <span style="font-size: 0.8em">{{ user.friends_count }} {{ _("friends") }}</span>#}
+                {#                <span style="font-size: 0.8em">{{ user.friends_count }} {{ _("friends") }}</span>#}
                 <div class="user-card-other-block">
                     {% if name != current_user.username %}
                         <button class="tag-button-small" id="add_friend"
@@ -38,8 +39,8 @@
                         <button class="tag-button-small" id="decline_request"
                                 value="">{{ _("Decline request") }}</button>
                         <button class="tag-button-small" id="cancel_request" value="">{{ _("Cancel request") }}</button>
-{#                    {% else %}#}
-{#                        <span class="tag-button-small">{{ _("change cover") }}</span>#}
+                        {#                    {% else %}#}
+                        {#                        <span class="tag-button-small">{{ _("change cover") }}</span>#}
                     {% endif %}
                 </div>
             </div>
@@ -119,7 +120,7 @@
     <div class="posts">
         {% if posts %}
             {% for post in posts %}
-                <div class="post">
+                <div class="post" id="post_{{ post.id }}">
                     <div class="post-header">
                         <img class="post-avatar" alt="User avatar" src="{{ get_user_avatar(post['user_id']) }}">
                         <a class="post-nick"
@@ -139,7 +140,13 @@
                                 {% endfor %}
                             </div>
                         {% endif %}
-                        <span class="material-icons" id="post-more">more_horiz</span>
+                        <span class="material-icons" style="cursor: pointer" id="post-more"
+                              onclick="toggleMenu(parseInt({{ post.id }}))">more_horiz</span>
+                        <div id="post_context_{{ post.id }}" class="post-settings-context">
+                        <span class="post-settings-context-text"
+                              onclick="deleteUserPost(parseInt({{ post.id }}))"><i
+                                class="material-icons">delete</i>{{ _("Delete post") }}</span>
+                        </div>
                     </div>
                     <span class="post-message">{{ post['message'] }}</span>
                     <div class="post-pinned-images">

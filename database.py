@@ -571,6 +571,20 @@ class DataBase:
             self.conn_handler.commit_needed = True
         return True
 
+    def delete_user_post(self, user_id, post_id):
+        with self.conn_handler as session:
+            stmt = delete(UserPost).filter((UserPost.id == post_id) & (UserPost.userid == user_id))
+            res = session.execute(stmt)
+            self.conn_handler.commit_needed = True
+            if res.rowcount > 0:
+                return True
+            else:
+                stmt = delete(UserPost).filter((UserPost.id == post_id) & (UserPost.whereid == user_id))
+                res = session.execute(stmt)
+                if res.rowcount > 0:
+                    return True
+                return False
+
     def delete_group(self, owner_id: int, group_name: str) -> bool:
         """
         This function deletes group if there is a group with owner_id and group_name\n
@@ -1180,11 +1194,21 @@ class DataBase:
             friend = session.execute(statement).scalar()  # Getting existing rows
             if not friend:  # If there is no friend entry like that
                 return False
+            self.remove_all_friend_roles(friend.first_user_id, friend.second_user_id, session)
+            self.remove_all_friend_roles(friend.second_user_id, friend.first_user_id, session)
             statement = delete(Friend).filter((Friend.first_user_id == friend.first_user_id) &
                                               (Friend.second_user_id == friend.second_user_id))
             session.execute(statement)
             self.conn_handler.commit_needed = True
             return True
+
+    def remove_all_friend_roles(self, user_id: int, friend_id: int, scoped=False):
+        if scoped:
+            friend = scoped.execute(self.FRIEND_STATEMENT(user_id, friend_id)).scalar()
+            if friend.first_user_id == user_id:
+                friend.second_user_roles = []
+            else:
+                friend.first_user_roles = []
 
     def accept_request(self, second_user: int, user: int) -> bool:
         """
