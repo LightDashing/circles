@@ -21,14 +21,14 @@
             </div>
             <div class="user-card-nickname-section">
                 <span class="user-nickname">{{ user.username }}</span>
-                <span style="font-size: 0.8em">{{ _("common user") }}, {% if current_user.is_admin %} id:
+                <span style="font-size: 0.8em">{{ _("common user") }}{% if current_user.is_admin %}, id:
                     {{ user.id }} {% endif %}</span>
                 {% if user.is_online %}
                     <span style="font-size: 0.8em; color: green">{{ _("online") }}</span>
                 {% else %}
                     <span style="font-size: 0.8em">{{ user.last_time_online }}</span>
                 {% endif %}
-                <span style="font-size: 0.8em">{{ user.friends_count }} {{ _("friends") }}</span>
+{#                <span style="font-size: 0.8em">{{ user.friends_count }} {{ _("friends") }}</span>#}
                 <div class="user-card-other-block">
                     {% if name != current_user.username %}
                         <button class="tag-button-small" id="add_friend"
@@ -38,8 +38,8 @@
                         <button class="tag-button-small" id="decline_request"
                                 value="">{{ _("Decline request") }}</button>
                         <button class="tag-button-small" id="cancel_request" value="">{{ _("Cancel request") }}</button>
-                    {% else %}
-                        <span class="tag-button-small">{{ _("change cover") }}</span>
+{#                    {% else %}#}
+{#                        <span class="tag-button-small">{{ _("change cover") }}</span>#}
                     {% endif %}
                 </div>
             </div>
